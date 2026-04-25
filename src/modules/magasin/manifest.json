@@ -1,0 +1,17 @@
+{
+  "name": "magasin",
+  "label": "Magasin",
+  "description": "Gestion de magasin, produits, ventes et stock",
+  "icon": "Store",
+  "version": "1.0.0",
+  "routes": [
+    { "path": "/dashboard", "label": "Tableau de bord", "icon": "LayoutDashboard" },
+    { "path": "/magasin/products", "label": "Produits", "icon": "Package" },
+    { "path": "/magasin/categories", "label": "Catégories", "icon": "Tag" },
+    { "path": "/magasin/sales", "label": "Ventes", "icon": "ShoppingCart" },
+    { "path": "/magasin/stock", "label": "Stock", "icon": "Warehouse" },
+    { "path": "/magasin/expiry", "label": "Périmés", "icon": "CalendarX" },
+    { "path": "/magasin/reports", "label": "Rapports", "icon": "BarChart2" },
+    { "path": "/magasin/financial", "label": "Financier", "icon": "TrendingUp" }
+  ]
+}

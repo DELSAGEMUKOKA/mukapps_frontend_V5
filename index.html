@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+
+  <meta name="theme-color" content="#1e40af" />
+
+  <meta name="description" content="Mukapps - Application de gestion de magasin, point de vente et facturation en RDC" />
+  <meta name="keywords" content="gestion magasin, POS, inventaire, facturation, Mukapps, RDC, Lubumbashi" />
+  <meta name="author" content="Planetech Delsage SARL" />
+
+  <meta name="geo.region" content="CD" />
+  <meta name="geo.placename" content="Lubumbashi" />
+
+  <meta name="robots" content="index, follow" />
+
+  <meta property="og:title" content="MukApps - Gestion de magasin" />
+  <meta property="og:description" content="Solution complète de gestion d'inventaire et point de vente" />
+  <meta property="og:image" content="/LOGO_Mukapps.png" />
+  <meta property="og:type" content="website" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="MukApps" />
+  <meta name="twitter:description" content="Application de gestion de magasin" />
+  <meta name="twitter:image" content="/LOGO_Mukapps.png" />
+
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="MukApps" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <link rel="icon" type="image/png" href="/LOGO_Mukapps.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=()">
+
+  <!-- ✅ CSP CORRIGÉE - Ajout des domaines Google Analytics dans connect-src -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; 
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com; 
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+      font-src 'self' https://fonts.gstatic.com; 
+      img-src 'self' data: https:; 
+      connect-src 'self' http://localhost:4000 https://zzqswsgxyjrmreotglzh.supabase.co https://www.google-analytics.com https://www.google.com https://*.google-analytics.com https://*.google.com;
+      frame-src 'none'; 
+      object-src 'none'; 
+      base-uri 'self';">
+
+  <!-- Google Analytics avec gestion d'erreur -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    // Vérifier si l'environnement autorise GA
+    if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+      console.log('✅ Google Analytics initialisé');
+    } else {
+      console.log('🔍 Google Analytics désactivé en développement');
+    }
+  </script>
+
+  <title>MukApps - Plateforme de Gestion des entreprises</title>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="module" src="/src/main.tsx"></script>
+
+  <script>
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.classList.add('standalone-mode');
+    }
+  </script>
+</body>
+</html>

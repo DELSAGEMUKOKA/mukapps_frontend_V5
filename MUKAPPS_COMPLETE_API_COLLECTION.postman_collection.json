@@ -1,0 +1,822 @@
+{
+  "info": {
+    "_postman_id": "mukapps-api-v2-2026",
+    "name": "Mukapps SaaS Backend API v2.0",
+    "description": "Collection complète de l'API Mukapps Backend v2.0\n\n## Architecture Modulaire\n- Product Module (Implémenté)\n- Category Module (Implémenté)\n- Sales Module (À tester)\n- Stock Module (À tester)\n- Finance Module (À tester)\n- Reports Module (À tester)\n- Customer Module (À tester)\n- User Module (À tester)\n\n## Variables d'environnement requises:\n- `baseUrl`: http://localhost:4000\n- `token`: Token JWT (auto-généré après login)\n- `companyId`: ID de l'entreprise\n- `userId`: ID de l'utilisateur\n\n## Ordre de test recommandé:\n1. Health - Vérifier l'API\n2. Auth - Register & Login\n3. Modules - Vérifier accès\n4. Product - CRUD\n5. Category - CRUD\n\n## Nouvelle Structure:\n- Routes centralisées: /api/\n- Modules indépendants: /api/products, /api/categories, /api/sales, etc.\n- Gestion des modules: /api/modules/\n\nDernière mise à jour: 2026-04-24",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Vérifier que l'API est opérationnelle"
+          },
+          "response": []
+        },
+        {
+          "name": "Root Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"]
+            },
+            "description": "Vérifier le statut général de l'API"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de santé et status"
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.environment.set('token', response.data.token);",
+                  "        pm.environment.set('userId', response.data.user.id);",
+                  "        pm.environment.set('companyId', response.data.user.companyId);",
+                  "        console.log('✅ Token saved');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin@123\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"Test\",\n  \"phone\": \"+243123456789\",\n  \"company\": {\n    \"name\": \"Test Company\",\n    \"email\": \"contact@test.com\",\n    \"phone\": \"+243987654321\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Créer un compte utilisateur et une entreprise"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.environment.set('token', response.data.token);",
+                  "        pm.environment.set('userId', response.data.user.id);",
+                  "        pm.environment.set('companyId', response.data.user.companyId);",
+                  "        console.log('✅ Token saved from login');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Se connecter avec email/password"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Récupérer les infos de l'utilisateur connecté"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Se déconnecter"
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentification (register, login, logout)"
+    },
+    {
+      "name": "2. Module Management",
+      "item": [
+        {
+          "name": "List All Modules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modules",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules"]
+            },
+            "description": "Lister tous les modules et leurs statuts"
+          },
+          "response": []
+        },
+        {
+          "name": "List Active Modules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modules/active",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules", "active"]
+            },
+            "description": "Lister les modules actifs pour cette entreprise"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Module Access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modules/product/check",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules", "product", "check"]
+            },
+            "description": "Vérifier l'accès à un module spécifique"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationMonths\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/modules/sales/activate",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules", "sales", "activate"]
+            },
+            "description": "Activer un module pour cette entreprise"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Module",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modules/sales/deactivate",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules", "sales", "deactivate"]
+            },
+            "description": "Désactiver un module pour cette entreprise"
+          },
+          "response": []
+        },
+        {
+          "name": "Renew Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationMonths\": 6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/modules/sales/renew",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "modules", "sales", "renew"]
+            },
+            "description": "Renouveler l'accès à un module"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des modules (activation, désactivation, renouvellement)"
+    },
+    {
+      "name": "3. Product Module",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.environment.set('productId', response.data.id);",
+                  "        console.log('✅ Product ID saved: ' + response.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Product\",\n  \"description\": \"A test product\",\n  \"sku\": \"TEST-001\",\n  \"barcode\": \"123456789\",\n  \"costPrice\": 10.00,\n  \"sellingPrice\": 15.00,\n  \"quantity\": 100,\n  \"minStockLevel\": 10,\n  \"unit\": \"pièce\",\n  \"tags\": [\"test\", \"demo\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Créer un nouveau produit"
+          },
+          "response": []
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=1&limit=20&search=",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Lister tous les produits avec pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Récupérer un produit spécifique"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Product\",\n  \"sellingPrice\": 20.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Mettre à jour un produit"
+          },
+          "response": []
+        },
+        {
+          "name": "Archive Product",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/archive",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}", "archive"]
+            },
+            "description": "Archiver un produit"
+          },
+          "response": []
+        },
+        {
+          "name": "Restore Product",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/restore",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}", "restore"]
+            },
+            "description": "Restaurer un produit archivé"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Supprimer un produit"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Low Stock Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/low-stock",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "low-stock"]
+            },
+            "description": "Lister les produits avec stock faible"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Expiring Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/expiring?days=30",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "expiring"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Lister les produits qui expirent bientôt"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Price History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}/price-history",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}", "price-history"]
+            },
+            "description": "Obtenir l'historique des prix d'un produit"
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Create Products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Product 1\",\n      \"sku\": \"SKU-001\",\n      \"costPrice\": 5.00,\n      \"sellingPrice\": 10.00,\n      \"quantity\": 50\n    },\n    {\n      \"name\": \"Product 2\",\n      \"sku\": \"SKU-002\",\n      \"costPrice\": 8.00,\n      \"sellingPrice\": 12.00,\n      \"quantity\": 75\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/products/bulk/create",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "bulk", "create"]
+            },
+            "description": "Créer plusieurs produits en une seule requête"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des produits (CRUD, archives, stock, prix)"
+    },
+    {
+      "name": "4. Category Module",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.environment.set('categoryId', response.data.id);",
+                  "        console.log('✅ Category ID saved: ' + response.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products\",\n  \"sortOrder\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"]
+            },
+            "description": "Créer une nouvelle catégorie"
+          },
+          "response": []
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories?page=1&limit=20",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lister toutes les catégories"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            },
+            "description": "Récupérer une catégorie spécifique"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electrical Devices\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            },
+            "description": "Mettre à jour une catégorie"
+          },
+          "response": []
+        },
+        {
+          "name": "Archive Category",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}/archive",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}", "archive"]
+            },
+            "description": "Archiver une catégorie"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "categories", "{{categoryId}}"]
+            },
+            "description": "Supprimer une catégorie"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des catégories (CRUD)"
+    },
+    {
+      "name": "5. Sales Module",
+      "item": [
+        {
+          "name": "Create Sale",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 5,\n      \"unitPrice\": 15.00\n    }\n  ],\n  \"paymentMethod\": \"CASH\",\n  \"discount\": 0,\n  \"notes\": \"Test sale\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sales",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales"]
+            },
+            "description": "Créer une nouvelle vente"
+          },
+          "response": []
+        },
+        {
+          "name": "List Sales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sales?page=1&limit=20",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sales"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lister toutes les ventes"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion des ventes (À implémenter)"
+    },
+    {
+      "name": "6. Stock Module",
+      "item": [
+        {
+          "name": "Get Stock Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stock/overview",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "stock", "overview"]
+            },
+            "description": "Vue d'ensemble du stock"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion du stock (À implémenter)"
+    },
+    {
+      "name": "7. Finance Module",
+      "item": [
+        {
+          "name": "Get Financial Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/finance/summary",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "finance", "summary"]
+            },
+            "description": "Résumé financier"
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestion financière (À implémenter)"
+    },
+    {
+      "name": "8. Reports Module",
+      "item": [
+        {
+          "name": "Get Sales Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/sales",
+              "protocol": "http",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "sales"]
+            },
+            "description": "Rapport des ventes"
+          },
+          "response": []
+        }
+      ],
+      "description": "Rapports et analytics (À implémenter)"
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "saleId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
