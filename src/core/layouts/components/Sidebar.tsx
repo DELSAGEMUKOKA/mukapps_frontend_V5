@@ -4,6 +4,7 @@ import {
   ChartBar as BarChart2, DollarSign, Users, UserCheck, Settings, CreditCard,
   Building2, Activity, Shield, Barcode,
   MonitorSmartphone, FileText, ShoppingCart, ChevronLeft, ChevronRight, Plus,
+  ClipboardList, Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
@@ -167,6 +168,19 @@ function useSidebarNav() {
       sections: [{
         items: [
           { label: 'Tous les utilisateurs', to: ROUTES.USERS, icon: Users },
+        ],
+      }],
+    };
+  }
+
+  if (activeModule === 'invoicing' && hasModule('invoicing')) {
+    return {
+      title: 'Facturation',
+      sections: [{
+        items: [
+          ...(canPage('quotes') ? [{ label: 'Devis', to: ROUTES.INVOICING_QUOTES, icon: ClipboardList }] : []),
+          ...(canPage('proforma') ? [{ label: 'Proforma', to: ROUTES.INVOICING_PROFORMA, icon: FileText }] : []),
+          ...(canPage('invoicing') ? [{ label: 'Factures', to: ROUTES.INVOICING_INVOICES, icon: Receipt }] : []),
         ],
       }],
     };

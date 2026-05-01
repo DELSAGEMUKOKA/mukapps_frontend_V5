@@ -1,5 +1,13 @@
 "use client";
 import {
+  onlineManager,
+  require_jsx_runtime,
+  useQueryClient
+} from "./chunk-7OWVEFH7.js";
+import {
+  require_react
+} from "./chunk-HA2I5Q66.js";
+import {
   createComponent,
   createSignal,
   lazy,
@@ -8,18 +16,8 @@ import {
   setupStyleSheet
 } from "./chunk-4XEUAV2G.js";
 import {
-  onlineManager,
-  useQueryClient
-} from "./chunk-3ZO7MGEF.js";
-import {
-  require_jsx_runtime
-} from "./chunk-CVSOQ2CG.js";
-import {
-  require_react
-} from "./chunk-K3W77EYD.js";
-import {
   __toESM
-} from "./chunk-G3PMV62Z.js";
+} from "./chunk-5WRI5ZAA.js";
 
 // node_modules/@tanstack/react-query-devtools/build/modern/ReactQueryDevtools.js
 var React = __toESM(require_react(), 1);
@@ -104,7 +102,7 @@ var TanstackQueryDevtools = class {
       if (this.#Component) {
         Devtools = this.#Component;
       } else {
-        Devtools = lazy(() => import("./NXRPVNXJ-H5VZJCO5.js"));
+        Devtools = lazy(() => import("./NXRPVNXJ-RMT2K4TJ.js"));
         this.#Component = Devtools;
       }
       setupStyleSheet(this.#styleNonce, this.#shadowDOMTarget);
@@ -242,7 +240,7 @@ var TanstackQueryDevtoolsPanel = class {
       if (this.#Component) {
         Devtools = this.#Component;
       } else {
-        Devtools = lazy(() => import("./RXFVSJH2-NGEZCUSU.js"));
+        Devtools = lazy(() => import("./RXFVSJH2-FWAO7ZFG.js"));
         this.#Component = Devtools;
       }
       setupStyleSheet(this.#styleNonce, this.#shadowDOMTarget);

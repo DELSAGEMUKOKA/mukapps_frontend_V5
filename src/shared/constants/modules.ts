@@ -8,6 +8,7 @@ export const MODULES = {
   STOCK: 'stock',
   FINANCE: 'finance',
   REPORTS: 'reports',
+  INVOICING: 'invoicing',
 } as const;
 
 export type ModuleName = (typeof MODULES)[keyof typeof MODULES];

@@ -167,6 +167,44 @@ export const API = {
     LOGO: '/settings/logo',
   },
 
+  // Invoicing module
+  INVOICING: {
+    // Quotes
+    QUOTES: '/invoicing/quotes',
+    QUOTE_BY_ID: (id: string) => `/invoicing/quotes/${id}`,
+    QUOTE_MARK_SENT: (id: string) => `/invoicing/quotes/${id}/mark-as-sent`,
+    QUOTE_MARK_ACCEPTED: (id: string) => `/invoicing/quotes/${id}/mark-as-accepted`,
+    QUOTE_MARK_REJECTED: (id: string) => `/invoicing/quotes/${id}/mark-as-rejected`,
+    QUOTE_CONVERT_PROFORMA: (id: string) => `/invoicing/quotes/${id}/convert-to-proforma`,
+    // Proforma invoices
+    PROFORMAS: '/invoicing/proforma-invoices',
+    PROFORMA_BY_ID: (id: string) => `/invoicing/proforma-invoices/${id}`,
+    PROFORMA_CONFIRM: (id: string) => `/invoicing/proforma-invoices/${id}/confirm`,
+    PROFORMA_RECORD_PAYMENT: (id: string) => `/invoicing/proforma-invoices/${id}/record-payment`,
+    PROFORMA_PAYMENTS: (id: string) => `/invoicing/proforma-invoices/${id}/payments`,
+    PROFORMA_CONVERT_INVOICE: (id: string) => `/invoicing/proforma-invoices/${id}/convert-to-invoice`,
+    // Invoices
+    INVOICES: '/invoicing/invoices',
+    INVOICE_BY_ID: (id: string) => `/invoicing/invoices/${id}`,
+    INVOICE_SUMMARY: '/invoicing/invoices/summary',
+    INVOICE_MARK_SENT: (id: string) => `/invoicing/invoices/${id}/mark-as-sent`,
+    INVOICE_MARK_VIEWED: (id: string) => `/invoicing/invoices/${id}/mark-as-viewed`,
+    INVOICE_RECORD_PAYMENT: (id: string) => `/invoicing/invoices/${id}/record-payment`,
+    INVOICE_PAYMENTS: (id: string) => `/invoicing/invoices/${id}/payments`,
+    INVOICE_AUDIT_LOG: (id: string) => `/invoicing/invoices/${id}/audit-log`,
+    INVOICE_CHECK_OVERDUE: '/invoicing/invoices/check-overdue',
+  },
+
+  // Invoicing templates
+  INVOICING_TEMPLATES: {
+    BASE: '/invoicing/templates',
+    BY_ID: (id: string) => `/invoicing/templates/${id}`,
+    DEFAULT: (type: string) => `/invoicing/templates/default/${type}`,
+    SET_DEFAULT: (id: string) => `/invoicing/templates/${id}/default`,
+    CLONE: (id: string) => `/invoicing/templates/${id}/clone`,
+    PREVIEW: '/invoicing/templates/preview',
+  },
+
   // Clients
   CLIENTS: {
     BASE: '/client',

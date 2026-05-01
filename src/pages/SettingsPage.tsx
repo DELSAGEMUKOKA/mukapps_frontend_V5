@@ -1,13 +1,13 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { User, Lock, Building2, Barcode } from 'lucide-react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { User, Lock, Building2, Barcode, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/core/store';
 import { usersApi } from '@/modules/users/api/usersApi';
 import { authApi } from '@/core/api/authApi';
 import { companySettingsApi } from '@/modules/users/api/companySettingsApi';
 import { getRoleLabel } from '@/lib/utils';
-import type { CompanySettings } from '@/shared/types';
+import type { CompanySettings, LogoData } from '@/shared/types';
 
 const BarcodeLabels = lazy(() => import('@/modules/magasin/pages/BarcodeLabels'));
 
@@ -37,6 +37,8 @@ type Tab = 'profile' | 'security' | 'company' | 'barcodes';
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
+  const qc = useQueryClient();
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [profileForm, setProfileForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -45,6 +47,7 @@ export default function SettingsPage() {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [companyForm, setCompanyForm] = useState<CompanySettings>(DEFAULT_SETTINGS);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
@@ -59,6 +62,29 @@ export default function SettingsPage() {
       setCompanyForm((prev) => ({ ...prev, ...savedSettings }));
     }
   }, [savedSettings]);
+
+  // ✅ Requête pour récupérer le logo avec transformation correcte
+  const { data: logoData, refetch: refetchLogo } = useQuery({
+    queryKey: ['company-logo'],
+    queryFn: async (): Promise<LogoData | null> => {
+      const result = await companySettingsApi.getLogo();
+      // ✅ Adaptation : le backend retourne "logo" (base64), pas "url"
+      if (result && 'logo' in result) {
+        return { url: result.logo, mimeType: result.logoMimeType, size: result.logoSize };
+      }
+      return result;
+    },
+    enabled: isAdmin,
+  });
+
+  // ✅ Extraire l'URL du logo pour l'affichage
+  useEffect(() => {
+    if (logoData?.url) {
+      setLogoUrl(logoData.url);
+    } else {
+      setLogoUrl(null);
+    }
+  }, [logoData]);
 
   const profileMutation = useMutation({
     mutationFn: (payload: typeof profileForm) => usersApi.updateProfile(payload),
@@ -83,6 +109,49 @@ export default function SettingsPage() {
     onSuccess: () => toast.success('Paramètres de l\'entreprise sauvegardés'),
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const uploadLogoMutation = useMutation({
+    mutationFn: (file: File) => companySettingsApi.uploadLogo(file),
+    onSuccess: (data) => {
+      toast.success('Logo téléchargé');
+      // ✅ Mise à jour immédiate de l'URL affichée
+      if (data && 'logo' in data) {
+        setLogoUrl(data.logo);
+      } else if (data && 'url' in data) {
+        setLogoUrl(data.url);
+      }
+      qc.invalidateQueries({ queryKey: ['company-logo'] });
+      refetchLogo();
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erreur lors de l\'upload'),
+  });
+
+  const deleteLogoMutation = useMutation({
+    mutationFn: () => companySettingsApi.deleteLogo(),
+    onSuccess: () => {
+      toast.success('Logo supprimé');
+      setLogoUrl(null);
+      qc.invalidateQueries({ queryKey: ['company-logo'] });
+      refetchLogo();
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erreur lors de la suppression'),
+  });
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez PNG, JPEG, GIF ou WebP');
+      return;
+    }
+    if (file.size > 64 * 1024 * 1024) {
+      toast.error('Fichier trop volumineux (max 5 MB)');
+      return;
+    }
+    uploadLogoMutation.mutate(file);
+    e.target.value = '';
+  };
 
   const tabs = [
     { id: 'profile' as Tab, label: 'Profil', icon: User },
@@ -204,6 +273,98 @@ export default function SettingsPage() {
           onSubmit={(e) => { e.preventDefault(); companyMutation.mutate(companyForm); }}
           className="space-y-5"
         >
+          {/* Logo upload */}
+          <div className="card p-6 space-y-5">
+            <h3 className="text-sm font-semibold text-secondary-900 pb-2 border-b border-secondary-100">
+              Logo de l'entreprise
+            </h3>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              className="hidden"
+              onChange={handleLogoChange}
+            />
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              {/* Logo preview area */}
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadLogoMutation.isPending}
+                className="group relative w-full sm:w-48 h-36 rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#017e84] bg-gray-50 hover:bg-[#017e84]/5 flex items-center justify-center overflow-hidden transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
+              >
+                {uploadLogoMutation.isPending ? (
+                  <div className="flex flex-col items-center gap-2 text-[#017e84]">
+                    <span className="w-8 h-8 border-2 border-[#017e84]/20 border-t-[#017e84] rounded-full animate-spin" />
+                    <span className="text-xs font-medium">Upload en cours...</span>
+                  </div>
+                ) : logoUrl ? (
+                  <>
+                    <img src={logoUrl} alt="Logo entreprise" className="w-full h-full object-contain p-3" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex flex-col items-center gap-1.5 text-white">
+                        <Upload size={20} />
+                        <span className="text-xs font-medium">Remplacer</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-400 group-hover:text-[#017e84] transition-colors">
+                    <ImageIcon size={32} strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Cliquer pour ajouter</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Info + actions */}
+              <div className="flex-1 space-y-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-secondary-800">
+                    {logoUrl ? 'Logo actuel' : 'Aucun logo configuré'}
+                  </p>
+                  <p className="text-xs text-secondary-500 leading-relaxed">
+                    Le logo apparaît sur tous vos documents PDF (devis, proformas, factures).<br />
+                    Formats acceptés : PNG, JPEG, GIF, WebP — Taille max : 5 MB
+                  </p>
+                </div>
+
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadLogoMutation.isPending}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm bg-[#017e84] text-white rounded-lg hover:bg-[#016a70] transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium shadow-sm"
+                  >
+                    <Upload size={14} />
+                    {logoUrl ? 'Remplacer le logo' : 'Télécharger un logo'}
+                  </button>
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm('Supprimer le logo ?')) deleteLogoMutation.mutate(); }}
+                      disabled={deleteLogoMutation.isPending}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm border border-red-200 text-red-500 rounded-lg hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+                    >
+                      {deleteLogoMutation.isPending ? (
+                        <span className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+
+                {logoUrl && (
+                  <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Logo actif — visible sur tous les documents
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="card p-6 space-y-5">
             <h3 className="text-sm font-semibold text-secondary-900 pb-2 border-b border-secondary-100">
               Informations générales

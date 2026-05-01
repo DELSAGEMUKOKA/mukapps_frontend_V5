@@ -21,6 +21,9 @@ export const ROLE_PERMISSIONS = {
       users: false,
       settings: false,
       subscription: false,
+      quotes: false,
+      proforma: false,
+      invoicing: false,
     },
   },
 
@@ -44,6 +47,9 @@ export const ROLE_PERMISSIONS = {
       users: true,
       settings: true,
       subscription: true,
+      quotes: true,
+      proforma: true,
+      invoicing: true,
     },
   },
 
@@ -67,6 +73,9 @@ export const ROLE_PERMISSIONS = {
       users: false,
       settings: true,
       subscription: false,
+      quotes: true,
+      proforma: true,
+      invoicing: true,
     },
   },
 
@@ -90,6 +99,9 @@ export const ROLE_PERMISSIONS = {
       users: false,
       settings: true,
       subscription: false,
+      quotes: true,
+      proforma: false,
+      invoicing: false,
     },
   },
 
@@ -113,6 +125,9 @@ export const ROLE_PERMISSIONS = {
       users: false,
       settings: true,
       subscription: false,
+      quotes: false,
+      proforma: false,
+      invoicing: false,
     },
   },
 } as const;

@@ -44,6 +44,13 @@ export const ROUTES = {
   SUBSCRIPTION: '/subscription',
   SUBSCRIPTION_REQUIRED: '/subscription-required',
 
+  // Invoicing module
+  INVOICING: '/invoicing',
+  INVOICING_QUOTES: '/invoicing/quotes',
+  INVOICING_PROFORMA: '/invoicing/proforma',
+  INVOICING_INVOICES: '/invoicing/invoices',
+  INVOICING_TEMPLATES: '/invoicing/templates',
+
   // Superadmin module
   SUPERADMIN_DASHBOARD: '/superadmin',
   SUPERADMIN_COMPANIES: '/superadmin/companies',

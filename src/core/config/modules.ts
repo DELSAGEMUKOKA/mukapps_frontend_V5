@@ -57,11 +57,19 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
   },
   {
-    name: 'restaurant',
-    label: 'Restaurant',
-    description: 'Gestion de restaurant et tables',
+    name: 'invoicing',
+    label: 'invoicing',
+    description: 'Gestion de invoicing et tables',
     icon: 'UtensilsCrossed',
-    routes: ['/restaurant'],
+    routes: ['/invoicing'],
+    requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
+  },
+  {
+    name: 'invoicing',
+    label: 'Facturation',
+    description: 'Devis, factures proforma et factures clients avec suivi des paiements',
+    icon: 'Receipt',
+    routes: ['/invoicing', '/invoicing/quotes', '/invoicing/proforma', '/invoicing/invoices'],
     requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
   },
 ];
@@ -73,5 +81,6 @@ export const MODULE_NAMES = {
   FINANCE: 'finance',
   REPORTS: 'reports',
   CLIENT: 'client',
-  RESTAURANT: 'restaurant',
+  invoicing: 'invoicing',
+  INVOICING: 'invoicing',
 } as const;

@@ -4,7 +4,7 @@ import {
   Store, Users, UserCheck, Settings, Shield, Bell, LogOut, ChevronDown,
   Search, Menu, LayoutDashboard, CreditCard, Grid3x3, Package, ShoppingCart,
   Archive, DollarSign, ChartBar as BarChart2, Tag, Calendar, FileText,
-  MonitorSmartphone, Barcode, X,
+  MonitorSmartphone, Barcode, X, Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
@@ -86,6 +86,18 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
     }
     if (canPage('settings')) {
       items.push({ label: 'Paramètres', sublabel: 'Compte et configuration', icon: Settings, to: ROUTES.SETTINGS, moduleKey: 'settings' });
+    }
+    if (hasModule('invoicing') && canPage('invoicing')) {
+      items.push({ label: 'Facturation', sublabel: 'Devis, proformas, factures', icon: Receipt, to: ROUTES.INVOICING, moduleKey: 'invoicing' });
+    }
+    if (hasModule('invoicing') && canPage('quotes')) {
+      items.push({ label: 'Devis', sublabel: 'Facturation', icon: Receipt, to: ROUTES.INVOICING_QUOTES, moduleKey: 'invoicing' });
+    }
+    if (hasModule('invoicing') && canPage('proforma')) {
+      items.push({ label: 'Proforma', sublabel: 'Facturation', icon: FileText, to: ROUTES.INVOICING_PROFORMA, moduleKey: 'invoicing' });
+    }
+    if (hasModule('invoicing') && canPage('invoicing')) {
+      items.push({ label: 'Factures (Invoicing)', sublabel: 'Facturation', icon: FileText, to: ROUTES.INVOICING_INVOICES, moduleKey: 'invoicing' });
     }
     if (canPage('subscription')) {
       items.push({ label: 'Abonnement', sublabel: 'Modules et abonnement', icon: CreditCard, to: ROUTES.SUBSCRIPTION, moduleKey: 'settings' });
@@ -232,6 +244,9 @@ export default function TopNavbar() {
           : []),
         ...(canPage('users')
           ? [{ key: 'users' as ActiveModule, label: 'Utilisateurs', icon: Users, to: ROUTES.USERS, paths: ['/users'] }]
+          : []),
+        ...(hasModule('invoicing') && canPage('invoicing')
+          ? [{ key: 'invoicing' as ActiveModule, label: 'Facturation', icon: Receipt, to: ROUTES.INVOICING, paths: ['/invoicing'] }]
           : []),
         ...(canPage('settings')
           ? [{ key: 'settings' as ActiveModule, label: 'Paramètres', icon: Settings, to: ROUTES.SETTINGS, paths: ['/settings', '/subscription'] }]

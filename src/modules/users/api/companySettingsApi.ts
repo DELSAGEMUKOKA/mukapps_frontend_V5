@@ -2,6 +2,11 @@ import apiClient from '@/core/api/axiosConfig';
 import { API } from '@/shared/constants/apiEndpoints';
 import type { CompanySettings } from '@/shared/types';
 
+export interface LogoData {
+  url: string;
+  filename?: string;
+}
+
 const STORAGE_KEY = 'mukapps-company-settings';
 
 function loadLocal(): Partial<CompanySettings> {
@@ -37,4 +42,26 @@ export const companySettingsApi = {
   },
 
   getLocalSettings: (): Partial<CompanySettings> => loadLocal(),
+
+  getLogo: async (): Promise<LogoData | null> => {
+    try {
+      const res = await apiClient.get(API.COMPANY.LOGO);
+      return res.data?.data || res.data || null;
+    } catch {
+      return null;
+    }
+  },
+
+  uploadLogo: async (file: File): Promise<LogoData> => {
+    const form = new FormData();
+    form.append('logo', file);
+    const res = await apiClient.post(`${API.COMPANY.LOGO}/upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data?.data || res.data;
+  },
+
+  deleteLogo: async (): Promise<void> => {
+    await apiClient.delete(API.COMPANY.LOGO);
+  },
 };
