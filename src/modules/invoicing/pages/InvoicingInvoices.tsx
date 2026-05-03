@@ -15,9 +15,9 @@ import { fr } from 'date-fns/locale';
 import InvoiceDocDetailModal from '../components/InvoiceDocDetailModal';
 import DesignPickerModal from '../components/DesignPickerModal';
 
-// Étendre le type InvoiceDoc pour inclure lineItems
+// ✅ CORRECTION: Interface étendue correctement
 interface ExtendedInvoiceDoc extends InvoiceDoc {
-  lineItems?: InvoiceDoc['items'];
+  lineItems?: any[];
 }
 
 function statusBadge(status: InvoiceStatus, isOverdue?: boolean) {
@@ -57,6 +57,13 @@ function getClientName(invoice: InvoiceDoc): string {
   }
   return 'Client inconnu';
 }
+
+// ✅ Fonction utilitaire pour convertir en nombre avec 2 décimales
+const toNumber = (value: string | number | undefined | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return Math.round(value * 100) / 100;
+  return Math.round((parseFloat(String(value).replace(',', '.')) || 0) * 100) / 100;
+};
 
 export default function InvoicingInvoices() {
   const qc = useQueryClient();
@@ -115,9 +122,24 @@ export default function InvoicingInvoices() {
     onError: () => toast.error('Erreur lors de la vérification'),
   });
 
-  const invoices = data?.data ?? [];
+  const rawInvoices = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
+
+  // ✅ CORRECTION: Recalculer amountDue pour chaque facture
+  const invoices = rawInvoices.map((inv) => ({
+    ...inv,
+    amountDue: toNumber(inv.totalAmount) - toNumber(inv.amountPaid),
+  }));
+
+  // ✅ CORRECTION: Calculer le total restant dû manuellement
+  const totalDueCalculated = invoices.reduce((sum, inv) => {
+    const due = inv.amountDue > 0 ? inv.amountDue : 0;
+    return sum + due;
+  }, 0);
+
+  // Utiliser la valeur calculée ou celle de l'API
+  const totalDueDisplay = totalDueCalculated > 0 ? totalDueCalculated : (summary?.totalDue ?? 0);
 
   const handleDownloadPdf = (inv: InvoiceDoc) => {
     setDesignPickerInvoice(inv);
@@ -135,7 +157,8 @@ export default function InvoicingInvoices() {
         companySettingsApi.getSettings(),
         companySettingsApi.getLogo().catch(() => null),
       ]);
-      const items = (full as ExtendedInvoiceDoc).lineItems || full.items || [];
+      // ✅ CORRECTION: Utiliser lineItems au lieu de items
+      const items = (full as ExtendedInvoiceDoc).lineItems || [];
       const logoUrl = logoData && 'logo' in logoData ? (logoData as any).logo : (logoData as any)?.url;
       const currency = (company as any)?.currency || 'FC';
       const html = buildInvoiceHtml({ ...full, items }, company as any, logoUrl, currency, design);
@@ -187,7 +210,7 @@ export default function InvoicingInvoices() {
           {[
             { label: 'Total facturé', value: fmt(summary.totalAmount ?? 0), icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'Total reçu', value: fmt(summary.totalPaid ?? 0), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Reste à payer', value: fmt(summary.totalDue ?? 0), icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+            { label: 'Reste à payer', value: fmt(totalDueDisplay), icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
             { label: 'En retard', value: fmt(summary.overdueAmount ?? 0), icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex items-center gap-3">
@@ -249,7 +272,9 @@ export default function InvoicingInvoices() {
 
       {isLoading ? (
         <div className="py-20">
-          <SmartLoader isLoading={true} />
+          <SmartLoader isLoading={true}>
+            <div /> {/* ✅ CORRECTION: Ajouter children requis */}
+          </SmartLoader>
         </div>
       ) : invoices.length === 0 ? (
         <div className="py-20 flex flex-col items-center gap-3 text-gray-400 bg-white rounded-xl border border-gray-200">
@@ -268,7 +293,7 @@ export default function InvoicingInvoices() {
         <>
           {/* Mobile cards */}
           <div className="sm:hidden space-y-3">
-            {invoices.map((inv) => (
+            {invoices.map((inv: any) => (
               <div key={inv.id} className={`bg-white rounded-xl border p-4 ${inv.isOverdue ? 'border-red-200 bg-red-50/20' : 'border-gray-200'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
@@ -281,7 +306,7 @@ export default function InvoicingInvoices() {
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
                     <p className="font-bold text-gray-900 text-sm">{fmt(inv.totalAmount)}</p>
-                    {inv.amountDue > 0 && inv.status !== 'PAID' && (
+                    {inv.amountDue > 0.01 && inv.status !== 'PAID' && (
                       <p className="text-xs text-orange-600 font-medium mt-0.5">Reste: {fmt(inv.amountDue)}</p>
                     )}
                   </div>
@@ -334,7 +359,7 @@ export default function InvoicingInvoices() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {invoices.map((inv) => (
+                  {invoices.map((inv: any) => (
                     <tr key={inv.id} className={`hover:bg-gray-50 transition-colors ${inv.isOverdue ? 'bg-red-50/30' : ''}`}>
                       <td className="px-4 py-3 font-mono text-xs text-gray-600">{inv.invoiceNumber}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">
@@ -346,10 +371,10 @@ export default function InvoicingInvoices() {
                       <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={inv.subject}>{inv.subject}</td>
                       <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(inv.totalAmount)}</td>
                       <td className="px-4 py-3 text-right">
-                        {inv.amountDue > 0 && inv.status !== 'PAID' ? (
+                        {inv.amountDue > 0.01 && inv.status !== 'PAID' ? (
                           <span className="text-orange-600 font-medium">{fmt(inv.amountDue)}</span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-gray-400">0</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">{statusBadge(inv.status, inv.isOverdue)}</td>
@@ -360,7 +385,7 @@ export default function InvoicingInvoices() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-medium transition-colors" title="Voir"><Eye size={12} /><span className="hidden xl:inline">Voir</span></button>
                           <button onClick={() => handleDownloadPdf(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
-                          {(inv.status === 'SENT' || inv.status === 'VIEWED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') && (
+                          {(inv.status === 'SENT' || inv.status === 'VIEWED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') && inv.amountDue > 0.01 && (
                             <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden xl:inline">Paiement</span></button>
                           )}
                           <div className="w-px h-5 bg-gray-200 mx-0.5" />

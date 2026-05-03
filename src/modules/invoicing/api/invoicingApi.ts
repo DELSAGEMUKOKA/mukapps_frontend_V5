@@ -60,7 +60,7 @@ export interface Quote {
   client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
   subject: string;
   description?: string;
-  items: InvoicingLineItem[];
+  lineItems: InvoicingLineItem[];
   validityDays: number;
   taxRate: number;
   discountPercentage: number;
@@ -94,12 +94,12 @@ export type ProformaStatus = 'DRAFT' | 'CONFIRMED' | 'PARTIALLY_PAID' | 'PAID' |
 
 export interface ProformaInvoice {
   id: string;
-  proformaNumber: string;
+  proformaNumber: string;  // ✅ Correction: minuscule
   clientId: string;
   client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
   quoteId?: string;
   subject: string;
-  items: InvoicingLineItem[];
+  lineItems: InvoicingLineItem[];
   taxRate: number;
   discountPercentage: number;
   shippingCost: number;
@@ -145,10 +145,10 @@ export interface InvoiceDoc {
   invoiceNumber: string;
   clientId: string;
   client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
-  proformaId?: string;
+  proformaId?: string;  // ✅ Correction: minuscule
   quoteId?: string;
   subject: string;
-  items: InvoicingLineItem[];
+  lineItems: InvoicingLineItem[];
   invoiceDate: string;
   dueDate: string;
   taxRate: number;
@@ -208,23 +208,25 @@ export interface InvoiceSummary {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+export const roundToTwoDecimals = (value: number): number => {
+  return Math.round(value * 100) / 100;
+};
+
+export const toNumber = (value: string | number | undefined | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return roundToTwoDecimals(value);
+  const cleaned = String(value).replace(',', '.');
+  return roundToTwoDecimals(parseFloat(cleaned) || 0);
+};
+
 function extractData<T>(res: { data: unknown }): T {
   const d = res.data as Record<string, unknown>;
   return (d?.data ?? d) as T;
 }
 
-/**
- * Extrait les données paginées de la réponse API
- * Supporte plusieurs formats de réponse:
- * 1. { data: { invoices: [], total: 10, page: 1, totalPages: 2 } }
- * 2. { data: [], total: 10, page: 1, totalPages: 2 }
- * 3. { invoices: [], total: 10, page: 1, totalPages: 2 }
- * 4. { data: { data: [], total: 10, page: 1, totalPages: 2 } }
- */
 function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResult<T> {
   const raw = res.data as Record<string, unknown>;
   
-  // Format 1: { data: { invoices: [], total: 10, page: 1, totalPages: 2 } }
   if (raw?.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
     const container = raw.data as Record<string, unknown>;
     if (Array.isArray(container[key])) {
@@ -247,7 +249,6 @@ function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResu
     }
   }
   
-  // Format 2: { data: [], total: 10, page: 1, totalPages: 2 }
   if (Array.isArray(raw?.data)) {
     const items = raw.data as T[];
     return {
@@ -258,7 +259,6 @@ function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResu
     };
   }
   
-  // Format 3: { invoices: [], total: 10, page: 1, totalPages: 2 }
   if (Array.isArray(raw?.[key])) {
     const items = raw[key] as T[];
     return {
@@ -269,7 +269,6 @@ function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResu
     };
   }
   
-  // Format 4: { data: { data: [], total: 10, page: 1, totalPages: 2 } }
   if (raw?.data && typeof raw.data === 'object') {
     const nested = raw.data as Record<string, unknown>;
     if (Array.isArray(nested.data)) {
@@ -283,7 +282,6 @@ function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResu
     }
   }
   
-  // Fallback: retourner un tableau vide
   console.warn(`extractPaginated: impossible d'extraire les données pour la clé "${key}"`, raw);
   return { data: [], total: 0, page: 1, totalPages: 1 };
 }
@@ -292,95 +290,124 @@ function extractPaginated<T>(res: { data: unknown }, key: string): PaginatedResu
 
 export const quotesApi = {
   list: async (params?: PaginatedParams): Promise<PaginatedResult<Quote>> => {
-    const res = await apiClient.get(API.INVOICING.QUOTES, { params });
-    return extractPaginated<Quote>(res, 'quotes');
+    const res = await apiClient.get('/invoicing/quotes', { params });
+    const result = extractPaginated<Quote>(res, 'quotes');
+    return {
+      ...result,
+      data: result.data.map(quote => ({
+        ...quote,
+        lineItems: (quote as any).lineItems || (quote as any).items || [],
+      })),
+    };
   },
 
   getById: async (id: string): Promise<Quote> => {
-    const res = await apiClient.get(API.INVOICING.QUOTE_BY_ID(id));
-    return extractData<Quote>(res);
+    const res = await apiClient.get(`/invoicing/quotes/${id}`);
+    const quote = extractData<Quote>(res);
+    return {
+      ...quote,
+      lineItems: (quote as any).lineItems || (quote as any).items || [],
+    };
   },
 
   create: async (payload: CreateQuotePayload): Promise<Quote> => {
-    const res = await apiClient.post(API.INVOICING.QUOTES, payload);
+    const res = await apiClient.post('/invoicing/quotes', payload);
     return extractData<Quote>(res);
   },
 
   update: async (id: string, payload: Partial<CreateQuotePayload>): Promise<Quote> => {
-    const res = await apiClient.put(API.INVOICING.QUOTE_BY_ID(id), payload);
+    const res = await apiClient.put(`/invoicing/quotes/${id}`, payload);
     return extractData<Quote>(res);
   },
 
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(API.INVOICING.QUOTE_BY_ID(id));
+    await apiClient.delete(`/invoicing/quotes/${id}`);
   },
 
   markAsSent: async (id: string): Promise<Quote> => {
-    const res = await apiClient.post(API.INVOICING.QUOTE_MARK_SENT(id));
+    const res = await apiClient.post(`/invoicing/quotes/${id}/mark-as-sent`);
     return extractData<Quote>(res);
   },
 
   markAsAccepted: async (id: string): Promise<Quote> => {
-    const res = await apiClient.post(API.INVOICING.QUOTE_MARK_ACCEPTED(id));
+    const res = await apiClient.post(`/invoicing/quotes/${id}/mark-as-accepted`);
     return extractData<Quote>(res);
   },
 
   markAsRejected: async (id: string): Promise<Quote> => {
-    const res = await apiClient.post(API.INVOICING.QUOTE_MARK_REJECTED(id));
+    const res = await apiClient.post(`/invoicing/quotes/${id}/mark-as-rejected`);
     return extractData<Quote>(res);
   },
 
   convertToProforma: async (id: string): Promise<ProformaInvoice> => {
-    const res = await apiClient.post(API.INVOICING.QUOTE_CONVERT_PROFORMA(id));
+    const res = await apiClient.post(`/invoicing/quotes/${id}/convert-to-proforma`);
     return extractData<ProformaInvoice>(res);
   },
 };
 
 // ─── Proforma API ─────────────────────────────────────────────────────────────
+// ✅ CORRECTION: Export en minuscules (proformaApi, pas ProformaApi)
 
 export const proformaApi = {
   list: async (params?: PaginatedParams): Promise<PaginatedResult<ProformaInvoice>> => {
-    const res = await apiClient.get(API.INVOICING.PROFORMAS, { params });
-    return extractPaginated<ProformaInvoice>(res, 'proformas');
+    const res = await apiClient.get('/invoicing/proforma-invoices', { params });
+    const result = extractPaginated<ProformaInvoice>(res, 'proformas');
+    return {
+      ...result,
+      data: result.data.map(proforma => ({
+        ...proforma,
+        lineItems: (proforma as any).lineItems || (proforma as any).items || [],
+      })),
+    };
   },
 
   getById: async (id: string): Promise<ProformaInvoice> => {
-    const res = await apiClient.get(API.INVOICING.PROFORMA_BY_ID(id));
-    return extractData<ProformaInvoice>(res);
+    const res = await apiClient.get(`/invoicing/proforma-invoices/${id}`);
+    const proforma = extractData<ProformaInvoice>(res);
+    return {
+      ...proforma,
+      lineItems: (proforma as any).lineItems || (proforma as any).items || [],
+    };
   },
 
   create: async (payload: CreateProformaPayload): Promise<ProformaInvoice> => {
-    const res = await apiClient.post(API.INVOICING.PROFORMAS, payload);
+    const res = await apiClient.post('/invoicing/proforma-invoices', payload);
     return extractData<ProformaInvoice>(res);
   },
 
   update: async (id: string, payload: Partial<CreateProformaPayload>): Promise<ProformaInvoice> => {
-    const res = await apiClient.put(API.INVOICING.PROFORMA_BY_ID(id), payload);
+    const res = await apiClient.put(`/invoicing/proforma-invoices/${id}`, payload);
     return extractData<ProformaInvoice>(res);
   },
 
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(API.INVOICING.PROFORMA_BY_ID(id));
+    await apiClient.delete(`/invoicing/proforma-invoices/${id}`);
   },
 
   confirm: async (id: string): Promise<ProformaInvoice> => {
-    const res = await apiClient.post(API.INVOICING.PROFORMA_CONFIRM(id));
+    const res = await apiClient.post(`/invoicing/proforma-invoices/${id}/confirm`);
     return extractData<ProformaInvoice>(res);
   },
 
   recordPayment: async (id: string, payload: RecordPaymentPayload): Promise<PaymentRecord> => {
-    const res = await apiClient.post(API.INVOICING.PROFORMA_RECORD_PAYMENT(id), payload);
+    const roundedPayload = {
+      paymentMethod: payload.paymentMethod,
+      paymentAmount: roundToTwoDecimals(payload.paymentAmount),
+      paymentReference: payload.paymentReference,
+      notes: payload.notes,
+    };
+    const res = await apiClient.post(`/invoicing/proforma-invoices/${id}/record-payment`, roundedPayload);
     return extractData<PaymentRecord>(res);
   },
 
   getPayments: async (id: string): Promise<PaymentRecord[]> => {
-    const res = await apiClient.get(API.INVOICING.PROFORMA_PAYMENTS(id));
+    const res = await apiClient.get(`/invoicing/proforma-invoices/${id}/payments`);
     const d = extractData<unknown>(res);
     return Array.isArray(d) ? d : [];
   },
 
   convertToInvoice: async (id: string): Promise<InvoiceDoc> => {
-    const res = await apiClient.post(API.INVOICING.PROFORMA_CONVERT_INVOICE(id));
+    const res = await apiClient.post(`/invoicing/proforma-invoices/${id}/convert-to-invoice`);
     return extractData<InvoiceDoc>(res);
   },
 };
@@ -389,68 +416,94 @@ export const proformaApi = {
 
 export const invoicesApi = {
   list: async (params?: PaginatedParams & { isOverdue?: boolean }): Promise<PaginatedResult<InvoiceDoc>> => {
-    const res = await apiClient.get(API.INVOICING.INVOICES, { params });
+    const res = await apiClient.get('/invoicing/invoices', { params });
     const result = extractPaginated<InvoiceDoc>(res, 'invoices');
-    // Debug: log la structure de la réponse si les données sont vides
-    if (result.data.length === 0 && process.env.NODE_ENV === 'development') {
-      console.log('API Response structure:', res.data);
-    }
-    return result;
+    return {
+      ...result,
+      data: result.data.map(invoice => ({
+        ...invoice,
+        lineItems: (invoice as any).lineItems || (invoice as any).items || [],
+      })),
+    };
   },
 
   getById: async (id: string): Promise<InvoiceDoc> => {
-    const res = await apiClient.get(API.INVOICING.INVOICE_BY_ID(id));
-    return extractData<InvoiceDoc>(res);
+    const res = await apiClient.get(`/invoicing/invoices/${id}`);
+    const invoice = extractData<InvoiceDoc>(res);
+    return {
+      ...invoice,
+      lineItems: (invoice as any).lineItems || (invoice as any).items || [],
+      amountDueCalculated: toNumber(invoice.totalAmount) - toNumber(invoice.amountPaid),
+    } as InvoiceDoc & { amountDueCalculated: number };
   },
 
   create: async (payload: CreateInvoicePayload): Promise<InvoiceDoc> => {
-    const res = await apiClient.post(API.INVOICING.INVOICES, payload);
+    const res = await apiClient.post('/invoicing/invoices', payload);
     return extractData<InvoiceDoc>(res);
   },
 
   update: async (id: string, payload: Partial<CreateInvoicePayload>): Promise<InvoiceDoc> => {
-    const res = await apiClient.put(API.INVOICING.INVOICE_BY_ID(id), payload);
+    const res = await apiClient.put(`/invoicing/invoices/${id}`, payload);
     return extractData<InvoiceDoc>(res);
   },
 
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(API.INVOICING.INVOICE_BY_ID(id));
+    await apiClient.delete(`/invoicing/invoices/${id}`);
   },
 
   getSummary: async (params?: { startDate?: string; endDate?: string }): Promise<InvoiceSummary> => {
-    const res = await apiClient.get(API.INVOICING.INVOICE_SUMMARY, { params });
+    const res = await apiClient.get('/invoicing/invoices/summary', { params });
     return extractData<InvoiceSummary>(res);
   },
 
   markAsSent: async (id: string): Promise<InvoiceDoc> => {
-    const res = await apiClient.post(API.INVOICING.INVOICE_MARK_SENT(id));
+    const res = await apiClient.post(`/invoicing/invoices/${id}/mark-as-sent`);
     return extractData<InvoiceDoc>(res);
   },
 
   markAsViewed: async (id: string): Promise<InvoiceDoc> => {
-    const res = await apiClient.post(API.INVOICING.INVOICE_MARK_VIEWED(id));
+    const res = await apiClient.post(`/invoicing/invoices/${id}/mark-as-viewed`);
     return extractData<InvoiceDoc>(res);
   },
 
   recordPayment: async (id: string, payload: RecordPaymentPayload): Promise<PaymentRecord> => {
-    const res = await apiClient.post(API.INVOICING.INVOICE_RECORD_PAYMENT(id), payload);
+    const roundedPayload = {
+      paymentMethod: payload.paymentMethod,
+      paymentAmount: roundToTwoDecimals(payload.paymentAmount),
+      paymentReference: payload.paymentReference,
+      notes: payload.notes,
+    };
+    
+    console.log('📤 API recordPayment - payload arrondi:', roundedPayload);
+    
+    const res = await apiClient.post(`/invoicing/invoices/${id}/record-payment`, roundedPayload);
     return extractData<PaymentRecord>(res);
   },
 
   getPayments: async (id: string): Promise<PaymentRecord[]> => {
-    const res = await apiClient.get(API.INVOICING.INVOICE_PAYMENTS(id));
+    const res = await apiClient.get(`/invoicing/invoices/${id}/payments`);
     const d = extractData<unknown>(res);
     return Array.isArray(d) ? d : [];
   },
 
   getAuditLog: async (id: string): Promise<AuditLogEntry[]> => {
-    const res = await apiClient.get(API.INVOICING.INVOICE_AUDIT_LOG(id));
+    const res = await apiClient.get(`/invoicing/invoices/${id}/audit-log`);
     const d = extractData<unknown>(res);
     return Array.isArray(d) ? d : [];
   },
 
   checkOverdue: async (): Promise<{ updated: number }> => {
-    const res = await apiClient.post(API.INVOICING.INVOICE_CHECK_OVERDUE);
+    const res = await apiClient.post('/invoicing/invoices/check-overdue');
     return extractData<{ updated: number }>(res);
+  },
+
+  getAmountDue: async (id: string): Promise<number> => {
+    try {
+      const invoice = await invoicesApi.getById(id);
+      return toNumber(invoice.totalAmount) - toNumber(invoice.amountPaid);
+    } catch (error) {
+      console.error('Erreur getAmountDue:', error);
+      return 0;
+    }
   },
 };

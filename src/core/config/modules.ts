@@ -67,9 +67,9 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
   {
     name: 'invoicing',
     label: 'Facturation',
-    description: 'Devis, factures proforma et factures clients avec suivi des paiements',
+    description: 'Devis, factures Proforma et factures clients avec suivi des paiements',
     icon: 'Receipt',
-    routes: ['/invoicing', '/invoicing/quotes', '/invoicing/proforma', '/invoicing/invoices'],
+    routes: ['/invoicing', '/invoicing/quotes', '/invoicing/Proforma', '/invoicing/invoices'],
     requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
   },
 ];

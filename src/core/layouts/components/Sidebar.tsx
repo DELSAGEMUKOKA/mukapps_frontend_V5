@@ -179,7 +179,7 @@ function useSidebarNav() {
       sections: [{
         items: [
           ...(canPage('quotes') ? [{ label: 'Devis', to: ROUTES.INVOICING_QUOTES, icon: ClipboardList }] : []),
-          ...(canPage('proforma') ? [{ label: 'Proforma', to: ROUTES.INVOICING_PROFORMA, icon: FileText }] : []),
+          ...(canPage('Proforma') ? [{ label: 'Proforma', to: ROUTES.INVOICING_Proforma, icon: FileText }] : []),
           ...(canPage('invoicing') ? [{ label: 'Factures', to: ROUTES.INVOICING_INVOICES, icon: Receipt }] : []),
         ],
       }],

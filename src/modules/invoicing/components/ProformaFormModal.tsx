@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { X, FileText, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { proformaApi, type CreateProformaPayload } from '../api/invoicingApi';
+import { ProformaApi, type CreateProformaPayload } from '../api/invoicingApi';
 import { useFormatCurrency } from '@/shared/hooks/useCurrency';
 import InvoicingClientSelector from './InvoicingClientSelector';
 import type { Customer } from '@/shared/types';
@@ -120,7 +120,7 @@ export default function ProformaFormModal({ onClose, onSaved }: Props) {
         deliveryDetails: deliveryDetails || undefined,
         notes: notes || undefined,
       };
-      await proformaApi.create(payload);
+      await ProformaApi.create(payload);
       toast.success('Proforma créé');
       onSaved();
     } catch { toast.error('Erreur lors de la création'); }
@@ -137,17 +137,17 @@ export default function ProformaFormModal({ onClose, onSaved }: Props) {
             <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
               <FileText size={16} className="text-[#017e84]" />
             </div>
-            <h2 className="font-bold text-gray-900">Nouveau proforma</h2>
+            <h2 className="font-bold text-gray-900">Nouveau Proforma</h2>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 font-medium transition-colors">
               Annuler
             </button>
-            <button form="proforma-form" type="submit" disabled={loading}
+            <button form="Proforma-form" type="submit" disabled={loading}
               className="flex items-center gap-1.5 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
               {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
-              {loading ? 'Création...' : 'Créer le proforma'}
+              {loading ? 'Création...' : 'Créer le Proforma'}
             </button>
             <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 ml-1">
               <X size={16} className="text-gray-500" />
@@ -155,7 +155,7 @@ export default function ProformaFormModal({ onClose, onSaved }: Props) {
           </div>
         </div>
 
-        <form id="proforma-form" onSubmit={handleSubmit}>
+        <form id="Proforma-form" onSubmit={handleSubmit}>
           <div className="flex flex-col lg:flex-row">
             {/* Left: form */}
             <div className="flex-1 p-6 space-y-6">
@@ -173,7 +173,7 @@ export default function ProformaFormModal({ onClose, onSaved }: Props) {
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Sujet <span className="text-red-500">*</span></label>
-                      <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet du proforma"
+                      <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet du Proforma"
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" required />
                     </div>
                   </div>

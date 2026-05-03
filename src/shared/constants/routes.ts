@@ -47,7 +47,7 @@ export const ROUTES = {
   // Invoicing module
   INVOICING: '/invoicing',
   INVOICING_QUOTES: '/invoicing/quotes',
-  INVOICING_PROFORMA: '/invoicing/proforma',
+  INVOICING_Proforma: '/invoicing/Proforma',
   INVOICING_INVOICES: '/invoicing/invoices',
   INVOICING_TEMPLATES: '/invoicing/templates',
 

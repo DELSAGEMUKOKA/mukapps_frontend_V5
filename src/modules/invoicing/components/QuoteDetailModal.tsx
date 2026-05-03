@@ -114,13 +114,13 @@ function ActionBox({ quote, onMarkSent, onMarkAccepted, onMarkRejected, onConver
     SENT: 'Devis envoyé au client',
     ACCEPTED: 'Devis accepté',
     REJECTED: 'Devis rejeté',
-    CONVERTED: 'Converti en proforma',
+    CONVERTED: 'Converti en Proforma',
   };
 
   const nextStepLabel: Partial<Record<QuoteStatus, string>> = {
     DRAFT: 'Envoyer au client',
     SENT: 'En attente de réponse',
-    ACCEPTED: 'Convertir en proforma',
+    ACCEPTED: 'Convertir en Proforma',
   };
 
   return (
@@ -203,7 +203,7 @@ function ActionBox({ quote, onMarkSent, onMarkAccepted, onMarkRejected, onConver
           {quote.status === 'CONVERTED' && (
             <div className="flex items-center gap-2 px-3 py-2.5 bg-teal-50 rounded-lg">
               <CheckCircle size={15} className="text-teal-600" />
-              <span className="text-sm text-teal-700 font-medium">Ce devis a été converti en proforma</span>
+              <span className="text-sm text-teal-700 font-medium">Ce devis a été converti en Proforma</span>
             </div>
           )}
 
@@ -226,10 +226,20 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
   const [showDesignPicker, setShowDesignPicker] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // CORRECTION 1: Récupérer les items depuis lineItems ou items
+  const lineItems = (quote as any).lineItems || quote.items || [];
+
+  // CORRECTION 2: Fonction utilitaire pour convertir en nombre
+  const toNumber = (value: string | number | undefined | null): number => {
+    if (value === undefined || value === null) return 0;
+    if (typeof value === 'number') return value;
+    return parseFloat(value) || 0;
+  };
+
   const markSent = useMutation({ mutationFn: () => quotesApi.markAsSent(quote.id), onSuccess: () => { toast.success('Devis envoyé'); onAction(); }, onError: () => toast.error('Erreur') });
   const markAccepted = useMutation({ mutationFn: () => quotesApi.markAsAccepted(quote.id), onSuccess: () => { toast.success('Devis accepté'); onAction(); }, onError: () => toast.error('Erreur') });
   const markRejected = useMutation({ mutationFn: () => quotesApi.markAsRejected(quote.id), onSuccess: () => { toast.success('Devis rejeté'); onAction(); }, onError: () => toast.error('Erreur') });
-  const convert = useMutation({ mutationFn: () => quotesApi.convertToProforma(quote.id), onSuccess: () => { toast.success('Converti en proforma'); onAction(); }, onError: () => toast.error('Erreur') });
+  const convert = useMutation({ mutationFn: () => quotesApi.convertToProforma(quote.id), onSuccess: () => { toast.success('Converti en Proforma'); onAction(); }, onError: () => toast.error('Erreur') });
   const deleteMut = useMutation({
     mutationFn: () => quotesApi.delete(quote.id),
     onSuccess: () => { toast.success('Devis supprimé'); onDeleted ? onDeleted() : onClose(); },
@@ -273,6 +283,22 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
     rejected: markRejected.isPending,
     convert: convert.isPending,
   };
+
+  // CORRECTION 3: Obtenir le nom du client correctement
+  const customerName = quote.client 
+    ? `${quote.client.firstName} ${quote.client.lastName}` 
+    : (quote as any).customerId || (quote as any).clientId || 'Client inconnu';
+
+  // CORRECTION 4: Obtenir la date d'émission et d'expiration
+  const quoteDate = (quote as any).quoteDate || quote.createdAt;
+  const expiryDate = (quote as any).expiryDate || (() => {
+    if (quote.validityDays) {
+      const date = new Date(quoteDate);
+      date.setDate(date.getDate() + quote.validityDays);
+      return date.toISOString();
+    }
+    return null;
+  })();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -349,9 +375,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                     <User size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-gray-500">Client</p>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {quote.client ? `${quote.client.firstName} ${quote.client.lastName}` : quote.clientId}
-                      </p>
+                      <p className="text-sm font-semibold text-gray-900">{customerName}</p>
                       {quote.client?.email && <p className="text-xs text-gray-400">{quote.client.email}</p>}
                       {quote.client?.phone && <p className="text-xs text-gray-400">{quote.client.phone}</p>}
                     </div>
@@ -360,7 +384,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                     <Hash size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-gray-500">Objet</p>
-                      <p className="text-sm font-semibold text-gray-900">{quote.subject}</p>
+                      <p className="text-sm font-semibold text-gray-900">{quote.subject || 'Sans objet'}</p>
                       {quote.description && <p className="text-xs text-gray-500 mt-0.5">{quote.description}</p>}
                     </div>
                   </div>
@@ -370,7 +394,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                       <div>
                         <p className="text-xs text-gray-500">Date d'émission</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {format(new Date(quote.createdAt), 'dd/MM/yyyy', { locale: fr })}
+                          {format(new Date(quoteDate), 'dd/MM/yyyy', { locale: fr })}
                         </p>
                       </div>
                     </div>
@@ -378,10 +402,10 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                       <Calendar size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500">Validité</p>
-                        <p className="text-sm font-semibold text-gray-900">{quote.validityDays} jours</p>
-                        {quote.expiresAt && (
+                        <p className="text-sm font-semibold text-gray-900">{quote.validityDays || 30} jours</p>
+                        {expiryDate && (
                           <p className="text-xs text-gray-400">
-                            Expire le {format(new Date(quote.expiresAt), 'dd/MM/yyyy', { locale: fr })}
+                            Expire le {format(new Date(expiryDate), 'dd/MM/yyyy', { locale: fr })}
                           </p>
                         )}
                       </div>
@@ -390,10 +414,12 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                 </div>
               </div>
 
-              {/* Line items */}
+              {/* Line items - CORRECTION 5: Affichage sécurisé */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
-                  <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Lignes ({quote.items.length})</h3>
+                  <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Lignes ({lineItems.length})
+                  </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -406,21 +432,31 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {quote.items.map((it, i) => (
-                        <tr key={i} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-2.5 text-gray-800">{it.description}</td>
-                          <td className="px-3 py-2.5 text-center text-gray-600">{it.quantity}</td>
-                          <td className="px-3 py-2.5 text-right text-gray-600">{fmt(it.unitPrice)}</td>
-                          <td className="px-4 py-2.5 text-right font-medium text-gray-900">{fmt(it.quantity * it.unitPrice)}</td>
+                      {lineItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                            Aucun produit
+                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        lineItems.map((it: any, i: number) => (
+                          <tr key={it.id || i} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 text-gray-800">{it.description || it.productName || '-'}</td>
+                            <td className="px-3 py-2.5 text-center text-gray-600">{toNumber(it.quantity)}</td>
+                            <td className="px-3 py-2.5 text-right text-gray-600">{fmt(toNumber(it.unitPrice))}</td>
+                            <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                              {fmt(toNumber(it.quantity) * toNumber(it.unitPrice))}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
 
-            {/* Right: financial summary */}
+            {/* Right: financial summary - CORRECTION 6: Utiliser toNumber pour les calculs */}
             <div className="lg:col-span-2 space-y-4">
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
@@ -429,23 +465,23 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                 <div className="p-4 space-y-2.5">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Total HT</span>
-                    <span className="font-semibold text-gray-900">{fmt(quote.subtotal)}</span>
+                    <span className="font-semibold text-gray-900">{fmt(toNumber(quote.subtotal))}</span>
                   </div>
-                  {quote.taxAmount > 0 && (
+                  {toNumber(quote.taxAmount) > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">TVA</span>
-                      <span className="font-semibold text-gray-900">{fmt(quote.taxAmount)}</span>
+                      <span className="text-gray-600">TVA ({toNumber(quote.taxRate)}%)</span>
+                      <span className="font-semibold text-gray-900">{fmt(toNumber(quote.taxAmount))}</span>
                     </div>
                   )}
-                  {quote.discountPercentage > 0 && (
+                  {toNumber(quote.discountPercentage) > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Réduction ({quote.discountPercentage}%)</span>
-                      <span className="font-semibold text-red-500">- {fmt(quote.discountAmount)}</span>
+                      <span className="text-gray-600">Réduction ({toNumber(quote.discountPercentage)}%)</span>
+                      <span className="font-semibold text-red-500">- {fmt(toNumber(quote.discountAmount))}</span>
                     </div>
                   )}
                   <div className="pt-2 border-t border-gray-200 flex justify-between">
                     <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                    <span className="text-xl font-bold text-[#017e84]">{fmt(quote.totalAmount)}</span>
+                    <span className="text-xl font-bold text-[#017e84]">{fmt(toNumber(quote.totalAmount))}</span>
                   </div>
                 </div>
               </div>
@@ -453,7 +489,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
               {(quote.notes || quote.terms) && (
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
-                    <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Notes</h3>
+                    <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Notes & Conditions</h3>
                   </div>
                   <div className="p-4 space-y-3">
                     {quote.notes && (

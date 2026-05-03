@@ -28,7 +28,7 @@ const MODULE_META: Record<string, { label: string; description: string; icon: ty
   magasin:    { label: 'Magasin',       description: 'Gestion des produits, stocks et ventes', icon: Store },
   category:   { label: 'Catégories',    description: 'Gestion des catégories de produits', icon: Package },
   restaurant: { label: 'Restaurant',    description: 'Gestion de restaurant et tables', icon: UtensilsCrossed },
-  invoicing:  { label: 'Facturation',   description: 'Devis, factures proforma et factures clients avec suivi des paiements', icon: CreditCard },
+  invoicing:  { label: 'Facturation',   description: 'Devis, factures Proforma et factures clients avec suivi des paiements', icon: CreditCard },
   user:       { label: 'Utilisateurs',  description: 'Gestion des utilisateurs et rôles', icon: Users },
   users:      { label: 'Utilisateurs',  description: 'Gestion des utilisateurs et rôles', icon: Users },
   superadmin: { label: 'Super Admin',   description: 'Accès super administrateur', icon: Shield },

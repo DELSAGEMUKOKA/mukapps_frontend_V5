@@ -455,40 +455,40 @@ function buildQuoteHtmlMinimaliste(quote: Quote, company: Company, logoUrl: stri
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PROFORMA builders
+// Proforma builders
 // ══════════════════════════════════════════════════════════════════════════════
 
-export function buildProformaHtml(proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string, design: DocumentDesign = 'classique'): string {
-  if (design === 'moderne') return buildProformaHtmlModerne(proforma, company, logoUrl, currency);
-  if (design === 'minimaliste') return buildProformaHtmlMinimaliste(proforma, company, logoUrl, currency);
-  return buildProformaHtmlClassique(proforma, company, logoUrl, currency);
+export function buildProformaHtml(Proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string, design: DocumentDesign = 'classique'): string {
+  if (design === 'moderne') return buildProformaHtmlModerne(Proforma, company, logoUrl, currency);
+  if (design === 'minimaliste') return buildProformaHtmlMinimaliste(Proforma, company, logoUrl, currency);
+  return buildProformaHtmlClassique(Proforma, company, logoUrl, currency);
 }
 
-function buildProformaHtmlClassique(proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
+function buildProformaHtmlClassique(Proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = proforma.proformaNumber || (proforma as any).prorformaNumber || '—';
+  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
 
   const meta = `
-    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#1e293b;text-align:right;">${fmtDate(proforma.createdAt)}</td></tr>
-    ${proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${proforma.subject}</td></tr>` : ''}
-    ${proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Conditions paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${proforma.paymentTerms}</td></tr>` : ''}
-    ${proforma.deliveryDetails ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Livraison</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${proforma.deliveryDetails}</td></tr>` : ''}`;
+    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#1e293b;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
+    ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.subject}</td></tr>` : ''}
+    ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Conditions paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}
+    ${Proforma.deliveryDetails ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Livraison</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.deliveryDetails}</td></tr>` : ''}`;
 
   const badge = `<div style="display:inline-flex;align-items:center;gap:6px;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:10.5px;color:#92400e;font-weight:600;">Document non contractuel</div>`;
-  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'PROFORMA', docNumber, meta, badge);
+  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
 
   const totalSummaryRows: string[] = [];
-  totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.subtotal)}</td></tr>`);
-  if (proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">TVA (${proforma.taxRate}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.taxAmount)}</td></tr>`);
-  if (proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Réduction (${proforma.discountPercentage}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#ef4444;">\u2212${fmt(proforma.discountAmount)}</td></tr>`);
-  if (proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Frais de livraison</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.shippingCost)}</td></tr>`);
+  totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.subtotal)}</td></tr>`);
+  if (Proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">TVA (${Proforma.taxRate}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.taxAmount)}</td></tr>`);
+  if (Proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Réduction (${Proforma.discountPercentage}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#ef4444;">\u2212${fmt(Proforma.discountAmount)}</td></tr>`);
+  if (Proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Frais de livraison</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.shippingCost)}</td></tr>`);
 
-  const items = (proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
+  const items = (Proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
 
-  const leftPanel = proforma.deliveryDetails
-    ? `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:12px;color:#334155;">${proforma.deliveryDetails}</div></div>`
+  const leftPanel = Proforma.deliveryDetails
+    ? `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:12px;color:#334155;">${Proforma.deliveryDetails}</div></div>`
     : '<div></div>';
 
   const body = `
@@ -497,7 +497,7 @@ function buildProformaHtmlClassique(proforma: ProformaInvoice, company: Company,
       <tr>
         <td style="vertical-align:top;width:48%;padding-right:16px;">
           <div style="font-size:9.5px;font-weight:700;color:${CLASSIQUE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
-          ${clientCard(proforma.client, undefined, CLASSIQUE_COLOR)}
+          ${clientCard(Proforma.client, undefined, CLASSIQUE_COLOR)}
         </td>
         <td style="vertical-align:top;width:52%;padding-left:16px;">
           <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
@@ -518,38 +518,38 @@ function buildProformaHtmlClassique(proforma: ProformaInvoice, company: Company,
       <tr>
         <td width="50%" style="vertical-align:top;">${leftPanel}</td>
         <td width="4%"></td>
-        <td width="46%" style="vertical-align:top;">${summaryCard(totalSummaryRows, fmt(proforma.totalAmount), CLASSIQUE_COLOR)}</td>
+        <td width="46%" style="vertical-align:top;">${summaryCard(totalSummaryRows, fmt(Proforma.totalAmount), CLASSIQUE_COLOR)}</td>
       </tr>
     </table>
-    ${proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="background:#fffbeb;border-radius:10px;padding:13px 15px;border-left:3px solid #f59e0b;font-size:11.5px;color:#334155;line-height:1.7;white-space:pre-line;">${proforma.notes}</div></div>` : ''}`;
+    ${Proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="background:#fffbeb;border-radius:10px;padding:13px 15px;border-left:3px solid #f59e0b;font-size:11.5px;color:#334155;line-height:1.7;white-space:pre-line;">${Proforma.notes}</div></div>` : ''}`;
 
   return baseHtmlClassique(body, CLASSIQUE_COLOR);
 }
 
-function buildProformaHtmlModerne(proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
+function buildProformaHtmlModerne(Proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = proforma.proformaNumber || (proforma as any).prorformaNumber || '—';
+  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
 
   const badge = `<div style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:10.5px;color:#fff;font-weight:600;">Document non contractuel</div>`;
   const meta = `
-    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#fff;text-align:right;">${fmtDate(proforma.createdAt)}</td></tr>
-    ${proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${proforma.subject}</td></tr>` : ''}
-    ${proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${proforma.paymentTerms}</td></tr>` : ''}`;
+    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#fff;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
+    ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${Proforma.subject}</td></tr>` : ''}
+    ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}`;
 
-  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'PROFORMA', docNumber, meta, badge);
+  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
 
   const totalSummaryRows: string[] = [];
-  totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.subtotal)}</td></tr>`);
-  if (proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">TVA (${proforma.taxRate}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.taxAmount)}</td></tr>`);
-  if (proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Réduction</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#ef4444;">\u2212${fmt(proforma.discountAmount)}</td></tr>`);
-  if (proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Livraison</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(proforma.shippingCost)}</td></tr>`);
+  totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.subtotal)}</td></tr>`);
+  if (Proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">TVA (${Proforma.taxRate}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.taxAmount)}</td></tr>`);
+  if (Proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Réduction</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#ef4444;">\u2212${fmt(Proforma.discountAmount)}</td></tr>`);
+  if (Proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Livraison</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.shippingCost)}</td></tr>`);
 
-  const items = (proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
+  const items = (Proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
 
-  const leftPanel = proforma.deliveryDetails
-    ? `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:12px;color:#334155;">${proforma.deliveryDetails}</div></div>`
+  const leftPanel = Proforma.deliveryDetails
+    ? `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:12px;color:#334155;">${Proforma.deliveryDetails}</div></div>`
     : '<div></div>';
 
   const bodyContent = `
@@ -557,7 +557,7 @@ function buildProformaHtmlModerne(proforma: ProformaInvoice, company: Company, l
       <tr>
         <td style="vertical-align:top;width:48%;padding-right:16px;">
           <div style="font-size:9.5px;font-weight:700;color:${MODERNE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
-          ${clientCard(proforma.client, undefined, MODERNE_COLOR)}
+          ${clientCard(Proforma.client, undefined, MODERNE_COLOR)}
         </td>
         <td style="vertical-align:top;width:52%;padding-left:16px;">
           <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
@@ -578,38 +578,38 @@ function buildProformaHtmlModerne(proforma: ProformaInvoice, company: Company, l
       <tr>
         <td width="50%" style="vertical-align:top;">${leftPanel}</td>
         <td width="4%"></td>
-        <td width="46%" style="vertical-align:top;">${summaryCard(totalSummaryRows, fmt(proforma.totalAmount), MODERNE_COLOR)}</td>
+        <td width="46%" style="vertical-align:top;">${summaryCard(totalSummaryRows, fmt(Proforma.totalAmount), MODERNE_COLOR)}</td>
       </tr>
     </table>
-    ${proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="background:#eff6ff;border-radius:10px;padding:13px 15px;border-left:3px solid ${MODERNE_COLOR};font-size:11.5px;color:#334155;line-height:1.7;white-space:pre-line;">${proforma.notes}</div></div>` : ''}`;
+    ${Proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="background:#eff6ff;border-radius:10px;padding:13px 15px;border-left:3px solid ${MODERNE_COLOR};font-size:11.5px;color:#334155;line-height:1.7;white-space:pre-line;">${Proforma.notes}</div></div>` : ''}`;
 
   return baseHtmlModerne(header + docBodyModerne(bodyContent), MODERNE_COLOR);
 }
 
-function buildProformaHtmlMinimaliste(proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
+function buildProformaHtmlMinimaliste(Proforma: ProformaInvoice, company: Company, logoUrl: string | undefined, currency: string): string {
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = proforma.proformaNumber || (proforma as any).prorformaNumber || '—';
+  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
 
   const badge = `<span style="font-size:10.5px;color:#666;font-style:italic;">Document non contractuel</span>`;
   const meta = `
-    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1a1a1a;text-align:right;">${fmtDate(proforma.createdAt)}</td></tr>
-    ${proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${proforma.subject}</td></tr>` : ''}
-    ${proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${proforma.paymentTerms}</td></tr>` : ''}`;
+    <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1a1a1a;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
+    ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${Proforma.subject}</td></tr>` : ''}
+    ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}`;
 
-  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'PROFORMA', docNumber, meta, badge);
+  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
 
-  const items = (proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
+  const items = (Proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
 
   const totalSummaryRows: string[] = [];
-  totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Sous-total HT</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(proforma.subtotal)}</td></tr>`);
-  if (proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">TVA (${proforma.taxRate}%)</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(proforma.taxAmount)}</td></tr>`);
-  if (proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Réduction</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#ef4444;">\u2212${fmt(proforma.discountAmount)}</td></tr>`);
-  if (proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Livraison</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(proforma.shippingCost)}</td></tr>`);
+  totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Sous-total HT</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(Proforma.subtotal)}</td></tr>`);
+  if (Proforma.taxAmount > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">TVA (${Proforma.taxRate}%)</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(Proforma.taxAmount)}</td></tr>`);
+  if (Proforma.discountAmount > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Réduction</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#ef4444;">\u2212${fmt(Proforma.discountAmount)}</td></tr>`);
+  if (Proforma.shippingCost > 0) totalSummaryRows.push(`<tr><td style="padding:5px 0;font-size:12px;color:#555;">Livraison</td><td style="padding:5px 0;text-align:right;font-size:12px;color:#1a1a1a;">${fmt(Proforma.shippingCost)}</td></tr>`);
 
-  const leftPanel = proforma.deliveryDetails
-    ? `<div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:11.5px;color:#444;">${proforma.deliveryDetails}</div>`
+  const leftPanel = Proforma.deliveryDetails
+    ? `<div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">LIVRAISON</div><div style="font-size:11.5px;color:#444;">${Proforma.deliveryDetails}</div>`
     : '';
 
   const body = `
@@ -618,9 +618,9 @@ function buildProformaHtmlMinimaliste(proforma: ProformaInvoice, company: Compan
       <tr>
         <td style="vertical-align:top;width:48%;padding-right:20px;">
           <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
-          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${proforma.client ? `${proforma.client.firstName || ''} ${proforma.client.lastName || ''}`.trim() || '—' : '—'}</div>
-          ${proforma.client?.email ? `<div style="font-size:11px;color:#666;margin-top:3px;">${proforma.client.email}</div>` : ''}
-          ${proforma.client?.phone ? `<div style="font-size:11px;color:#666;margin-top:2px;">${proforma.client.phone}</div>` : ''}
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${Proforma.client ? `${Proforma.client.firstName || ''} ${Proforma.client.lastName || ''}`.trim() || '—' : '—'}</div>
+          ${Proforma.client?.email ? `<div style="font-size:11px;color:#666;margin-top:3px;">${Proforma.client.email}</div>` : ''}
+          ${Proforma.client?.phone ? `<div style="font-size:11px;color:#666;margin-top:2px;">${Proforma.client.phone}</div>` : ''}
         </td>
         <td style="vertical-align:top;width:52%;padding-left:20px;">
           <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
@@ -641,10 +641,10 @@ function buildProformaHtmlMinimaliste(proforma: ProformaInvoice, company: Compan
       <tr>
         <td width="50%" style="vertical-align:top;">${leftPanel}</td>
         <td width="4%"></td>
-        <td width="46%" style="vertical-align:bottom;">${summaryMinimaliste(totalSummaryRows, fmt(proforma.totalAmount))}</td>
+        <td width="46%" style="vertical-align:bottom;">${summaryMinimaliste(totalSummaryRows, fmt(Proforma.totalAmount))}</td>
       </tr>
     </table>
-    ${proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="font-size:11.5px;color:#444;line-height:1.7;white-space:pre-line;border-left:2px solid #ddd;padding-left:12px;">${proforma.notes}</div></div>` : ''}`;
+    ${Proforma.notes ? `<div style="margin-bottom:20px;"><div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">NOTES</div><div style="font-size:11.5px;color:#444;line-height:1.7;white-space:pre-line;border-left:2px solid #ddd;padding-left:12px;">${Proforma.notes}</div></div>` : ''}`;
 
   return baseHtmlMinimaliste(body);
 }

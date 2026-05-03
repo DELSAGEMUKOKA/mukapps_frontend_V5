@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Eye, Trash2, CircleCheck as CheckCircle, ArrowRight, FileText, ChevronLeft, ChevronRight, RefreshCw, CreditCard, Pencil, Building2, Receipt, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { proformaApi, type ProformaInvoice, type ProformaStatus } from '../api/invoicingApi';
+// ✅ CORRECTION: Import en minuscules
+import { proformaApi, type ProformaInvoice, type ProformaStatus, type InvoicingLineItem } from '../api/invoicingApi';
 import { exportHtmlToPdf } from '../utils/exportPdf';
 import { buildProformaHtml, type DocumentDesign } from '../utils/buildDocumentHtml';
 import { companySettingsApi } from '@/modules/users/api/companySettingsApi';
@@ -15,9 +16,10 @@ import { fr } from 'date-fns/locale';
 import ProformaDetailModal from '../components/ProformaDetailModal';
 import DesignPickerModal from '../components/DesignPickerModal';
 
-// Étendre le type ProformaInvoice pour inclure lineItems
-interface ExtendedProformaInvoice extends ProformaInvoice {
-  lineItems?: ProformaInvoice['items'];
+// ✅ CORRECTION: Type correct pour les items
+interface ExtendedProformaInvoice extends Omit<ProformaInvoice, 'lineItems'> {
+  lineItems?: InvoicingLineItem[];
+  items?: InvoicingLineItem[];
 }
 
 // Fonction utilitaire pour obtenir le nom du client
@@ -41,22 +43,25 @@ function getClientName(proforma: ProformaInvoice): string {
   return 'Client non spécifié';
 }
 
-// Fonction pour obtenir le numéro de proforma (supporte les deux noms de champ)
+// Fonction pour obtenir le numéro de proforma
 function getProformaNumber(proforma: ProformaInvoice): string {
-  return proforma.proformaNumber || (proforma as any).prorformaNumber || '—';
+  return proforma.proformaNumber || (proforma as any).proformaNumber || '—';
+}
+
+// Fonction pour obtenir le reste dû calculé
+function getAmountDue(proforma: ProformaInvoice): number {
+  const total = Number(proforma.totalAmount) || 0;
+  const paid = Number((proforma as any).amountPaid) || 0;
+  return total - paid;
 }
 
 function statusBadge(status: ProformaStatus) {
   const map: Record<ProformaStatus, { label: string; cls: string }> = {
     DRAFT: { label: 'Brouillon', cls: 'bg-gray-100 text-gray-700' },
-    SENT: { label: 'Envoyé', cls: 'bg-blue-100 text-blue-700' },
     CONFIRMED: { label: 'Confirmé', cls: 'bg-green-100 text-green-700' },
-    PAYMENT_PENDING: { label: 'Paiement en attente', cls: 'bg-yellow-100 text-yellow-700' },
     PARTIALLY_PAID: { label: 'Part. payé', cls: 'bg-orange-100 text-orange-700' },
     PAID: { label: 'Payé', cls: 'bg-emerald-100 text-emerald-700' },
-    CONVERTED_TO_INVOICE: { label: 'Converti', cls: 'bg-teal-100 text-teal-700' },
     CONVERTED: { label: 'Converti', cls: 'bg-teal-100 text-teal-700' },
-    CANCELLED: { label: 'Annulé', cls: 'bg-gray-100 text-gray-500' },
   };
   const { label, cls } = map[status] ?? { label: status, cls: 'bg-gray-100 text-gray-600' };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>{label}</span>;
@@ -74,6 +79,7 @@ export default function ProformaInvoices() {
   const [designPickerProforma, setDesignPickerProforma] = useState<ProformaInvoice | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // ✅ CORRECTION: Utilisation de proformaApi (minuscules)
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['invoicing-proformas', page, dSearch, statusFilter],
     queryFn: () => proformaApi.list({ page, limit: 15, status: statusFilter || undefined, search: dSearch || undefined }),
@@ -86,11 +92,13 @@ export default function ProformaInvoices() {
     onSuccess: () => { toast.success('Proforma supprimée'); invalidate(); },
     onError: () => toast.error('Erreur lors de la suppression'),
   });
+
   const confirmMut = useMutation({
     mutationFn: (id: string) => proformaApi.confirm(id),
     onSuccess: () => { toast.success('Proforma confirmée'); invalidate(); },
     onError: () => toast.error('Erreur'),
   });
+
   const convertMut = useMutation({
     mutationFn: (id: string) => proformaApi.convertToInvoice(id),
     onSuccess: () => { toast.success('Convertie en facture'); invalidate(); },
@@ -99,7 +107,7 @@ export default function ProformaInvoices() {
 
   const proformas = data?.data ?? [];
   const total = data?.total ?? 0;
-  const totalPages = data?.pages ?? 1;
+  const totalPages = data?.totalPages ?? 1;
 
   const handleDownloadPdf = (proforma: ProformaInvoice) => {
     setDesignPickerProforma(proforma);
@@ -117,10 +125,11 @@ export default function ProformaInvoices() {
         companySettingsApi.getSettings(),
         companySettingsApi.getLogo().catch(() => null),
       ]);
-      const items = (full as ExtendedProformaInvoice).lineItems || full.items || [];
+      // ✅ CORRECTION: Utiliser lineItems ou items
+      const items = (full as ExtendedProformaInvoice).lineItems || (full as ExtendedProformaInvoice).items || [];
       const logoUrl = logoData && 'logo' in logoData ? (logoData as any).logo : (logoData as any)?.url;
       const currency = (company as any)?.currency || 'FC';
-      const docNumber = full.proformaNumber || (full as any).prorformaNumber || 'PROFORMA';
+      const docNumber = full.proformaNumber || (full as any).proformaNumber || 'Proforma';
       const html = buildProformaHtml({ ...full, items }, company as any, logoUrl, currency, design);
       await exportHtmlToPdf(html, `proforma_${docNumber}.pdf`);
       toast.success('PDF téléchargé', { id: tid });
@@ -131,11 +140,6 @@ export default function ProformaInvoices() {
       setPdfLoading(false);
     }
   };
-
-  // Debug - Afficher la structure pour voir les champs disponibles
-  if (proformas.length > 0 && import.meta.env.DEV) {
-    console.log('Structure proforma:', JSON.stringify(proformas[0], null, 2));
-  }
 
   return (
     <div className="p-4 sm:p-6 space-y-5">
@@ -150,7 +154,7 @@ export default function ProformaInvoices() {
           className="flex items-center gap-2 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] transition-colors"
         >
           <Plus size={16} />
-          <span className="hidden sm:inline">Nouvelle proforma</span>
+          <span className="hidden sm:inline">Nouvelle Proforma</span>
           <span className="sm:hidden">Nouvelle</span>
         </button>
       </div>
@@ -173,22 +177,22 @@ export default function ProformaInvoices() {
         >
           <option value="">Tous les statuts</option>
           <option value="DRAFT">Brouillon</option>
-          <option value="SENT">Envoyé</option>
           <option value="CONFIRMED">Confirmé</option>
-          <option value="PAYMENT_PENDING">Paiement en attente</option>
           <option value="PARTIALLY_PAID">Part. payé</option>
           <option value="PAID">Payé</option>
-          <option value="CONVERTED_TO_INVOICE">Converti</option>
-          <option value="CANCELLED">Annulé</option>
+          <option value="CONVERTED">Converti</option>
         </select>
         <button onClick={() => invalidate()} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" title="Actualiser">
           <RefreshCw size={15} className={isFetching ? 'animate-spin text-[#017e84]' : 'text-gray-500'} />
         </button>
       </div>
 
+      {/* ✅ CORRECTION: SmartLoader avec children */}
       {isLoading ? (
         <div className="py-20">
-          <SmartLoader isLoading={true} />
+          <SmartLoader isLoading={true}>
+            <div className="text-center text-gray-500">Chargement des proformas...</div>
+          </SmartLoader>
         </div>
       ) : proformas.length === 0 ? (
         <div className="py-20 flex flex-col items-center gap-3 text-gray-400 bg-white rounded-xl border border-gray-200">
@@ -207,57 +211,60 @@ export default function ProformaInvoices() {
         <>
           {/* Mobile cards */}
           <div className="sm:hidden space-y-3">
-            {proformas.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="font-mono text-xs text-gray-500">{getProformaNumber(p)}</p>
-                    <p className="font-semibold text-gray-900 text-sm mt-0.5 flex items-center gap-1">
-                      <Building2 size={12} className="text-gray-400" />
-                      {getClientName(p)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.subject}</p>
+            {proformas.map((p) => {
+              const amountDue = getAmountDue(p);
+              return (
+                <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="font-mono text-xs text-gray-500">{getProformaNumber(p)}</p>
+                      <p className="font-semibold text-gray-900 text-sm mt-0.5 flex items-center gap-1">
+                        <Building2 size={12} className="text-gray-400" />
+                        {getClientName(p)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.subject}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className="font-bold text-gray-900 text-sm">{fmt(p.totalAmount)}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{format(new Date(p.createdAt), 'd MMM yyyy', { locale: fr })}</p>
+                    </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-3">
-                    <p className="font-bold text-gray-900 text-sm">{fmt(p.totalAmount)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{format(new Date(p.createdAt), 'd MMM yyyy', { locale: fr })}</p>
+                  <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                    <div className="bg-green-50 rounded-lg px-2 py-1.5">
+                      <p className="text-green-600 font-medium">Payé</p>
+                      <p className="text-green-700 font-bold mt-0.5">{fmt(p.amountPaid ?? 0)}</p>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg px-2 py-1.5">
+                      <p className="text-orange-600 font-medium">Reste</p>
+                      <p className="text-orange-700 font-bold mt-0.5">{fmt(amountDue)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    {statusBadge(p.status)}
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium transition-colors" title="Voir"><Eye size={12} />Voir</button>
+                      <button onClick={() => handleDownloadPdf(p)} className="p-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] transition-colors" title="Télécharger PDF"><Download size={12} /></button>
+                      {(p.status === 'CONFIRMED' || p.status === 'PARTIALLY_PAID') && amountDue > 0 && (
+                        <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden sm:inline">Paiement</span></button>
+                      )}
+                      <div className="w-px h-4 bg-gray-200" />
+                      {p.status === 'DRAFT' && (
+                        <button onClick={() => navigate(`/invoicing/proforma/${p.id}/edit`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Modifier"><Pencil size={13} /></button>
+                      )}
+                      {p.status === 'DRAFT' && (
+                        <button onClick={() => confirmMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors" title="Confirmer"><CheckCircle size={13} /></button>
+                      )}
+                      {(p.status === 'CONFIRMED' || p.status === 'PAID' || p.status === 'PARTIALLY_PAID') && (
+                        <button onClick={() => convertMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-teal-50 text-gray-400 hover:text-teal-600 transition-colors" title="Convertir en facture"><ArrowRight size={13} /></button>
+                      )}
+                      {p.status === 'DRAFT' && (
+                        <button onClick={() => { if (confirm('Supprimer cette proforma ?')) deleteMut.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer"><Trash2 size={13} /></button>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
-                  <div className="bg-green-50 rounded-lg px-2 py-1.5">
-                    <p className="text-green-600 font-medium">Payé</p>
-                    <p className="text-green-700 font-bold mt-0.5">{fmt(p.amountPaid ?? 0)}</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-lg px-2 py-1.5">
-                    <p className="text-orange-600 font-medium">Reste</p>
-                    <p className="text-orange-700 font-bold mt-0.5">{fmt(p.amountDue ?? p.totalAmount)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  {statusBadge(p.status)}
-                  <div className="flex items-center gap-1.5">
-                    <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium transition-colors" title="Voir"><Eye size={12} />Voir</button>
-                    <button onClick={() => handleDownloadPdf(p)} className="p-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] transition-colors" title="Télécharger PDF"><Download size={12} /></button>
-                    {(p.status === 'CONFIRMED' || p.status === 'PARTIALLY_PAID' || p.status === 'PAYMENT_PENDING') && (
-                      <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden sm:inline">Paiement</span></button>
-                    )}
-                    <div className="w-px h-4 bg-gray-200" />
-                    {p.status === 'DRAFT' && (
-                      <button onClick={() => navigate(`/invoicing/proforma/${p.id}/edit`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Modifier"><Pencil size={13} /></button>
-                    )}
-                    {p.status === 'DRAFT' && (
-                      <button onClick={() => confirmMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors" title="Confirmer"><CheckCircle size={13} /></button>
-                    )}
-                    {(p.status === 'CONFIRMED' || p.status === 'PAID' || p.status === 'PARTIALLY_PAID') && (
-                      <button onClick={() => convertMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-teal-50 text-gray-400 hover:text-teal-600 transition-colors" title="Convertir en facture"><ArrowRight size={13} /></button>
-                    )}
-                    {p.status === 'DRAFT' && (
-                      <button onClick={() => { if (confirm('Supprimer cette proforma ?')) deleteMut.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer"><Trash2 size={13} /></button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop table */}
@@ -278,53 +285,56 @@ export default function ProformaInvoices() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {proformas.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{getProformaNumber(p)}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        <div className="flex items-center gap-1.5">
-                          <Building2 size={12} className="text-gray-400" />
-                          <span>{getClientName(p)}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.subject}>{p.subject}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(p.totalAmount)}</td>
-                      <td className="px-4 py-3 text-right text-green-600 font-medium">{fmt(p.amountPaid ?? 0)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {p.amountDue && p.amountDue > 0 && p.status !== 'PAID' ? (
-                          <span className="text-orange-600 font-medium">{fmt(p.amountDue)}</span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">{statusBadge(p.status)}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        {format(new Date(p.createdAt), 'd MMM yyyy', { locale: fr })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-medium transition-colors" title="Voir"><Eye size={12} /><span className="hidden xl:inline">Voir</span></button>
-                          <button onClick={() => handleDownloadPdf(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
-                          {(p.status === 'CONFIRMED' || p.status === 'PARTIALLY_PAID' || p.status === 'PAYMENT_PENDING') && (
-                            <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden xl:inline">Paiement</span></button>
+                  {proformas.map((p) => {
+                    const amountDue = getAmountDue(p);
+                    return (
+                      <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{getProformaNumber(p)}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          <div className="flex items-center gap-1.5">
+                            <Building2 size={12} className="text-gray-400" />
+                            <span>{getClientName(p)}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.subject}>{p.subject}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">{fmt(p.totalAmount)}</td>
+                        <td className="px-4 py-3 text-right text-green-600 font-medium">{fmt(p.amountPaid ?? 0)}</td>
+                        <td className="px-4 py-3 text-right">
+                          {amountDue > 0 && p.status !== 'PAID' ? (
+                            <span className="text-orange-600 font-medium">{fmt(amountDue)}</span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
                           )}
-                          <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                          {p.status === 'DRAFT' && (
-                            <button onClick={() => navigate(`/invoicing/proforma/${p.id}/edit`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Modifier"><Pencil size={13} /></button>
-                          )}
-                          {p.status === 'DRAFT' && (
-                            <button onClick={() => confirmMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors" title="Confirmer"><CheckCircle size={13} /></button>
-                          )}
-                          {(p.status === 'CONFIRMED' || p.status === 'PAID' || p.status === 'PARTIALLY_PAID') && (
-                            <button onClick={() => convertMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-teal-50 text-gray-400 hover:text-teal-600 transition-colors" title="Convertir en facture"><ArrowRight size={13} /></button>
-                          )}
-                          {p.status === 'DRAFT' && (
-                            <button onClick={() => { if (confirm('Supprimer cette proforma ?')) deleteMut.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer"><Trash2 size={13} /></button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3 text-center">{statusBadge(p.status)}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">
+                          {format(new Date(p.createdAt), 'd MMM yyyy', { locale: fr })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-medium transition-colors" title="Voir"><Eye size={12} /><span className="hidden xl:inline">Voir</span></button>
+                            <button onClick={() => handleDownloadPdf(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
+                            {(p.status === 'CONFIRMED' || p.status === 'PARTIALLY_PAID') && amountDue > 0 && (
+                              <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden xl:inline">Paiement</span></button>
+                            )}
+                            <div className="w-px h-5 bg-gray-200 mx-0.5" />
+                            {p.status === 'DRAFT' && (
+                              <button onClick={() => navigate(`/invoicing/proforma/${p.id}/edit`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Modifier"><Pencil size={13} /></button>
+                            )}
+                            {p.status === 'DRAFT' && (
+                              <button onClick={() => confirmMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors" title="Confirmer"><CheckCircle size={13} /></button>
+                            )}
+                            {(p.status === 'CONFIRMED' || p.status === 'PAID' || p.status === 'PARTIALLY_PAID') && (
+                              <button onClick={() => convertMut.mutate(p.id)} className="p-1.5 rounded-lg hover:bg-teal-50 text-gray-400 hover:text-teal-600 transition-colors" title="Convertir en facture"><ArrowRight size={13} /></button>
+                            )}
+                            {p.status === 'DRAFT' && (
+                              <button onClick={() => { if (confirm('Supprimer cette proforma ?')) deleteMut.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer"><Trash2 size={13} /></button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

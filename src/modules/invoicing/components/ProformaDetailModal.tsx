@@ -56,8 +56,24 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
   const fmt = useFormatCurrency();
   const [showPayment, setShowPayment] = useState(false);
 
-  const confirm = useMutation({ mutationFn: () => proformaApi.confirm(proforma.id), onSuccess: () => { toast.success('Proforma confirmé'); onAction(); }, onError: () => toast.error('Erreur') });
-  const convert = useMutation({ mutationFn: () => proformaApi.convertToInvoice(proforma.id), onSuccess: () => { toast.success('Converti en facture'); onAction(); }, onError: () => toast.error('Erreur') });
+  // Fonction utilitaire pour convertir en nombre
+  const toNumber = (value: string | number | undefined | null): number => {
+    if (value === undefined || value === null) return 0;
+    if (typeof value === 'number') return value;
+    return parseFloat(value) || 0;
+  };
+
+  const confirm = useMutation({ 
+    mutationFn: () => proformaApi.confirm(proforma.id), 
+    onSuccess: () => { toast.success('Proforma confirmé'); onAction(); }, 
+    onError: () => toast.error('Erreur') 
+  });
+  
+  const convert = useMutation({ 
+    mutationFn: () => proformaApi.convertToInvoice(proforma.id), 
+    onSuccess: () => { toast.success('Converti en facture'); onAction(); }, 
+    onError: () => toast.error('Erreur') 
+  });
 
   const { data: payments } = useQuery({
     queryKey: ['proforma-payments', proforma.id],
@@ -70,6 +86,37 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
     toast.success('Paiement enregistré');
     onAction();
   };
+
+  // Récupération sécurisée des items
+  const lineItems = (proforma as any).lineItems || proforma.items || [];
+
+  // ✅ CORRECTION: Calcul correct du montant dû (total - payé)
+  const totalAmount = toNumber(proforma.totalAmount);
+  const amountPaid = toNumber((proforma as any).amountPaid ?? 0);
+  const amountDue = totalAmount - amountPaid;  // ← Calcul du reste dû
+  
+  const subtotal = toNumber(proforma.subtotal);
+  const discountAmount = toNumber(proforma.discountAmount);
+  const discountPercentage = toNumber(proforma.discountPercentage);
+  const taxAmount = toNumber(proforma.taxAmount);
+  const shippingCost = toNumber((proforma as any).shippingCost ?? 0);
+  
+  // Vérifier si la proforma est en brouillon
+  const isDraft = proforma.status === 'DRAFT';
+
+  // Nom du client
+  const customerName = proforma.client 
+    ? `${proforma.client.firstName} ${proforma.client.lastName}` 
+    : (proforma as any).clientId || 'Client inconnu';
+
+  console.log('=== DÉBOG PROFORMA ===', {
+    proformaNumber: proforma.proformaNumber,
+    totalAmount,
+    amountPaid,
+    amountDue,
+    status: proforma.status,
+    isDraft
+  });
 
   return (
     <>
@@ -89,26 +136,29 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
               <ProformaWorkflowStepper status={proforma.status} />
             </div>
 
-            {/* Financial summary 2-col */}
+            {/* Financial summary 3-col */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <p className="text-xs text-gray-500 mb-1">Total TTC</p>
-                <p className="font-bold text-gray-900">{fmt(proforma.totalAmount)}</p>
+                <p className="font-bold text-gray-900 text-sm">{fmt(totalAmount)}</p>
               </div>
               <div className="bg-green-50 rounded-lg p-3 text-center">
                 <p className="text-xs text-green-600 mb-1">Payé</p>
-                <p className="font-bold text-green-700">{fmt(proforma.amountPaid ?? 0)}</p>
+                <p className="font-bold text-green-700 text-sm">{fmt(amountPaid)}</p>
               </div>
-              <div className="bg-orange-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-orange-600 mb-1">Reste dû</p>
-                <p className="font-bold text-orange-700">{fmt(proforma.amountDue ?? proforma.totalAmount)}</p>
+              <div className={`rounded-lg p-3 text-center ${amountDue <= 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                <p className={`text-xs mb-1 ${amountDue <= 0 ? 'text-green-600' : 'text-orange-600'}`}>Reste dû</p>
+                <p className={`font-bold text-sm ${amountDue <= 0 ? 'text-green-700' : 'text-orange-700'}`}>{fmt(amountDue)}</p>
               </div>
             </div>
 
+            {/* Client info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Client</p>
-                <p className="font-medium text-gray-900">{proforma.client ? `${proforma.client.firstName} ${proforma.client.lastName}` : proforma.clientId}</p>
+                <p className="font-medium text-gray-900">{customerName}</p>
+                {proforma.client?.email && <p className="text-xs text-gray-400 mt-1">{proforma.client.email}</p>}
+                {proforma.client?.phone && <p className="text-xs text-gray-400">{proforma.client.phone}</p>}
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">Conditions de paiement</p>
@@ -116,33 +166,58 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
               </div>
             </div>
 
+            {/* Sujet */}
             <div>
               <p className="text-xs text-gray-500 mb-1">Sujet</p>
-              <p className="font-medium text-gray-900">{proforma.subject}</p>
+              <p className="font-medium text-gray-900">{proforma.subject || 'Sans sujet'}</p>
             </div>
+
+            {/* Description optionnelle */}
+            {(proforma as any).description && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Description</p>
+                <p className="text-sm text-gray-600">{(proforma as any).description}</p>
+              </div>
+            )}
 
             {/* Line items */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Lignes</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Lignes ({lineItems.length})</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b border-gray-100">
-                    <th className="text-left pb-2 text-xs text-gray-500">Description</th>
-                    <th className="text-right pb-2 text-xs text-gray-500">Qté</th>
-                    <th className="text-right pb-2 text-xs text-gray-500">P.U.</th>
-                    <th className="text-right pb-2 text-xs text-gray-500">TVA</th>
-                    <th className="text-right pb-2 text-xs text-gray-500">Total</th>
-                  </tr></thead>
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left pb-2 text-xs text-gray-500">Description</th>
+                      <th className="text-right pb-2 text-xs text-gray-500">Qté</th>
+                      <th className="text-right pb-2 text-xs text-gray-500">P.U.</th>
+                      <th className="text-right pb-2 text-xs text-gray-500">TVA</th>
+                      <th className="text-right pb-2 text-xs text-gray-500">Total</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {proforma.items.map((it, i) => (
-                      <tr key={i}>
-                        <td className="py-2 text-gray-700">{it.description}</td>
-                        <td className="py-2 text-right text-gray-600">{it.quantity}</td>
-                        <td className="py-2 text-right text-gray-600">{fmt(it.unitPrice)}</td>
-                        <td className="py-2 text-right text-gray-500">{it.taxRate}%</td>
-                        <td className="py-2 text-right font-medium">{fmt((it.quantity * it.unitPrice) * (1 + it.taxRate / 100))}</td>
+                    {lineItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                          Aucun produit
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      lineItems.map((it: any, i: number) => {
+                        const quantity = toNumber(it.quantity);
+                        const unitPrice = toNumber(it.unitPrice);
+                        const taxRate = toNumber(it.taxRate);
+                        const total = quantity * unitPrice * (1 + taxRate / 100);
+                        return (
+                          <tr key={it.id || i}>
+                            <td className="py-2 text-gray-700">{it.description || it.productName || '-'}</td>
+                            <td className="py-2 text-right text-gray-600">{quantity}</td>
+                            <td className="py-2 text-right text-gray-600">{fmt(unitPrice)}</td>
+                            <td className="py-2 text-right text-gray-500">{taxRate}%</td>
+                            <td className="py-2 text-right font-medium">{fmt(total)}</td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -150,22 +225,59 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
 
             {/* Totals breakdown */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-1.5 text-sm">
-              <div className="flex justify-between text-gray-600"><span>Sous-total HT</span><span>{fmt(proforma.subtotal)}</span></div>
-              {proforma.discountPercentage > 0 && <div className="flex justify-between text-orange-600"><span>Remise ({proforma.discountPercentage}%)</span><span>-{fmt(proforma.discountAmount)}</span></div>}
-              {proforma.shippingCost > 0 && <div className="flex justify-between text-gray-600"><span>Frais de livraison</span><span>{fmt(proforma.shippingCost)}</span></div>}
-              <div className="flex justify-between text-gray-600"><span>TVA</span><span>{fmt(proforma.taxAmount)}</span></div>
-              <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-200"><span>Total TTC</span><span>{fmt(proforma.totalAmount)}</span></div>
+              <div className="flex justify-between text-gray-600">
+                <span>Sous-total HT</span>
+                <span>{fmt(subtotal)}</span>
+              </div>
+              {discountPercentage > 0 && (
+                <div className="flex justify-between text-orange-600">
+                  <span>Remise ({discountPercentage}%)</span>
+                  <span>-{fmt(discountAmount)}</span>
+                </div>
+              )}
+              {shippingCost > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Frais de livraison</span>
+                  <span>{fmt(shippingCost)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-gray-600">
+                <span>TVA</span>
+                <span>{fmt(taxAmount)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-200">
+                <span>Total TTC</span>
+                <span>{fmt(totalAmount)}</span>
+              </div>
             </div>
+
+            {/* Notes optionnelles */}
+            {(proforma.notes || (proforma as any).terms) && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                {(proforma.notes || (proforma as any).notes) && (
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-gray-500 mb-1">Notes</p>
+                    <p className="text-sm text-gray-600">{proforma.notes || (proforma as any).notes}</p>
+                  </div>
+                )}
+                {(proforma as any).terms && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-1">Conditions</p>
+                    <p className="text-sm text-gray-600">{(proforma as any).terms}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Payments */}
             {payments && payments.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Paiements reçus</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Paiements reçus ({payments.length})</p>
                 <div className="space-y-2">
-                  {payments.map((p) => (
+                  {payments.map((p: any) => (
                     <div key={p.id} className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2 text-sm">
                       <div>
-                        <span className="font-medium text-gray-900">{fmt(p.paymentAmount)}</span>
+                        <span className="font-medium text-gray-900">{fmt(toNumber(p.paymentAmount))}</span>
                         <span className="text-gray-500 ml-2">· {p.paymentMethod}</span>
                         {p.paymentReference && <span className="text-gray-400 ml-2 text-xs">Réf: {p.paymentReference}</span>}
                       </div>
@@ -179,24 +291,40 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
             {/* Actions */}
             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
               {proforma.status === 'DRAFT' && (
-                <button onClick={() => confirm.mutate()} disabled={confirm.isPending}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-60">
-                  <CheckCircle size={13} /> Confirmer
+                <button 
+                  onClick={() => confirm.mutate()} 
+                  disabled={confirm.isPending}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                >
+                  <CheckCircle size={13} /> 
+                  {confirm.isPending ? 'Confirmation...' : 'Confirmer'}
                 </button>
               )}
-              {(proforma.status === 'CONFIRMED' || proforma.status === 'PARTIALLY_PAID') && (
-                <button onClick={() => setShowPayment(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-yellow-500 text-white rounded-lg text-xs font-medium hover:bg-yellow-600">
-                  <CreditCard size={13} /> Enregistrer paiement
+              {(proforma.status === 'CONFIRMED' || proforma.status === 'PARTIALLY_PAID') && amountDue > 0 && (
+                <button 
+                  onClick={() => setShowPayment(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-yellow-500 text-white rounded-lg text-xs font-medium hover:bg-yellow-600 transition-colors"
+                >
+                  <CreditCard size={13} /> 
+                  Enregistrer paiement
                 </button>
               )}
               {(proforma.status === 'CONFIRMED' || proforma.status === 'PAID') && (
-                <button onClick={() => convert.mutate()} disabled={convert.isPending}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 disabled:opacity-60">
-                  <ArrowRight size={13} /> Convertir en facture
+                <button 
+                  onClick={() => convert.mutate()} 
+                  disabled={convert.isPending}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 disabled:opacity-60 transition-colors"
+                >
+                  <ArrowRight size={13} /> 
+                  {convert.isPending ? 'Conversion...' : 'Convertir en facture'}
                 </button>
               )}
-              <button onClick={onClose} className="ml-auto px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Fermer</button>
+              <button 
+                onClick={onClose} 
+                className="ml-auto px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50 transition-colors"
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>
@@ -205,8 +333,9 @@ export default function ProformaDetailModal({ proforma, onClose, onAction }: Pro
       {showPayment && (
         <RecordPaymentModal
           title="Enregistrer un paiement"
-          totalAmount={proforma.totalAmount}
-          amountDue={proforma.amountDue ?? proforma.totalAmount}
+          totalAmount={totalAmount}
+          amountDue={amountDue}
+          isDraft={isDraft}
           onClose={() => setShowPayment(false)}
           onSubmit={handlePayment}
         />

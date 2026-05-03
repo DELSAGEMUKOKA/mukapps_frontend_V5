@@ -8,6 +8,7 @@ export interface CreateCustomerPayload {
   email?: string;
   phone: string;
   address?: string;
+  notes?: string;
   isVIP?: boolean;
 }
 

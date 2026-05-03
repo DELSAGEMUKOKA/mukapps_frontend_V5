@@ -88,13 +88,13 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
       items.push({ label: 'Paramètres', sublabel: 'Compte et configuration', icon: Settings, to: ROUTES.SETTINGS, moduleKey: 'settings' });
     }
     if (hasModule('invoicing') && canPage('invoicing')) {
-      items.push({ label: 'Facturation', sublabel: 'Devis, proformas, factures', icon: Receipt, to: ROUTES.INVOICING, moduleKey: 'invoicing' });
+      items.push({ label: 'Facturation', sublabel: 'Devis, Proformas, factures', icon: Receipt, to: ROUTES.INVOICING, moduleKey: 'invoicing' });
     }
     if (hasModule('invoicing') && canPage('quotes')) {
       items.push({ label: 'Devis', sublabel: 'Facturation', icon: Receipt, to: ROUTES.INVOICING_QUOTES, moduleKey: 'invoicing' });
     }
-    if (hasModule('invoicing') && canPage('proforma')) {
-      items.push({ label: 'Proforma', sublabel: 'Facturation', icon: FileText, to: ROUTES.INVOICING_PROFORMA, moduleKey: 'invoicing' });
+    if (hasModule('invoicing') && canPage('Proforma')) {
+      items.push({ label: 'Proforma', sublabel: 'Facturation', icon: FileText, to: ROUTES.INVOICING_Proforma, moduleKey: 'invoicing' });
     }
     if (hasModule('invoicing') && canPage('invoicing')) {
       items.push({ label: 'Factures (Invoicing)', sublabel: 'Facturation', icon: FileText, to: ROUTES.INVOICING_INVOICES, moduleKey: 'invoicing' });

@@ -121,209 +121,6 @@ function TemplateSelector({ templates, value, onChange }: {
   );
 }
 
-// ── Fallback HTML ─────────────────────────────────────────────────────────────
-
-function buildFallbackHtml(p: {
-  docNumber: string; date: string; subject: string;
-  client: Customer | null; items: DraftItem[];
-  subtotal: number; taxTotal: number; discount: number; total: number;
-  shippingCost: number; defaultTaxRate: number; discountPct: number;
-  notes: string; paymentTerms: string; deliveryDetails: string;
-  company: Record<string, string | undefined>; logoUrl?: string;
-  currency: string; settingsUrl: string;
-}): string {
-  const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(n) + '\u00a0' + p.currency;
-
-  const logoHtml = p.logoUrl
-    ? `<img src="${p.logoUrl}" alt="Logo" style="max-height:72px;max-width:200px;object-fit:contain;display:block;" />`
-    : `<div style="display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border:2px dashed #cbd5e1;border-radius:10px;color:#94a3b8;font-size:11px;font-style:italic;">Ajouter un logo</div>`;
-
-  const clientName = p.client ? `${p.client.firstName} ${p.client.lastName}` : '—';
-  const clientEmail = (p.client as any)?.email || '';
-  const clientPhone = p.client?.phone || '';
-  const clientAddress = (p.client as any)?.address || '';
-  const companyAddress = [p.company.address, p.company.city, p.company.country].filter(Boolean).join(', ');
-
-  const legalLines: string[] = [];
-  if (p.company.rccm) legalLines.push(`RCCM\u00a0: ${p.company.rccm}`);
-  if (p.company.idNat) legalLines.push(`ID NAT\u00a0: ${p.company.idNat}`);
-  if (p.company.impotNumber) legalLines.push(`N°\u00a0Impôt\u00a0: ${p.company.impotNumber}`);
-
-  const itemRows = p.items.map((item, i) => {
-    const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
-    return `<tr style="background:${bg};">
-      <td style="padding:11px 16px;font-size:12.5px;color:#1e293b;border-bottom:1px solid #f1f5f9;">${item.description || '<em style="color:#94a3b8;">—</em>'}</td>
-      <td style="padding:11px 16px;text-align:center;font-size:12.5px;color:#475569;border-bottom:1px solid #f1f5f9;">${item.quantity}</td>
-      <td style="padding:11px 16px;text-align:right;font-size:12.5px;color:#475569;border-bottom:1px solid #f1f5f9;">${fmt(item.unitPrice)}</td>
-      <td style="padding:11px 16px;text-align:right;font-size:12.5px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;">${fmt(item.quantity * item.unitPrice)}</td>
-    </tr>`;
-  }).join('');
-
-  const totalRows: string[] = [];
-  totalRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(p.subtotal)}</td></tr>`);
-  if (p.taxTotal > 0) totalRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">TVA (${p.defaultTaxRate}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(p.taxTotal)}</td></tr>`);
-  if (p.discount > 0) totalRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Réduction (${p.discountPct}%)</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#ef4444;">\u2212${fmt(p.discount)}</td></tr>`);
-  if (p.shippingCost > 0) totalRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Frais de livraison</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(p.shippingCost)}</td></tr>`);
-
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"/>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Segoe UI',Arial,sans-serif; background:#fff; color:#0f172a; font-size:13px; line-height:1.55; -webkit-print-color-adjust:exact; }
-  a { text-decoration:none; color:inherit; }
-</style>
-</head>
-<body style="width:794px; min-height:1123px; background:#fff;">
-
-  <!-- Top accent bar -->
-  <div style="height:5px; background:linear-gradient(90deg,#017e84 0%,#029aa2 50%,#e2f7f8 100%);"></div>
-
-  <div style="padding:40px 52px 48px;">
-
-    <!-- ── HEADER ── -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
-      <tr>
-        <td style="vertical-align:top; width:52%;">
-          ${logoHtml}
-          <div style="margin-top:${p.logoUrl ? '14px' : '0px'};">
-            <div style="font-size:18px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">${p.company.companyName || '<span style="color:#94a3b8;font-style:italic;font-size:13px;font-weight:400;">Nom de l\'entreprise</span>'}</div>
-            <div style="margin-top:5px; font-size:11px; color:#64748b; line-height:1.9;">
-              ${companyAddress ? `<div>${companyAddress}</div>` : ''}
-              ${p.company.email ? `<div>${p.company.email}</div>` : ''}
-              ${p.company.phone ? `<div>${p.company.phone}</div>` : ''}
-            </div>
-          </div>
-        </td>
-        <td style="vertical-align:top; text-align:right; width:48%;">
-          <div style="display:inline-block; text-align:right; margin-bottom:16px;">
-            <div style="font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#017e84; margin-bottom:4px;">PROFORMA</div>
-            <div style="font-size:28px; font-weight:800; color:#0f172a; letter-spacing:-0.5px; line-height:1;">${p.docNumber}</div>
-            <div style="height:3px; background:#017e84; border-radius:2px; margin-top:6px;"></div>
-          </div>
-          <table cellpadding="0" cellspacing="0" style="margin-left:auto;">
-            <tr>
-              <td style="padding:3px 10px 3px 0; font-size:11px; color:#94a3b8; text-align:right; white-space:nowrap;">Date d'émission</td>
-              <td style="padding:3px 0; font-size:11px; font-weight:700; color:#1e293b; text-align:right; white-space:nowrap;">${p.date}</td>
-            </tr>
-            ${p.subject ? `<tr>
-              <td style="padding:3px 10px 3px 0; font-size:11px; color:#94a3b8; text-align:right; white-space:nowrap;">Objet</td>
-              <td style="padding:3px 0; font-size:11px; font-weight:600; color:#1e293b; text-align:right; max-width:200px;">${p.subject}</td>
-            </tr>` : ''}
-            ${p.paymentTerms ? `<tr>
-              <td style="padding:3px 10px 3px 0; font-size:11px; color:#94a3b8; text-align:right; white-space:nowrap;">Conditions paiement</td>
-              <td style="padding:3px 0; font-size:11px; font-weight:600; color:#1e293b; text-align:right;">${p.paymentTerms}</td>
-            </tr>` : ''}
-            ${p.deliveryDetails ? `<tr>
-              <td style="padding:3px 10px 3px 0; font-size:11px; color:#94a3b8; text-align:right; white-space:nowrap;">Livraison</td>
-              <td style="padding:3px 0; font-size:11px; font-weight:600; color:#1e293b; text-align:right;">${p.deliveryDetails}</td>
-            </tr>` : ''}
-          </table>
-          <!-- Non-binding notice badge -->
-          <div style="margin-top:12px; text-align:right;">
-            <div style="display:inline-flex;align-items:center;gap:6px;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:10.5px;color:#92400e;font-weight:600;">
-              Document non contractuel
-            </div>
-          </div>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ── DIVIDER ── -->
-    <div style="height:1px; background:#e2e8f0; margin-bottom:28px;"></div>
-
-    <!-- ── ADDRESSES ── -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-      <tr>
-        <td style="vertical-align:top; width:48%; padding-right:16px;">
-          <div style="font-size:9.5px; font-weight:700; color:#017e84; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">DESTINATAIRE</div>
-          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; border-top:3px solid #017e84;">
-            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:2px;">${clientName}</div>
-            ${clientAddress ? `<div style="font-size:11px; color:#64748b; margin-top:5px;">${clientAddress}</div>` : ''}
-            ${clientEmail ? `<div style="font-size:11px; color:#64748b; margin-top:3px;">${clientEmail}</div>` : ''}
-            ${clientPhone ? `<div style="font-size:11px; color:#64748b; margin-top:3px;">${clientPhone}</div>` : ''}
-          </div>
-        </td>
-        <td style="vertical-align:top; width:52%; padding-left:16px;">
-          <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; background:#fafafa;">
-            ${legalLines.length > 0
-              ? legalLines.map(l => `<div style="font-size:11px; color:#475569; padding:3px 0;">${l}</div>`).join('')
-              : `<div style="font-size:11px; color:#94a3b8; font-style:italic;">Renseignez vos informations légales dans les paramètres</div>`}
-          </div>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ── ITEMS TABLE ── -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:28px;">
-      <thead>
-        <tr style="background:#017e84;">
-          <th style="padding:13px 16px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:#ffffff;">Désignation</th>
-          <th style="padding:13px 16px; text-align:center; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:rgba(255,255,255,0.85); width:70px;">Qté</th>
-          <th style="padding:13px 16px; text-align:right; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:rgba(255,255,255,0.85); width:140px;">Prix unitaire</th>
-          <th style="padding:13px 16px; text-align:right; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:#ffffff; width:140px;">Total HT</th>
-        </tr>
-      </thead>
-      <tbody>${itemRows}</tbody>
-    </table>
-
-    <!-- ── TOTALS ── -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-      <tr>
-        <td width="50%">
-          <!-- Delivery info or spacer -->
-          ${p.deliveryDetails ? `
-          <div style="border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px;">
-            <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">LIVRAISON</div>
-            <div style="font-size:12px; color:#334155;">${p.deliveryDetails}</div>
-          </div>` : '<div style="height:80px;"></div>'}
-        </td>
-        <td width="4%"></td>
-        <td width="46%">
-          <div style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
-            <div style="background:#f8fafc; padding:10px 16px; border-bottom:1px solid #e2e8f0;">
-              <span style="font-size:9.5px; font-weight:700; color:#64748b; letter-spacing:1.5px; text-transform:uppercase;">RÉCAPITULATIF</span>
-            </div>
-            <div style="padding:14px 16px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                ${totalRows.join('')}
-                <tr><td colspan="2" style="padding:8px 0 0;"><div style="height:1px; background:#e2e8f0;"></div></td></tr>
-                <tr>
-                  <td style="padding:12px 0 0; font-size:12px; font-weight:800; color:#0f172a;">TOTAL TTC</td>
-                  <td style="padding:12px 0 0; text-align:right;">
-                    <span style="font-size:22px; font-weight:800; color:#017e84;">${fmt(p.total)}</span>
-                  </td>
-                </tr>
-              </table>
-            </div>
-          </div>
-        </td>
-      </tr>
-    </table>
-
-    ${p.notes ? `
-    <!-- ── NOTES ── -->
-    <div style="margin-bottom:28px;">
-      <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">NOTES</div>
-      <div style="background:#fffbeb; border-radius:10px; padding:13px 15px; border-left:3px solid #f59e0b; font-size:11.5px; color:#334155; line-height:1.7; white-space:pre-line;">${p.notes}</div>
-    </div>` : ''}
-
-  </div>
-
-  <!-- ── FOOTER ── -->
-  <div style="border-top:1px solid #f1f5f9; padding:14px 52px; display:flex; align-items:center; justify-content:space-between;">
-    <div style="font-size:10px; color:#94a3b8;">${p.company.companyName || ''}</div>
-    <div style="font-size:10px; color:#cbd5e1;">${[p.company.email, p.company.phone].filter(Boolean).join(' · ')}</div>
-    <div style="font-size:10px; color:#94a3b8;">${p.docNumber}</div>
-  </div>
-  <div style="height:3px; background:linear-gradient(90deg,#e2f7f8 0%,#029aa2 50%,#017e84 100%);"></div>
-
-</body>
-</html>`;
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProformaFormPage() {
@@ -358,8 +155,6 @@ export default function ProformaFormPage() {
     queryFn: () => companySettingsApi.getLogo(),
   });
 
-  // Keep LOCAL_TEMPLATE_ID as default — server templates available via selector
-
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
   const [subject, setSubject] = useState('');
   const [defaultTaxRate, setDefaultTaxRate] = useState(0);
@@ -387,12 +182,12 @@ export default function ProformaFormPage() {
       setPaymentTerms(existing.paymentTerms ?? '');
       setDeliveryDetails(existing.deliveryDetails ?? '');
       setNotes(existing.notes ?? '');
-      const mapped = existing.items?.map(i => ({
+      const mapped = existing.lineItems?.map(i => ({
         description: i.description, quantity: i.quantity,
         unitPrice: i.unitPrice, taxRate: i.taxRate,
       })) ?? [{ description: '', quantity: 1, unitPrice: 0, taxRate: 0 }];
       setItems(mapped);
-      setDefaultTaxRate(existing.items?.[0]?.taxRate ?? 0);
+      setDefaultTaxRate(existing.lineItems?.[0]?.taxRate ?? 0);
       setInitialized(true);
     }
   }, [existing, initialized]);
@@ -411,7 +206,7 @@ export default function ProformaFormPage() {
   }, [items, discountPct, shippingCost]);
 
   const today = format(new Date(), 'dd/MM/yyyy');
- const docNumber = existing?.proformaNumber ?? `PRO-${format(new Date(), 'yyyy')}-00001`;
+  const docNumber = existing?.proformaNumber ?? `PRO-${format(new Date(), 'yyyy')}-00001`;
   const currency = (company as any)?.currency || 'FC';
   const settingsUrl = '/settings';
 
@@ -463,7 +258,7 @@ export default function ProformaFormPage() {
         phone: selectedClient.phone,
       } : undefined,
       subject,
-      items: items.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, taxRate: i.taxRate, total: i.quantity * i.unitPrice })),
+      lineItems: items.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, taxRate: i.taxRate, total: i.quantity * i.unitPrice })),
       taxRate: defaultTaxRate,
       discountPercentage: discountPct,
       shippingCost,
@@ -491,28 +286,26 @@ export default function ProformaFormPage() {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:absolute;top:0;left:0;z-index:-9999;width:794px;overflow:visible;background:#fff;';
       const container = document.createElement('div');
-      container.style.cssText = 'width:794px;background:#fff;';
       container.innerHTML = previewHtml;
       wrapper.appendChild(container);
       document.body.appendChild(wrapper);
       await new Promise(r => setTimeout(r, 400));
-      const contentH = container.scrollHeight;
-      const canvas = await html2canvas(container, {
-        scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
-        width: 794, height: contentH, windowWidth: 794, scrollX: 0, scrollY: 0,
-      });
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       document.body.removeChild(wrapper);
-      const A4_W_MM = 210;
-      const A4_H_MM = 297;
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      const pxPerMm = canvas.width / A4_W_MM;
-      const totalHeightMm = canvas.height / pxPerMm;
-      let renderedMm = 0; let pageIndex = 0;
-      while (renderedMm < totalHeightMm) {
-        if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, -renderedMm, A4_W_MM, totalHeightMm);
-        renderedMm += A4_H_MM; pageIndex++;
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
       pdf.save(`${docNumber}.pdf`);
     } catch (e) {
@@ -529,7 +322,10 @@ export default function ProformaFormPage() {
     setLoading(true);
     try {
       const payload: CreateProformaPayload = {
-        clientId: selectedClient.id, subject, items,
+        clientId: selectedClient.id,
+        subject,
+        items,
+        taxRate: defaultTaxRate,
         discountPercentage: discountPct,
         shippingCost: shippingCost || undefined,
         paymentTerms: paymentTerms || undefined,
@@ -549,7 +345,7 @@ export default function ProformaFormPage() {
   };
 
   if (id && loadingExisting) {
-    return <div className="flex items-center justify-center py-32"><SmartLoader /></div>;
+    return <div className="flex items-center justify-center py-32"><SmartLoader isLoading={true}><div>Chargement...</div></SmartLoader></div>;
   }
 
   return (
@@ -567,7 +363,7 @@ export default function ProformaFormPage() {
                 <FileText size={16} className="text-[#017e84]" />
               </div>
               <div>
-                <h1 className="font-bold text-gray-900 text-sm">{id ? 'Modifier le proforma' : 'Nouveau proforma'}</h1>
+                <h1 className="font-bold text-gray-900 text-sm">{id ? 'Modifier le Proforma' : 'Nouveau Proforma'}</h1>
                 {existing && <p className="text-xs text-gray-400">{existing.proformaNumber}</p>}
               </div>
             </div>
@@ -594,7 +390,7 @@ export default function ProformaFormPage() {
             <button form="proforma-form" type="submit" disabled={loading}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
               {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
-              {loading ? 'Sauvegarde...' : (id ? 'Mettre à jour' : 'Créer le proforma')}
+              {loading ? 'Sauvegarde...' : (id ? 'Mettre à jour' : 'Créer le Proforma')}
             </button>
           </div>
         </div>
@@ -667,7 +463,7 @@ export default function ProformaFormPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Objet <span className="text-red-500">*</span></label>
-                  <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet du proforma"
+                  <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet du Proforma"
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" required />
                 </div>
               </div>
@@ -803,7 +599,7 @@ export default function ProformaFormPage() {
             </div>
             <div className="flex-1 overflow-auto p-6 flex justify-center">
               <div className="relative shadow-2xl rounded-sm overflow-hidden" style={{ width: '794px', minHeight: '1123px', flexShrink: 0 }}>
-                <iframe ref={previewIframeRef} srcDoc={previewHtml} title="Aperçu du proforma"
+                <iframe ref={previewIframeRef} srcDoc={previewHtml} title="Aperçu du Proforma"
                   sandbox="allow-same-origin allow-scripts allow-top-navigation"
                   className="w-full border-0" style={{ width: '794px', height: '1123px', display: 'block' }} />
               </div>

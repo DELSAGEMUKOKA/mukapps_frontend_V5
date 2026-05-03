@@ -1,7 +1,7 @@
 import apiClient from '@/core/api/axiosConfig';
 import { API } from '@/shared/constants/apiEndpoints';
 
-export type TemplateType = 'QUOTE' | 'PROFORMA_INVOICE' | 'INVOICE';
+export type TemplateType = 'QUOTE' | 'Proforma_INVOICE' | 'INVOICE';
 
 export interface InvoicingTemplate {
   id: string;

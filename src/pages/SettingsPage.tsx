@@ -323,7 +323,7 @@ export default function SettingsPage() {
                     {logoUrl ? 'Logo actuel' : 'Aucun logo configuré'}
                   </p>
                   <p className="text-xs text-secondary-500 leading-relaxed">
-                    Le logo apparaît sur tous vos documents PDF (devis, proformas, factures).<br />
+                    Le logo apparaît sur tous vos documents PDF (devis, Proformas, factures).<br />
                     Formats acceptés : PNG, JPEG, GIF, WebP — Taille max : 5 MB
                   </p>
                 </div>

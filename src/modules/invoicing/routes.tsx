@@ -4,7 +4,7 @@ import PageGuard from '@/core/components/guards/PageGuard';
 
 function guard(
   moduleName: 'invoicing',
-  page: 'quotes' | 'proforma' | 'invoicing',
+  page: 'quotes' | 'Proforma' | 'invoicing',
   importFn: () => Promise<{ default: React.ComponentType }>
 ) {
   return {
@@ -41,16 +41,16 @@ export const invoicingRoutes: RouteObject[] = [
     ...guard('invoicing', 'quotes', () => import('./pages/QuoteFormPage')),
   },
   {
-    path: 'invoicing/proforma',
-    ...guard('invoicing', 'proforma', () => import('./pages/ProformaInvoices')),
+    path: 'invoicing/Proforma',
+    ...guard('invoicing', 'Proforma', () => import('./pages/ProformaInvoices')),
   },
   {
-    path: 'invoicing/proforma/new',
-    ...guard('invoicing', 'proforma', () => import('./pages/ProformaFormPage')),
+    path: 'invoicing/Proforma/new',
+    ...guard('invoicing', 'Proforma', () => import('./pages/ProformaFormPage')),
   },
   {
-    path: 'invoicing/proforma/:id/edit',
-    ...guard('invoicing', 'proforma', () => import('./pages/ProformaFormPage')),
+    path: 'invoicing/Proforma/:id/edit',
+    ...guard('invoicing', 'Proforma', () => import('./pages/ProformaFormPage')),
   },
   {
     path: 'invoicing/invoices',

@@ -107,7 +107,7 @@ function QuoteActions({ q, onView, onEdit, onMarkSent, onMarkAccepted, onMarkRej
         </>
       )}
       {q.status === 'ACCEPTED' && (
-        <button onClick={onConvert} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-medium transition-colors" title="Convertir en proforma">
+        <button onClick={onConvert} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-medium transition-colors" title="Convertir en Proforma">
           <ArrowRight size={12} />
           <span className="hidden lg:inline">Convertir</span>
         </button>
@@ -160,7 +160,7 @@ export default function Quotes() {
   });
   const convertMut = useMutation({
     mutationFn: (id: string) => quotesApi.convertToProforma(id),
-    onSuccess: () => { toast.success('Devis converti en proforma'); invalidate(); },
+    onSuccess: () => { toast.success('Devis converti en Proforma'); invalidate(); },
     onError: () => toast.error('Erreur lors de la conversion'),
   });
 
