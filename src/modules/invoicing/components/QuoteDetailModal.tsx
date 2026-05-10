@@ -46,29 +46,29 @@ function WorkflowStepper({ status }: { status: QuoteStatus }) {
                 <div className={cn(
                   'w-9 h-9 rounded-full flex items-center justify-center font-bold border-2 transition-all',
                   isRejected && i <= 1 ? 'bg-red-100 border-red-300 text-red-600' :
-                  done && !active ? 'bg-[#017e84] border-[#017e84] text-white' :
-                  active ? 'bg-[#017e84] border-[#017e84] text-white ring-4 ring-[#017e84]/20' :
+                  done && !active ? 'bg-[#2563EB] border-[#2563EB] text-white' :
+                  active ? 'bg-[#2563EB] border-[#2563EB] text-white ring-4 ring-[#2563EB]/20' :
                   'bg-white border-gray-200 text-gray-400'
                 )}>
                   {done && !active && !rejected ? <CheckCircle size={16} /> : <span className="text-xs">{i + 1}</span>}
                 </div>
                 <span className={cn(
                   'text-[11px] mt-1.5 font-medium text-center w-16 leading-tight',
-                  active ? 'text-[#017e84]' :
+                  active ? 'text-[#2563EB]' :
                   isRejected && i <= 1 ? 'text-red-600' :
                   done ? 'text-gray-700' : 'text-gray-400'
                 )}>
                   {step.label}
                 </span>
                 {active && (
-                  <span className="text-[9px] text-[#017e84] font-bold mt-0.5">● Actuel</span>
+                  <span className="text-[9px] text-[#2563EB] font-bold mt-0.5">● Actuel</span>
                 )}
               </div>
               {i < QUOTE_STEPS.length - 1 && (
                 <div className={cn(
                   'flex-1 h-0.5 mx-1 mb-5 transition-all',
                   isRejected && i < 1 ? 'bg-red-300' :
-                  i < currentIdx && !isRejected ? 'bg-[#017e84]' : 'bg-gray-200'
+                  i < currentIdx && !isRejected ? 'bg-[#2563EB]' : 'bg-gray-200'
                 )} />
               )}
             </div>
@@ -307,8 +307,8 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
-              <FileText size={16} className="text-[#017e84]" />
+            <div className="w-8 h-8 bg-[#2563EB]/10 rounded-lg flex items-center justify-center">
+              <FileText size={16} className="text-[#2563EB]" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900">Devis {quote.quoteNumber}</h2>
@@ -319,7 +319,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
             <button
               onClick={handleDownloadPdf}
               title="Télécharger PDF"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-[#017e84] text-[#017e84] rounded-lg hover:bg-[#017e84] hover:text-white transition-colors font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-[#2563EB] text-[#2563EB] rounded-lg hover:bg-[#2563EB] hover:text-white transition-colors font-medium"
             >
               <Download size={14} />
               <span className="hidden sm:inline">PDF</span>
@@ -481,7 +481,7 @@ export default function QuoteDetailModal({ quote, onClose, onAction, onEdit, onD
                   )}
                   <div className="pt-2 border-t border-gray-200 flex justify-between">
                     <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                    <span className="text-xl font-bold text-[#017e84]">{fmt(toNumber(quote.totalAmount))}</span>
+                    <span className="text-xl font-bold text-[#2563EB]">{fmt(toNumber(quote.totalAmount))}</span>
                   </div>
                 </div>
               </div>

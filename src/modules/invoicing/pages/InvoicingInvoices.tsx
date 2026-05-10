@@ -195,7 +195,7 @@ export default function InvoicingInvoices() {
           </button>
           <button
             onClick={() => navigate('/invoicing/invoices/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] transition-colors"
           >
             <Plus size={16} />
             <span className="hidden sm:inline">Nouvelle facture</span>
@@ -234,13 +234,13 @@ export default function InvoicingInvoices() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Rechercher par numéro, client, sujet..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 bg-white"
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 bg-white"
         >
           <option value="">Tous les statuts</option>
           <option value="DRAFT">Brouillon</option>
@@ -256,7 +256,7 @@ export default function InvoicingInvoices() {
             type="checkbox"
             checked={overdueOnly}
             onChange={(e) => { setOverdueOnly(e.target.checked); setPage(1); }}
-            className="rounded border-gray-300 text-[#017e84] focus:ring-[#017e84]"
+            className="rounded border-gray-300 text-[#2563EB] focus:ring-[#2563EB]"
           />
           <span className="hidden sm:inline">En retard seulement</span>
           <span className="sm:hidden">Retard</span>
@@ -266,7 +266,7 @@ export default function InvoicingInvoices() {
           className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
           title="Actualiser"
         >
-          <RefreshCw size={15} className={isFetching ? 'animate-spin text-[#017e84]' : 'text-gray-500'} />
+          <RefreshCw size={15} className={isFetching ? 'animate-spin text-[#2563EB]' : 'text-gray-500'} />
         </button>
       </div>
 
@@ -283,7 +283,7 @@ export default function InvoicingInvoices() {
           {(search || statusFilter || overdueOnly) && (
             <button 
               onClick={() => { setSearch(''); setStatusFilter(''); setOverdueOnly(false); }}
-              className="text-xs text-[#017e84] hover:underline"
+              className="text-xs text-[#2563EB] hover:underline"
             >
               Réinitialiser les filtres
             </button>
@@ -322,7 +322,7 @@ export default function InvoicingInvoices() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium transition-colors" title="Voir"><Eye size={12} />Voir</button>
-                    <button onClick={() => handleDownloadPdf(inv)} className="p-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] transition-colors" title="Télécharger PDF"><Download size={12} /></button>
+                    <button onClick={() => handleDownloadPdf(inv)} className="p-1.5 rounded-lg bg-[#2563EB]/10 hover:bg-[#2563EB]/20 text-[#2563EB] transition-colors" title="Télécharger PDF"><Download size={12} /></button>
                     {(inv.status === 'SENT' || inv.status === 'VIEWED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') && (
                       <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /></button>
                     )}
@@ -384,7 +384,7 @@ export default function InvoicingInvoices() {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
                           <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-medium transition-colors" title="Voir"><Eye size={12} /><span className="hidden xl:inline">Voir</span></button>
-                          <button onClick={() => handleDownloadPdf(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
+                          <button onClick={() => handleDownloadPdf(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#2563EB]/10 hover:bg-[#2563EB]/20 text-[#2563EB] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
                           {(inv.status === 'SENT' || inv.status === 'VIEWED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE') && inv.amountDue > 0.01 && (
                             <button onClick={() => setDetailInvoice(inv)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden xl:inline">Paiement</span></button>
                           )}

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
+import { 
   Store, Users, UserCheck, Settings, Shield, Bell, LogOut, ChevronDown,
   Search, Menu, LayoutDashboard, CreditCard, Grid3x3, Package, ShoppingCart,
   Archive, DollarSign, ChartBar as BarChart2, Tag, Calendar, FileText,
-  MonitorSmartphone, Barcode, X, Receipt,
+  MonitorSmartphone, Barcode, X, Receipt, MoreVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
@@ -141,7 +141,7 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
   return (
     <div ref={containerRef} className="relative hidden md:block">
       <div className="relative">
-        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -150,12 +150,12 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Rechercher un module..."
-          className="w-44 pl-7 pr-7 py-1 text-xs bg-white/8 border border-white/10 rounded text-gray-300 placeholder-gray-600 focus:outline-none focus:w-56 focus:bg-white/12 focus:border-white/20 transition-all duration-200"
+          className="w-44 pl-7 pr-7 py-1 text-xs bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:w-56 focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all duration-200"
         />
         {query && (
           <button
             onClick={() => { setQuery(''); setOpen(false); inputRef.current?.focus(); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B]"
           >
             <X size={11} />
           </button>
@@ -163,9 +163,9 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute right-0 top-full mt-1.5 w-64 bg-[#1e2436] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
-          <div className="px-3 py-1.5 border-b border-white/5">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+        <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
+          <div className="px-3 py-1.5 border-b border-[#F1F5F9]">
+            <span className="text-[10px] text-[#64748B] uppercase tracking-wider font-semibold">
               {query ? `Résultats pour "${query}"` : 'Navigation rapide'}
             </span>
           </div>
@@ -179,16 +179,16 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
                     onClick={() => handleSelect(s)}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2 text-left transition-colors',
-                      i === selected ? 'bg-white/10' : 'hover:bg-white/5'
+                      i === selected ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]'
                     )}
                   >
-                    <div className="w-6 h-6 rounded bg-white/8 flex items-center justify-center flex-shrink-0">
-                      <Icon size={12} className="text-[#017e84]" />
+                    <div className="w-6 h-6 rounded-lg bg-[#F1F5F9] flex items-center justify-center flex-shrink-0">
+                      <Icon size={12} className="text-[#2563EB]" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-gray-200 font-medium truncate">{s.label}</p>
+                      <p className="text-xs text-[#0F172A] font-medium truncate">{s.label}</p>
                       {s.sublabel && s.sublabel !== s.label && (
-                        <p className="text-[10px] text-gray-500 truncate">{s.sublabel}</p>
+                        <p className="text-[10px] text-[#64748B] truncate">{s.sublabel}</p>
                       )}
                     </div>
                   </button>
@@ -197,7 +197,7 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
             })}
           </ul>
           {query && suggestions.length === 0 && (
-            <div className="px-3 py-4 text-center text-xs text-gray-500">Aucun résultat</div>
+            <div className="px-3 py-4 text-center text-xs text-[#64748B]">Aucun résultat</div>
           )}
         </div>
       )}
@@ -213,19 +213,23 @@ export default function TopNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   useClickOutside(userMenuRef, () => setUserMenuOpen(false));
+  useClickOutside(moreMenuRef, () => setMoreMenuOpen(false));
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
+  // Construction du tableau sans undefined en filtrant
   const moduleItems: ModuleItem[] = isSuperAdmin
     ? [
         { key: 'superadmin', label: 'Super Admin', icon: Shield, to: ROUTES.SUPERADMIN_DASHBOARD, paths: ['/superadmin'] },
       ]
     : [
         { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard, to: ROUTES.DASHBOARD, paths: ['/dashboard'] },
-        ...(hasModule('product') && canPage('products')
-          ? [{ key: 'product' as ActiveModule, label: 'Produits', icon: Package, to: ROUTES.PRODUCTS, paths: ['/products', '/categories', '/expiry', '/barcode-labels'] }]
+        ...(hasModule('product') && canPage('products') 
+          ? [{ key: 'product' as ActiveModule, label: 'Produits', icon: Package, to: ROUTES.PRODUCTS, paths: ['/products', '/categories', '/expiry', '/barcode-labels'] }] 
           : []),
         ...(hasModule('sales') && (canPage('pos') || canPage('invoices'))
           ? [{ key: 'sales' as ActiveModule, label: 'Ventes', icon: ShoppingCart, to: canPage('pos') ? ROUTES.POS : ROUTES.INVOICES, paths: ['/pos', '/sales', '/invoices'] }]
@@ -253,6 +257,11 @@ export default function TopNavbar() {
           : []),
       ];
 
+  // Limiter le nombre de modules visibles (ajustez selon vos besoins)
+  const MAX_VISIBLE_MODULES = 5;
+  const visibleModules = moduleItems.slice(0, MAX_VISIBLE_MODULES);
+  const hiddenModules = moduleItems.slice(MAX_VISIBLE_MODULES);
+
   useEffect(() => {
     const path = location.pathname;
     const matched = moduleItems.find((m) =>
@@ -263,49 +272,96 @@ export default function TopNavbar() {
     } else if (path === '/dashboard') {
       setActiveModule('dashboard');
     }
-  }, [location.pathname]);
+  }, [location.pathname, moduleItems, setActiveModule]);
 
   const initials = `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`.toUpperCase();
 
   return (
-    <header className="h-11 bg-[#1a1f2e] flex items-center justify-between flex-shrink-0 z-40 border-b border-white/5">
-      <div className="flex items-center h-full">
+    <header className="h-11 bg-white border-b border-[#E2E8F0] flex items-center justify-between flex-shrink-0 z-40">
+      <div className="flex items-center h-full min-w-0 flex-1">
         <button
           onClick={toggleSidebar}
-          className="lg:hidden flex items-center justify-center w-11 h-11 text-gray-400 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+          className="lg:hidden flex items-center justify-center w-11 h-11 text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors flex-shrink-0"
         >
           <Menu size={16} />
         </button>
 
         <Link
           to={isSuperAdmin ? ROUTES.SUPERADMIN_DASHBOARD : ROUTES.DASHBOARD}
-          className="flex items-center gap-2 px-4 h-full border-r border-white/10 hover:bg-white/5 transition-colors flex-shrink-0"
+          className="flex items-center gap-2 px-4 h-full border-r border-[#E2E8F0] hover:bg-[#F8FAFC] transition-colors flex-shrink-0"
         >
-          <div className="w-6 h-6 bg-[#017e84] rounded flex items-center justify-center">
+          <div className="w-6 h-6 bg-[#2563EB] rounded flex items-center justify-center">
             <Grid3x3 size={13} className="text-white" />
           </div>
-          <span className="text-sm font-bold text-white tracking-tight hidden sm:block">MukApps</span>
+          <span className="text-sm font-bold text-[#0F172A] tracking-tight hidden sm:block">MukApps</span>
         </Link>
 
-        <nav className="flex items-center h-full overflow-x-auto scrollbar-hide">
-          {moduleItems.map((mod) => {
+        {/* Navigation avec menu "Plus" pour les modules supplémentaires et barre de scroll visible */}
+        <nav className="flex items-center h-full overflow-x-auto scrollbar-visible flex-1 pb-0.5">
+          {visibleModules.map((mod) => {
             const isActive = activeModule === mod.key;
             return (
               <Link
                 key={mod.key}
                 to={mod.to}
                 className={cn(
-                  'flex items-center gap-2 px-4 h-full text-xs font-medium transition-all whitespace-nowrap border-b-2 -mb-px',
+                  'flex items-center gap-2 px-4 h-full text-xs font-medium transition-all whitespace-nowrap border-b-2 -mb-px flex-shrink-0',
                   isActive
-                    ? 'text-white border-[#017e84] bg-white/5'
-                    : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
+                    ? 'text-[#2563EB] border-[#2563EB]'
+                    : 'text-[#64748B] border-transparent hover:text-[#0F172A] hover:border-[#CBD5E1]'
                 )}
               >
-                <mod.icon size={14} className={isActive ? 'text-[#017e84]' : ''} />
+                <mod.icon size={14} className={isActive ? 'text-[#2563EB]' : ''} />
                 {mod.label}
               </Link>
             );
           })}
+
+          {hiddenModules.length > 0 && (
+            <div className="relative h-full flex-shrink-0" ref={moreMenuRef}>
+              <button
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                className={cn(
+                  'flex items-center gap-2 px-4 h-full text-xs font-medium transition-all whitespace-nowrap border-b-2 -mb-px',
+                  moreMenuOpen
+                    ? 'text-[#2563EB] border-[#2563EB]'
+                    : 'text-[#64748B] border-transparent hover:text-[#0F172A] hover:border-[#CBD5E1]'
+                )}
+              >
+                <MoreVertical size={14} />
+                <span className="hidden sm:inline">Plus</span>
+              </button>
+
+              {moreMenuOpen && (
+                <div className="absolute right-0 top-full mt-0 w-56 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
+                  <div className="py-1">
+                    {hiddenModules.map((mod) => {
+                      const isActive = activeModule === mod.key;
+                      return (
+                        <Link
+                          key={mod.key}
+                          to={mod.to}
+                          onClick={() => setMoreMenuOpen(false)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2.5 text-xs transition-colors w-full text-left',
+                            isActive
+                              ? 'bg-[#DBEAFE] text-[#2563EB]'
+                              : 'text-[#1E293B] hover:bg-[#F8FAFC]'
+                          )}
+                        >
+                          <mod.icon size={14} />
+                          <span className="flex-1">{mod.label}</span>
+                          {isActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </nav>
       </div>
 
@@ -314,29 +370,33 @@ export default function TopNavbar() {
           <ModuleSearch moduleItems={moduleItems} />
         </div>
 
-        <button className="relative p-2 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+        <button className="relative p-2 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors">
           <Bell size={14} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#EF4444] rounded-full ring-2 ring-white" />
         </button>
 
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-1.5 px-2 py-1.5 rounded hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[#F1F5F9] transition-colors"
           >
-            <div className="w-6 h-6 rounded-full bg-[#017e84] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-              {initials}
+            <div className="w-6 h-6 rounded-full bg-[#2563EB] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+              {initials || 'U'}
             </div>
-            <span className="hidden sm:block text-xs text-gray-300 max-w-[80px] truncate">{user?.firstName}</span>
-            <ChevronDown size={11} className="text-gray-500" />
+            <span className="hidden sm:block text-xs font-medium text-[#1E293B] max-w-[80px] truncate">
+              {user?.firstName || 'Utilisateur'}
+            </span>
+            <ChevronDown size={11} className="text-[#94A3B8]" />
           </button>
 
           {userMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden animate-fade-in">
-              <div className="px-3 py-2.5 border-b border-gray-100 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-900 truncate">{user?.firstName} {user?.lastName}</p>
-                <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
-                <span className="mt-1 inline-block text-[11px] bg-[#017e84]/10 text-[#017e84] px-1.5 py-0.5 rounded font-medium">
+            <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
+              <div className="px-3 py-2.5 border-b border-[#F1F5F9] bg-[#F8FAFC]">
+                <p className="text-xs font-semibold text-[#0F172A] truncate">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-[11px] text-[#64748B] truncate">{user?.email}</p>
+                <span className="mt-1 inline-block text-[11px] bg-[#DBEAFE] text-[#2563EB] px-1.5 py-0.5 rounded-md font-medium">
                   {user ? getRoleLabel(user.role) : ''}
                 </span>
               </div>
@@ -344,7 +404,7 @@ export default function TopNavbar() {
                 <Link
                   to={ROUTES.SETTINGS}
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-[#1E293B] hover:bg-[#F1F5F9] rounded-lg transition-colors"
                 >
                   <Settings size={13} />
                   Paramètres du compte
@@ -353,16 +413,16 @@ export default function TopNavbar() {
                   <Link
                     to={ROUTES.SUBSCRIPTION}
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-[#1E293B] hover:bg-[#F1F5F9] rounded-lg transition-colors"
                   >
                     <CreditCard size={13} />
                     Abonnement
                   </Link>
                 )}
-                <div className="my-1 border-t border-gray-100" />
+                <div className="my-1 border-t border-[#F1F5F9]" />
                 <button
                   onClick={() => { clearAuth(); navigate('/login', { replace: true }); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#EF4444] hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <LogOut size={13} />
                   Se déconnecter

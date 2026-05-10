@@ -50,9 +50,9 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: {
               <input value={item.description} onChange={e => update(i, 'description', e.target.value)}
                 placeholder="Description..." className="w-full px-2 py-1.5 text-sm border-0 focus:outline-none bg-transparent placeholder-gray-400 min-w-0" />
               <input type="number" min={1} value={item.quantity} onChange={e => update(i, 'quantity', Number(e.target.value))}
-                className="w-full px-1.5 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84] min-w-0" />
+                className="w-full px-1.5 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB] min-w-0" />
               <input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => update(i, 'unitPrice', Number(e.target.value))}
-                className="w-full px-1.5 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84] min-w-0" />
+                className="w-full px-1.5 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB] min-w-0" />
               <span className="text-sm font-semibold text-gray-700 text-right truncate">{fmt(lineTotal)}</span>
               <button type="button" onClick={() => remove(i)} disabled={items.length === 1}
                 className="w-5 h-5 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0">
@@ -63,7 +63,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: {
         })}
       </div>
       <button type="button" onClick={add}
-        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#017e84] hover:text-[#017e84] hover:bg-[#017e84]/5 transition-colors">
+        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#2563EB]/5 transition-colors">
         <Plus size={14} />
         Ajouter une ligne
       </button>
@@ -97,20 +97,20 @@ function TemplateSelector({ templates, value, onChange }: {
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-        <Layers size={14} className="text-[#017e84]" />
+        <Layers size={14} className="text-[#2563EB]" />
         <span className="max-w-[120px] truncate">{label}</span>
         <ChevronDown size={12} className="text-gray-400" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
           <button type="button" onClick={() => { onChange(LOCAL_TEMPLATE_ID); setOpen(false); }}
-            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === LOCAL_TEMPLATE_ID ? 'text-[#017e84] font-semibold bg-[#017e84]/5' : 'text-gray-700'}`}>
+            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === LOCAL_TEMPLATE_ID ? 'text-[#2563EB] font-semibold bg-[#2563EB]/5' : 'text-gray-700'}`}>
             <span>Aperçu local</span>
-            <span className="text-[10px] bg-[#017e84]/10 text-[#017e84] px-1.5 py-0.5 rounded-full flex-shrink-0">Défaut</span>
+            <span className="text-[10px] bg-[#2563EB]/10 text-[#2563EB] px-1.5 py-0.5 rounded-full flex-shrink-0">Défaut</span>
           </button>
           {templates.map(t => (
             <button key={t.id} type="button" onClick={() => { onChange(t.id); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === t.id ? 'text-[#017e84] font-semibold bg-[#017e84]/5' : 'text-gray-700'}`}>
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === t.id ? 'text-[#2563EB] font-semibold bg-[#2563EB]/5' : 'text-gray-700'}`}>
               <span className="truncate">{t.name}</span>
               {t.isDefault && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full flex-shrink-0">Serveur</span>}
             </button>
@@ -359,8 +359,8 @@ export default function ProformaFormPage() {
               <ArrowLeft size={18} />
             </button>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
-                <FileText size={16} className="text-[#017e84]" />
+              <div className="w-8 h-8 bg-[#2563EB]/10 rounded-lg flex items-center justify-center">
+                <FileText size={16} className="text-[#2563EB]" />
               </div>
               <div>
                 <h1 className="font-bold text-gray-900 text-sm">{id ? 'Modifier le Proforma' : 'Nouveau Proforma'}</h1>
@@ -379,8 +379,8 @@ export default function ProformaFormPage() {
               Aperçu
             </button>
             <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#017e84] text-[#017e84] rounded-lg text-sm font-medium hover:bg-[#017e84]/5 transition-colors disabled:opacity-60">
-              {exportingPdf ? <span className="w-3.5 h-3.5 border-2 border-[#017e84]/30 border-t-[#017e84] rounded-full animate-spin" /> : <Download size={14} />}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60">
+              {exportingPdf ? <span className="w-3.5 h-3.5 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" /> : <Download size={14} />}
               PDF
             </button>
             <button type="button" onClick={() => navigate('/invoicing/proforma')}
@@ -388,7 +388,7 @@ export default function ProformaFormPage() {
               Annuler
             </button>
             <button form="proforma-form" type="submit" disabled={loading}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
               {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
               {loading ? 'Sauvegarde...' : (id ? 'Mettre à jour' : 'Créer le Proforma')}
             </button>
@@ -410,7 +410,7 @@ export default function ProformaFormPage() {
               </div>
               <div className="p-3 grid grid-cols-3 gap-2">
                 {([
-                  { id: 'classique', label: 'Classique', color: '#017e84', desc: 'Sobre & professionnel' },
+                  { id: 'classique', label: 'Classique', color: '#2563EB', desc: 'Sobre & professionnel' },
                   { id: 'moderne', label: 'Moderne', color: '#2563eb', desc: 'Élégant & coloré' },
                   { id: 'minimaliste', label: 'Minimaliste', color: '#1e293b', desc: 'Épuré & neutre' },
                 ] as { id: DocumentDesign; label: string; color: string; desc: string }[]).map(({ id: did, label, color, desc }) => (
@@ -418,7 +418,7 @@ export default function ProformaFormPage() {
                     key={did}
                     type="button"
                     onClick={() => setSelectedDesign(did)}
-                    className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left ${selectedDesign === did ? 'border-[#017e84] shadow-md' : 'border-gray-200 hover:border-gray-300'}`}
+                    className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left ${selectedDesign === did ? 'border-[#2563EB] shadow-md' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="h-20 w-full flex flex-col overflow-hidden" style={{ background: '#fff' }}>
                       <div style={{ height: '6px', background: color, flexShrink: 0 }} />
@@ -437,7 +437,7 @@ export default function ProformaFormPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-gray-800">{label}</span>
                         {selectedDesign === did && (
-                          <span className="w-3.5 h-3.5 rounded-full bg-[#017e84] flex items-center justify-center flex-shrink-0">
+                          <span className="w-3.5 h-3.5 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
                             <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </span>
                         )}
@@ -464,7 +464,7 @@ export default function ProformaFormPage() {
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Objet <span className="text-red-500">*</span></label>
                   <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet du Proforma"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" required />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" required />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -472,31 +472,31 @@ export default function ProformaFormPage() {
                   <label className="text-xs font-semibold text-gray-700">TVA (%)</label>
                   <input type="number" min={0} max={100} step={0.01} value={defaultTaxRate}
                     onChange={e => handleTaxRateChange(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Réduction (%)</label>
                   <input type="number" min={0} max={100} value={discountPct}
                     onChange={e => setDiscountPct(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Livraison</label>
                   <input type="number" min={0} step={0.01} value={shippingCost}
                     onChange={e => setShippingCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Conditions de paiement</label>
                   <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="Net 30, à réception..."
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Livraison / détails</label>
                   <input value={deliveryDetails} onChange={e => setDeliveryDetails(e.target.value)} placeholder="Adresse, délai..."
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
               </div>
             </div>
@@ -542,7 +542,7 @@ export default function ProformaFormPage() {
               )}
               <div className="pt-2 border-t border-gray-200 flex justify-between">
                 <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                <span className="text-lg font-bold text-[#017e84]">{fmt(recap.total)}</span>
+                <span className="text-lg font-bold text-[#2563EB]">{fmt(recap.total)}</span>
               </div>
             </div>
           </div>
@@ -555,15 +555,15 @@ export default function ProformaFormPage() {
             <div className="p-4">
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                 placeholder="Notes internes ou pour le client..."
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none" />
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none" />
             </div>
           </div>
 
           {/* Mobile PDF */}
           <div className="sm:hidden">
             <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#017e84] text-[#017e84] rounded-xl text-sm font-medium hover:bg-[#017e84]/5 transition-colors disabled:opacity-60">
-              {exportingPdf ? <span className="w-4 h-4 border-2 border-[#017e84]/30 border-t-[#017e84] rounded-full animate-spin" /> : <Download size={15} />}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#2563EB] text-[#2563EB] rounded-xl text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60">
+              {exportingPdf ? <span className="w-4 h-4 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" /> : <Download size={15} />}
               Télécharger PDF
             </button>
           </div>
@@ -574,7 +574,7 @@ export default function ProformaFormPage() {
           <div className="hidden lg:flex flex-col flex-1 border-l border-gray-200 bg-gray-100 overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
               <div className="flex items-center gap-2">
-                <Eye size={13} className="text-[#017e84]" />
+                <Eye size={13} className="text-[#2563EB]" />
                 <span className="text-xs font-semibold text-gray-600">Aperçu en direct</span>
                 {selectedTemplateId === LOCAL_TEMPLATE_ID && (
                   <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
@@ -583,7 +583,7 @@ export default function ProformaFormPage() {
                         key={d}
                         type="button"
                         onClick={() => setSelectedDesign(d)}
-                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md capitalize transition-colors ${selectedDesign === d ? 'bg-white text-[#017e84] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md capitalize transition-colors ${selectedDesign === d ? 'bg-white text-[#2563EB] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                       >
                         {d}
                       </button>
@@ -592,7 +592,7 @@ export default function ProformaFormPage() {
                 )}
               </div>
               <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#017e84] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
                 {exportingPdf ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download size={12} />}
                 Télécharger PDF
               </button>

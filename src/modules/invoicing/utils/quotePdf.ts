@@ -9,7 +9,7 @@ function fmtDate(dateStr: string): string {
   return new Intl.DateTimeFormat('fr-FR').format(new Date(dateStr));
 }
 
-const BRAND = '#017e84';
+const BRAND = '#2563EB';
 
 function hexToRgb(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16);

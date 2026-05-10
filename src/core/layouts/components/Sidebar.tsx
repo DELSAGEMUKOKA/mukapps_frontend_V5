@@ -44,19 +44,19 @@ function SidebarSection({ title, items, collapsed }: SidebarSectionProps) {
                 className={cn(
                   'flex items-center gap-2.5 px-2.5 py-1.5 rounded text-xs transition-all duration-150 group relative',
                   isActive
-                    ? 'bg-[#017e84]/10 text-[#017e84] font-semibold'
+                    ? 'bg-[#2563EB]/10 text-[#2563EB] font-semibold'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-medium',
                   collapsed && 'justify-center'
                 )}
               >
                 {isActive && !collapsed && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#017e84] rounded-r" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#2563EB] rounded-r" />
                 )}
                 <item.icon
                   size={14}
                   className={cn(
                     'flex-shrink-0 transition-colors',
-                    isActive ? 'text-[#017e84]' : 'text-gray-400 group-hover:text-gray-600'
+                    isActive ? 'text-[#2563EB]' : 'text-gray-400 group-hover:text-gray-600'
                   )}
                 />
                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -248,7 +248,7 @@ export default function Sidebar() {
                 to={ROUTES.SUBSCRIPTION}
                 title="Abonnement"
                 className={cn(
-                  'flex items-center justify-center rounded bg-[#017e84] text-white hover:bg-[#016a6f] transition-colors',
+                  'flex items-center justify-center rounded bg-[#2563EB] text-white hover:bg-[1D4ED8] transition-colors',
                   sidebarCollapsed ? 'w-7 h-7' : 'w-5 h-5'
                 )}
               >
@@ -280,7 +280,7 @@ export default function Sidebar() {
               to={ROUTES.SUBSCRIPTION}
               title="Installer module"
               className={cn(
-                'flex items-center gap-2 rounded bg-[#017e84] text-white hover:bg-[#016a6f] transition-colors font-semibold',
+                'flex items-center gap-2 rounded bg-[#2563EB] text-white hover:bg-[1D4ED8] transition-colors font-semibold',
                 sidebarCollapsed ? 'w-8 h-8 justify-center' : 'px-3 py-2 w-full'
               )}
             >
@@ -293,7 +293,7 @@ export default function Sidebar() {
         {!sidebarCollapsed && (
           <div className="px-2 py-2 border-t border-gray-100 flex-shrink-0">
             <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50">
-              <div className="w-5 h-5 bg-[#017e84] rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
+              <div className="w-5 h-5 bg-[#2563EB] rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
                 {`${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`.toUpperCase()}
               </div>
               <div className="min-w-0">

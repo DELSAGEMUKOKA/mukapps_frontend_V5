@@ -132,7 +132,7 @@ export default function RecordPaymentModal({
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-[#017e84]" />
+            <CreditCard size={18} className="text-[#2563EB]" />
             <h2 className="font-semibold text-gray-900">{title}</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100">
@@ -183,7 +183,7 @@ export default function RecordPaymentModal({
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] bg-white"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] bg-white"
               required
             >
               {METHODS.map(m => (
@@ -205,7 +205,7 @@ export default function RecordPaymentModal({
               step={0.01}
               value={amount}
               onChange={handleAmountChange}
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] ${
+              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] ${
                 error ? 'border-red-400 bg-red-50' : 'border-gray-200'
               }`}
               required
@@ -229,7 +229,7 @@ export default function RecordPaymentModal({
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder="N° de virement, numéro de chèque..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
             />
           </div>
 
@@ -243,7 +243,7 @@ export default function RecordPaymentModal({
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Informations complémentaires..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none"
             />
           </div>
 
@@ -260,7 +260,7 @@ export default function RecordPaymentModal({
             <button
               type="submit"
               disabled={loading || !isValid}
-              className="flex-1 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

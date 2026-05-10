@@ -42,7 +42,7 @@ export default function InvoicingClientSelector({ value, onChange }: Props) {
           <button
             type="button"
             onClick={() => setOpen(o => !o)}
-            className="flex-1 flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-lg hover:border-[#017e84] focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 bg-white transition-colors"
+            className="flex-1 flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-lg hover:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 bg-white transition-colors"
           >
             <span className={value ? 'text-gray-900 font-medium' : 'text-gray-400'}>
               {value ? `${value.firstName} ${value.lastName}` : 'Sélectionner un client...'}
@@ -53,7 +53,7 @@ export default function InvoicingClientSelector({ value, onChange }: Props) {
             type="button"
             onClick={() => { setOpen(false); setShowModal(true); }}
             title="Créer un nouveau client"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#017e84] text-[#017e84] hover:bg-[#017e84] hover:text-white transition-colors flex-shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white transition-colors flex-shrink-0"
           >
             <Plus size={16} />
           </button>
@@ -69,7 +69,7 @@ export default function InvoicingClientSelector({ value, onChange }: Props) {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Rechercher par nom, téléphone..."
-                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
                 />
               </div>
             </div>
@@ -81,7 +81,7 @@ export default function InvoicingClientSelector({ value, onChange }: Props) {
                   <button
                     type="button"
                     onClick={() => { setOpen(false); setShowModal(true); }}
-                    className="text-xs text-[#017e84] font-medium hover:underline"
+                    className="text-xs text-[#2563EB] font-medium hover:underline"
                   >
                     + Créer un nouveau client
                   </button>
@@ -94,8 +94,8 @@ export default function InvoicingClientSelector({ value, onChange }: Props) {
                     onClick={() => { onChange(c); setOpen(false); setSearch(''); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-full bg-[#017e84]/10 flex items-center justify-center flex-shrink-0">
-                      <User size={12} className="text-[#017e84]" />
+                    <div className="w-7 h-7 rounded-full bg-[#2563EB]/10 flex items-center justify-center flex-shrink-0">
+                      <User size={12} className="text-[#2563EB]" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{c.firstName} {c.lastName}</p>

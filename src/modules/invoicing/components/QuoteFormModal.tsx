@@ -45,21 +45,21 @@ function NewClientForm({ onCreated, onCancel }: NewClientFormProps) {
       <p className="text-xs font-semibold text-blue-700">Nouveau client</p>
       <div className="grid grid-cols-2 gap-2">
         <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Prénom *"
-          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
         <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom *"
-          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone *"
-          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email"
-          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+          className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
       </div>
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">Annuler</button>
         <button type="button" disabled={!firstName.trim() || !lastName.trim() || !phone.trim() || mut.isPending}
           onClick={() => mut.mutate()}
-          className="px-3 py-1.5 text-xs bg-[#017e84] text-white rounded-lg hover:bg-[#016a70] disabled:opacity-60">
+          className="px-3 py-1.5 text-xs bg-[#2563EB] text-white rounded-lg hover:bg-[#016a70] disabled:opacity-60">
           {mut.isPending ? 'Création...' : 'Créer'}
         </button>
       </div>
@@ -103,7 +103,7 @@ function ClientDropdown({ value, onChange }: ClientDropdownProps) {
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className="flex-1 flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-lg hover:border-[#017e84] focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 bg-white transition-colors"
+          className="flex-1 flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-lg hover:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 bg-white transition-colors"
         >
           <span className={value ? 'text-gray-900 font-medium' : 'text-gray-400'}>
             {value ? `${value.firstName} ${value.lastName}` : 'Sélectionner un client...'}
@@ -114,7 +114,7 @@ function ClientDropdown({ value, onChange }: ClientDropdownProps) {
           type="button"
           onClick={() => { setOpen(false); setShowNew(true); }}
           title="Nouveau client"
-          className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#017e84] text-[#017e84] hover:bg-[#017e84] hover:text-white transition-colors flex-shrink-0"
+          className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white transition-colors flex-shrink-0"
         >
           <Plus size={16} />
         </button>
@@ -130,7 +130,7 @@ function ClientDropdown({ value, onChange }: ClientDropdownProps) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Rechercher par nom, téléphone..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
               />
             </div>
           </div>
@@ -145,8 +145,8 @@ function ClientDropdown({ value, onChange }: ClientDropdownProps) {
                   onClick={() => { onChange(c); setOpen(false); setSearch(''); }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[#017e84]/10 flex items-center justify-center flex-shrink-0">
-                    <User size={12} className="text-[#017e84]" />
+                  <div className="w-7 h-7 rounded-full bg-[#2563EB]/10 flex items-center justify-center flex-shrink-0">
+                    <User size={12} className="text-[#2563EB]" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{c.firstName} {c.lastName}</p>
@@ -215,7 +215,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: LineItemsTable
                 min={1}
                 value={item.quantity}
                 onChange={e => update(i, 'quantity', Number(e.target.value))}
-                className="w-full px-2 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84]"
+                className="w-full px-2 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
               />
               <input
                 type="number"
@@ -223,7 +223,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: LineItemsTable
                 step={0.01}
                 value={item.unitPrice}
                 onChange={e => update(i, 'unitPrice', Number(e.target.value))}
-                className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84]"
+                className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
               />
               <span className="text-sm font-medium text-gray-700 text-right pr-1">{fmt(lineTotal)}</span>
               <button type="button" onClick={() => remove(i)} disabled={items.length === 1}
@@ -238,7 +238,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: LineItemsTable
       <button
         type="button"
         onClick={add}
-        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#017e84] hover:text-[#017e84] hover:bg-[#017e84]/5 transition-colors"
+        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#2563EB]/5 transition-colors"
       >
         <Plus size={14} />
         Ajouter une ligne
@@ -319,8 +319,8 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
-              <FileText size={16} className="text-[#017e84]" />
+            <div className="w-8 h-8 bg-[#2563EB]/10 rounded-lg flex items-center justify-center">
+              <FileText size={16} className="text-[#2563EB]" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900">{initial ? 'Modifier le devis' : 'Nouveau devis'}</h2>
@@ -336,7 +336,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
               form="quote-form"
               type="submit"
               disabled={loading}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors"
             >
               {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '✓'}
               {loading ? 'Sauvegarde...' : (initial ? 'Mettre à jour' : 'Créer le devis')}
@@ -373,7 +373,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                         value={subject}
                         onChange={e => setSubject(e.target.value)}
                         placeholder="Ex: Site web e-commerce"
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
                         required
                       />
                     </div>
@@ -386,7 +386,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                         min={1}
                         value={validityDays}
                         onChange={e => setValidityDays(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -398,7 +398,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                         step={0.01}
                         value={defaultTaxRate}
                         onChange={e => handleTaxRateChange(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -410,7 +410,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                         step={0.01}
                         value={discountPct}
                         onChange={e => setDiscountPct(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
                       />
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                       onChange={e => setNotes(e.target.value)}
                       rows={3}
                       placeholder="Notes visibles uniquement en interne..."
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -450,7 +450,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                       onChange={e => setTerms(e.target.value)}
                       rows={3}
                       placeholder="Conditions de paiement, délais, garanties..."
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none"
                     />
                   </div>
                 </div>
@@ -484,7 +484,7 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                     <div className="pt-2 border-t border-gray-200">
                       <div className="flex justify-between">
                         <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                        <span className="text-lg font-bold text-[#017e84]">{fmt(recap.total)}</span>
+                        <span className="text-lg font-bold text-[#2563EB]">{fmt(recap.total)}</span>
                       </div>
                     </div>
                   </div>
@@ -500,8 +500,8 @@ export default function QuoteFormModal({ initial, onClose, onSaved }: Props) {
                     <span className="font-semibold text-gray-700">{validityDays} jours</span>
                   </div>
                   {selectedClient && (
-                    <div className="mt-3 p-2.5 bg-[#017e84]/5 rounded-lg">
-                      <p className="font-semibold text-[#017e84] truncate">{selectedClient.firstName} {selectedClient.lastName}</p>
+                    <div className="mt-3 p-2.5 bg-[#2563EB]/5 rounded-lg">
+                      <p className="font-semibold text-[#2563EB] truncate">{selectedClient.firstName} {selectedClient.lastName}</p>
                       {selectedClient.phone && <p className="text-gray-500 truncate">{selectedClient.phone}</p>}
                     </div>
                   )}

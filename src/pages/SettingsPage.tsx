@@ -291,11 +291,11 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
                 disabled={uploadLogoMutation.isPending}
-                className="group relative w-full sm:w-48 h-36 rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#017e84] bg-gray-50 hover:bg-[#017e84]/5 flex items-center justify-center overflow-hidden transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
+                className="group relative w-full sm:w-48 h-36 rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#2563EB] bg-gray-50 hover:bg-[#2563EB]/5 flex items-center justify-center overflow-hidden transition-all duration-200 flex-shrink-0 disabled:cursor-not-allowed"
               >
                 {uploadLogoMutation.isPending ? (
-                  <div className="flex flex-col items-center gap-2 text-[#017e84]">
-                    <span className="w-8 h-8 border-2 border-[#017e84]/20 border-t-[#017e84] rounded-full animate-spin" />
+                  <div className="flex flex-col items-center gap-2 text-[#2563EB]">
+                    <span className="w-8 h-8 border-2 border-[#2563EB]/20 border-t-[#2563EB] rounded-full animate-spin" />
                     <span className="text-xs font-medium">Upload en cours...</span>
                   </div>
                 ) : logoUrl ? (
@@ -309,7 +309,7 @@ export default function SettingsPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-gray-400 group-hover:text-[#017e84] transition-colors">
+                  <div className="flex flex-col items-center gap-2 text-gray-400 group-hover:text-[#2563EB] transition-colors">
                     <ImageIcon size={32} strokeWidth={1.5} />
                     <span className="text-xs font-medium">Cliquer pour ajouter</span>
                   </div>
@@ -333,7 +333,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => logoInputRef.current?.click()}
                     disabled={uploadLogoMutation.isPending}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm bg-[#017e84] text-white rounded-lg hover:bg-[#016a70] transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium shadow-sm"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm bg-[#2563EB] text-white rounded-lg hover:bg-[#016a70] transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium shadow-sm"
                   >
                     <Upload size={14} />
                     {logoUrl ? 'Remplacer le logo' : 'Télécharger un logo'}

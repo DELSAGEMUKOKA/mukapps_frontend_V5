@@ -35,15 +35,15 @@ function ProformaWorkflowStepper({ status }: { status: ProformaStatus }) {
             <div className="flex flex-col items-center">
               <div className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2',
-                done ? 'bg-[#017e84] border-[#017e84] text-white' : 'bg-white border-gray-200 text-gray-400',
-                active && 'ring-2 ring-[#017e84]/30'
+                done ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-gray-200 text-gray-400',
+                active && 'ring-2 ring-[#2563EB]/30'
               )}>
                 {done && i < currentIdx ? <CheckCircle size={13} /> : i + 1}
               </div>
-              <span className={cn('text-[10px] mt-1 text-center w-12 leading-tight', active ? 'font-semibold text-[#017e84]' : done ? 'text-gray-600' : 'text-gray-400')}>{step.label}</span>
+              <span className={cn('text-[10px] mt-1 text-center w-12 leading-tight', active ? 'font-semibold text-[#2563EB]' : done ? 'text-gray-600' : 'text-gray-400')}>{step.label}</span>
             </div>
             {i < PROFORMA_STEPS.length - 1 && (
-              <div className={cn('flex-1 h-0.5 mb-4', i < currentIdx ? 'bg-[#017e84]' : 'bg-gray-200')} />
+              <div className={cn('flex-1 h-0.5 mb-4', i < currentIdx ? 'bg-[#2563EB]' : 'bg-gray-200')} />
             )}
           </div>
         );

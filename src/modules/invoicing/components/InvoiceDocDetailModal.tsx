@@ -29,12 +29,12 @@ function InvoiceWorkflowStepper({ status, isOverdue }: { status: InvoiceStatus; 
           {INVOICE_STEPS.slice(0, 2).map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <div className="flex flex-col items-center">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 bg-[#017e84] border-[#017e84] text-white">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 bg-[#2563EB] border-[#2563EB] text-white">
                   <CheckCircle size={13} />
                 </div>
                 <span className="text-[10px] mt-1 text-center w-14 leading-tight text-gray-600">{step.label}</span>
               </div>
-              {i === 0 && <div className="flex-1 h-0.5 mb-4 bg-[#017e84]" />}
+              {i === 0 && <div className="flex-1 h-0.5 mb-4 bg-[#2563EB]" />}
             </div>
           ))}
         </div>
@@ -56,15 +56,15 @@ function InvoiceWorkflowStepper({ status, isOverdue }: { status: InvoiceStatus; 
             <div className="flex flex-col items-center">
               <div className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2',
-                done ? 'bg-[#017e84] border-[#017e84] text-white' : 'bg-white border-gray-200 text-gray-400',
-                active && 'ring-2 ring-[#017e84]/30'
+                done ? 'bg-[#2563EB] border-[#2563EB] text-white' : 'bg-white border-gray-200 text-gray-400',
+                active && 'ring-2 ring-[#2563EB]/30'
               )}>
                 {done && i < currentIdx ? <CheckCircle size={13} /> : i + 1}
               </div>
-              <span className={cn('text-[10px] mt-1 text-center w-12 leading-tight', active ? 'font-semibold text-[#017e84]' : done ? 'text-gray-600' : 'text-gray-400')}>{step.label}</span>
+              <span className={cn('text-[10px] mt-1 text-center w-12 leading-tight', active ? 'font-semibold text-[#2563EB]' : done ? 'text-gray-600' : 'text-gray-400')}>{step.label}</span>
             </div>
             {i < INVOICE_STEPS.length - 1 && (
-              <div className={cn('flex-1 h-0.5 mb-4', i < currentIdx ? 'bg-[#017e84]' : 'bg-gray-200')} />
+              <div className={cn('flex-1 h-0.5 mb-4', i < currentIdx ? 'bg-[#2563EB]' : 'bg-gray-200')} />
             )}
           </div>
         );
@@ -188,7 +188,7 @@ export default function InvoiceDocDetailModal({ invoice, onClose, onAction }: Pr
           <div className="flex border-b border-gray-100 px-6">
             {(['details', 'payments', 'audit'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
-                className={`px-3 py-2.5 text-xs font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-[#017e84] text-[#017e84]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                className={`px-3 py-2.5 text-xs font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
                 {tab === 'details' ? 'Détails' : tab === 'payments' ? 'Paiements' : 'Audit'}
               </button>
             ))}
@@ -365,7 +365,7 @@ export default function InvoiceDocDetailModal({ invoice, onClose, onAction }: Pr
                 ) : (
                   auditLog.map((entry: any) => (
                     <div key={entry.id} className="flex gap-3 items-start bg-gray-50 rounded-lg px-4 py-3">
-                      <div className="w-2 h-2 rounded-full bg-[#017e84] mt-1.5 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-[#2563EB] mt-1.5 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{entry.action}</p>
                         {entry.details && <p className="text-xs text-gray-500 mt-0.5">{entry.details}</p>}

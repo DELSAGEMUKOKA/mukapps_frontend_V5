@@ -54,11 +54,11 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: LineItemsTable
               />
               <input type="number" min={1} value={item.quantity}
                 onChange={e => update(i, 'quantity', Number(e.target.value))}
-                className="w-full px-2 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84]"
+                className="w-full px-2 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
               />
               <input type="number" min={0} step={0.01} value={item.unitPrice}
                 onChange={e => update(i, 'unitPrice', Number(e.target.value))}
-                className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84]"
+                className="w-full px-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
               />
               <span className="text-sm font-medium text-gray-700 text-right pr-1">{fmt(lineTotal)}</span>
               <button type="button" onClick={() => remove(i)} disabled={items.length === 1}
@@ -70,7 +70,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: LineItemsTable
         })}
       </div>
       <button type="button" onClick={add}
-        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#017e84] hover:text-[#017e84] hover:bg-[#017e84]/5 transition-colors">
+        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#2563EB]/5 transition-colors">
         <Plus size={14} />
         Ajouter une ligne
       </button>
@@ -152,8 +152,8 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
-              <FileText size={16} className="text-[#017e84]" />
+            <div className="w-8 h-8 bg-[#2563EB]/10 rounded-lg flex items-center justify-center">
+              <FileText size={16} className="text-[#2563EB]" />
             </div>
             <h2 className="font-bold text-gray-900">Nouvelle facture</h2>
           </div>
@@ -163,7 +163,7 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
               Annuler
             </button>
             <button form="invoice-form" type="submit" disabled={loading}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
               {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
               {loading ? 'Création...' : 'Créer la facture'}
             </button>
@@ -192,31 +192,31 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Sujet <span className="text-red-500">*</span></label>
                       <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet de la facture"
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" required />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" required />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Date facture</label>
                       <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Date échéance</label>
                       <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">TVA par défaut (%)</label>
                       <input type="number" min={0} max={100} step={0.01} value={defaultTaxRate}
                         onChange={e => handleTaxRateChange(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Réduction (%)</label>
                       <input type="number" min={0} max={100} value={discountPct}
                         onChange={e => setDiscountPct(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,12 +224,12 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                       <label className="text-xs font-semibold text-gray-700">Frais de livraison</label>
                       <input type="number" min={0} step={0.01} value={shippingCost}
                         onChange={e => setShippingCost(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">Conditions de paiement</label>
                       <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="Net 30..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                     <div key={label} className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700">{label}</label>
                       <input value={val} onChange={e => set(e.target.value)} placeholder={placeholder}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     </div>
                   ))}
                 </div>
@@ -277,7 +277,7 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                 <div className="p-4">
                   <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                     placeholder="Notes internes ou pour le client..."
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none" />
                 </div>
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                     <div className="pt-2 border-t border-gray-200">
                       <div className="flex justify-between">
                         <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                        <span className="text-lg font-bold text-[#017e84]">{fmt(recap.total)}</span>
+                        <span className="text-lg font-bold text-[#2563EB]">{fmt(recap.total)}</span>
                       </div>
                     </div>
                   </div>
@@ -335,8 +335,8 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                     <span className="font-semibold text-gray-700">{items.length}</span>
                   </div>
                   {selectedClient && (
-                    <div className="mt-3 p-2.5 bg-[#017e84]/5 rounded-lg">
-                      <p className="font-semibold text-[#017e84] truncate">{selectedClient.firstName} {selectedClient.lastName}</p>
+                    <div className="mt-3 p-2.5 bg-[#2563EB]/5 rounded-lg">
+                      <p className="font-semibold text-[#2563EB] truncate">{selectedClient.firstName} {selectedClient.lastName}</p>
                       {selectedClient.phone && <p className="text-gray-500 truncate">{selectedClient.phone}</p>}
                     </div>
                   )}

@@ -32,7 +32,7 @@ const DESIGNS: DesignOption[] = [
 function ClassiquePreview() {
   return (
     <div style={{ fontFamily: 'system-ui', fontSize: '7px', lineHeight: '1.4', background: '#fff', borderRadius: '6px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-      <div style={{ height: '3px', background: 'linear-gradient(90deg,#017e84,#029aa2,#e2f7f8)' }} />
+      <div style={{ height: '3px', background: 'linear-gradient(90deg,#2563EB,#029aa2,#e2f7f8)' }} />
       <div style={{ padding: '8px 10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
           <div>
@@ -40,13 +40,13 @@ function ClassiquePreview() {
             <div style={{ width: '36px', height: '3px', background: '#94a3b8', borderRadius: '1px' }} />
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '6px', fontWeight: 700, letterSpacing: '1px', color: '#017e84', marginBottom: '2px' }}>DEVIS</div>
+            <div style={{ fontSize: '6px', fontWeight: 700, letterSpacing: '1px', color: '#2563EB', marginBottom: '2px' }}>DEVIS</div>
             <div style={{ width: '40px', height: '5px', background: '#0f172a', borderRadius: '2px', marginLeft: 'auto' }} />
-            <div style={{ width: '40px', height: '2px', background: '#017e84', borderRadius: '1px', marginTop: '2px', marginLeft: 'auto' }} />
+            <div style={{ width: '40px', height: '2px', background: '#2563EB', borderRadius: '1px', marginTop: '2px', marginLeft: 'auto' }} />
           </div>
         </div>
         <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '5px' }} />
-        <div style={{ background: '#017e84', padding: '3px 5px', borderRadius: '3px', marginBottom: '3px', display: 'flex', gap: '20px' }}>
+        <div style={{ background: '#2563EB', padding: '3px 5px', borderRadius: '3px', marginBottom: '3px', display: 'flex', gap: '20px' }}>
           {['Désignation','Qté','PU','Total'].map(h => (
             <div key={h} style={{ color: '#fff', fontSize: '5px', fontWeight: 700 }}>{h}</div>
           ))}
@@ -59,10 +59,10 @@ function ClassiquePreview() {
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '5px' }}>
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: '4px', padding: '3px 5px', fontSize: '6px', fontWeight: 700, color: '#017e84' }}>200 FCFA</div>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '4px', padding: '3px 5px', fontSize: '6px', fontWeight: 700, color: '#2563EB' }}>200 FCFA</div>
         </div>
       </div>
-      <div style={{ height: '2px', background: 'linear-gradient(90deg,#e2f7f8,#029aa2,#017e84)' }} />
+      <div style={{ height: '2px', background: 'linear-gradient(90deg,#e2f7f8,#029aa2,#2563EB)' }} />
     </div>
   );
 }
@@ -175,7 +175,7 @@ export default function DesignPickerModal({ onSelect, onClose, loading }: Props)
                 key={d.id}
                 onClick={() => onSelect(d.id)}
                 disabled={loading}
-                className="group flex flex-col gap-3 p-3 rounded-xl border-2 border-gray-200 hover:border-[#017e84] hover:shadow-md transition-all disabled:opacity-60 text-left"
+                className="group flex flex-col gap-3 p-3 rounded-xl border-2 border-gray-200 hover:border-[#2563EB] hover:shadow-md transition-all disabled:opacity-60 text-left"
               >
                 <div className="w-full aspect-[3/4] overflow-hidden rounded-lg bg-gray-50 flex items-start justify-center pt-2 px-2">
                   <div className="w-full scale-[0.85] origin-top">
@@ -184,11 +184,11 @@ export default function DesignPickerModal({ onSelect, onClose, loading }: Props)
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-sm text-gray-900 group-hover:text-[#017e84] transition-colors">{d.label}</span>
+                    <span className="font-semibold text-sm text-gray-900 group-hover:text-[#2563EB] transition-colors">{d.label}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">{d.description}</p>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#017e84] text-white rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity justify-center">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity justify-center">
                   <Download size={12} />
                   Télécharger
                 </div>

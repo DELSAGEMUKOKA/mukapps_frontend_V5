@@ -24,14 +24,16 @@ export default function MainLayout() {
   }, [isAuthenticated, user?.id]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#f5f5f5] overflow-hidden">
+    // ✅ Supprimer overflow-hidden ici
+    <div className="flex flex-col h-screen bg-[#F8FAFC]">
       <TopNavbar />
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* ✅ Supprimer overflow-hidden ici aussi */}
+      <div className="flex flex-1 min-h-0">
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto min-w-0">
-          <div className="p-5 lg:p-6 max-w-[1600px] mx-auto w-full">
+          <div className="p-3 sm:p-4 md:p-5 lg:p-6 max-w-[1600px] mx-auto w-full">
             <Outlet />
           </div>
         </main>
@@ -42,11 +44,25 @@ export default function MainLayout() {
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#1a1f2e',
-            color: '#f9fafb',
-            borderRadius: '6px',
-            fontSize: '12px',
-            padding: '10px 14px',
+            background: '#FFFFFF',
+            color: '#0F172A',
+            borderRadius: '12px',
+            fontSize: '13px',
+            padding: '12px 16px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#FFFFFF',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#FFFFFF',
+            },
           },
         }}
       />

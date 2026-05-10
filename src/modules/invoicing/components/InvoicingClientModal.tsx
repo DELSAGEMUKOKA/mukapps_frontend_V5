@@ -177,7 +177,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
         onKeyDown={handleKeyDown}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-[#017e84] to-[#029aa2] px-6 py-5">
+        <div className="relative bg-gradient-to-r from-[#2563EB] to-[#029aa2] px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
               {initials ? initials.toUpperCase() : <User size={22} />}
@@ -221,7 +221,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                   onChange={setField('firstName')}
                   placeholder="Prénom"
                   className={`w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                    errors.firstName ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#017e84]/20 focus:border-[#017e84]'
+                    errors.firstName ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'
                   }`}
                 />
               </div>
@@ -240,7 +240,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                   onChange={setField('lastName')}
                   placeholder="Nom de famille"
                   className={`w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                    errors.lastName ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#017e84]/20 focus:border-[#017e84]'
+                    errors.lastName ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'
                   }`}
                 />
               </div>
@@ -261,7 +261,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                 onChange={setField('phone')}
                 placeholder="+243 81 000 00 00"
                 className={`w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                  errors.phone ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#017e84]/20 focus:border-[#017e84]'
+                  errors.phone ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'
                 }`}
               />
             </div>
@@ -281,7 +281,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                 onChange={setField('email')}
                 placeholder="client@exemple.com"
                 className={`w-full pl-9 pr-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                  errors.email ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#017e84]/20 focus:border-[#017e84]'
+                  errors.email ? 'border-red-400 focus:ring-red-200 bg-red-50' : 'border-gray-200 focus:ring-[#2563EB]/20 focus:border-[#2563EB]'
                 }`}
               />
             </div>
@@ -300,7 +300,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                 value={form.address}
                 onChange={setField('address')}
                 placeholder="Adresse complète"
-                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] transition-colors"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
                 onChange={setField('notes')}
                 placeholder="Informations complémentaires..."
                 rows={2}
-                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] transition-colors resize-none"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-colors resize-none"
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function InvoicingClientModal({ onClose, onCreated }: Props) {
               type="button"
               onClick={handleSubmit}
               disabled={mutation.isPending}
-              className="flex-1 px-4 py-2.5 bg-[#017e84] text-white rounded-xl hover:bg-[#016a70] font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 bg-[#2563EB] text-white rounded-xl hover:bg-[#016a70] font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {mutation.isPending
                 ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

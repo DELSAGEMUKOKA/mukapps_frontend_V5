@@ -83,7 +83,7 @@ function QuoteActions({ q, onView, onEdit, onMarkSent, onMarkAccepted, onMarkRej
       </button>
       <button
         onClick={onDownloadPdf}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#017e84]/10 hover:bg-[#017e84]/20 text-[#017e84] text-xs font-medium transition-colors"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#2563EB]/10 hover:bg-[#2563EB]/20 text-[#2563EB] text-xs font-medium transition-colors"
         title="Télécharger PDF"
       >
         <Download size={12} />
@@ -224,7 +224,7 @@ export default function Quotes() {
         </div>
         <button
           onClick={() => navigate('/invoicing/quotes/new')}
-          className="flex items-center gap-2 px-4 py-2 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] transition-colors"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">Nouveau devis</span>
@@ -240,13 +240,13 @@ export default function Quotes() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Rechercher par numéro, client, sujet..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] bg-white"
+          className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] bg-white"
         >
           <option value="">Tous les statuts</option>
           <option value="DRAFT">Brouillon</option>
@@ -256,7 +256,7 @@ export default function Quotes() {
           <option value="CONVERTED">Converti</option>
         </select>
         <button onClick={() => invalidate()} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors" title="Actualiser">
-          <RefreshCw size={15} className={isFetching ? 'animate-spin text-[#017e84]' : 'text-gray-500'} />
+          <RefreshCw size={15} className={isFetching ? 'animate-spin text-[#2563EB]' : 'text-gray-500'} />
         </button>
       </div>
 
@@ -272,7 +272,7 @@ export default function Quotes() {
           {(search || statusFilter) && (
             <button 
               onClick={() => { setSearch(''); setStatusFilter(''); }}
-              className="text-xs text-[#017e84] hover:underline"
+              className="text-xs text-[#2563EB] hover:underline"
             >
               Réinitialiser les filtres
             </button>

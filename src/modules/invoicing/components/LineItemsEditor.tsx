@@ -45,28 +45,28 @@ export default function LineItemsEditor({ items, onChange }: Props) {
                     value={it.description}
                     onChange={(e) => update(i, { description: e.target.value })}
                     placeholder="Description de la prestation"
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </td>
                 <td className="py-2 pr-2">
                   <input
                     type="number" min={1} value={it.quantity}
                     onChange={(e) => update(i, { quantity: Number(e.target.value) })}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#017e84]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </td>
                 <td className="py-2 pr-2">
                   <input
                     type="number" min={0} step={0.01} value={it.unitPrice}
                     onChange={(e) => update(i, { unitPrice: Number(e.target.value) })}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#017e84]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </td>
                 <td className="py-2 pr-2">
                   <input
                     type="number" min={0} max={100} step={0.5} value={it.taxRate}
                     onChange={(e) => update(i, { taxRate: Number(e.target.value) })}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#017e84]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded text-right focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </td>
                 <td className="py-2 pr-2 text-right text-gray-700 font-medium text-xs">
@@ -90,7 +90,7 @@ export default function LineItemsEditor({ items, onChange }: Props) {
       <button
         type="button"
         onClick={add}
-        className="flex items-center gap-1.5 text-xs text-[#017e84] hover:text-[#016a70] font-medium"
+        className="flex items-center gap-1.5 text-xs text-[#2563EB] hover:text-[#016a70] font-medium"
       >
         <Plus size={13} />
         Ajouter une ligne

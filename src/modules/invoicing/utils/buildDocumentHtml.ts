@@ -45,7 +45,7 @@ function legalBlock(company: Company, extras: string[] = []) {
     : `<div style="font-size:11px;color:#94a3b8;font-style:italic;">Aucune information légale renseignée</div>`;
 }
 
-function itemRows(items: { description: string; quantity: number; unitPrice: number }[], currency: string, accentColor = '#017e84') {
+function itemRows(items: { description: string; quantity: number; unitPrice: number }[], currency: string, accentColor = '#2563EB') {
   return items.map((item, i) => {
     const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
     const lineTotal = item.quantity * item.unitPrice;
@@ -58,7 +58,7 @@ function itemRows(items: { description: string; quantity: number; unitPrice: num
   }).join('');
 }
 
-function summaryCard(rows: string[], total: string, accentColor = '#017e84') {
+function summaryCard(rows: string[], total: string, accentColor = '#2563EB') {
   return `<div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
     <div style="background:#f8fafc;padding:10px 16px;border-bottom:1px solid #e2e8f0;">
       <span style="font-size:9.5px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;">RÉCAPITULATIF</span>
@@ -78,7 +78,7 @@ function summaryCard(rows: string[], total: string, accentColor = '#017e84') {
   </div>`;
 }
 
-function clientCard(client?: { firstName?: string; lastName?: string; email?: string; phone?: string } | null, extra?: string, accentColor = '#017e84') {
+function clientCard(client?: { firstName?: string; lastName?: string; email?: string; phone?: string } | null, extra?: string, accentColor = '#2563EB') {
   const name = client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() || '—' : '—';
   return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;border-top:3px solid ${accentColor};">
     <div style="font-size:14px;font-weight:700;color:#0f172a;">${name}</div>
@@ -90,7 +90,7 @@ function clientCard(client?: { firstName?: string; lastName?: string; email?: st
 
 // ── Base HTML wrappers by design ───────────────────────────────────────────────
 
-function baseHtmlClassique(body: string, accentColor = '#017e84') {
+function baseHtmlClassique(body: string, accentColor = '#2563EB') {
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"/>
 <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#0f172a;font-size:13px;line-height:1.55;-webkit-print-color-adjust:exact;}a{text-decoration:none;color:inherit;}</style>
@@ -137,7 +137,7 @@ function baseHtmlMinimaliste(body: string) {
 // CLASSIQUE design helpers (teal, professional)
 // ══════════════════════════════════════════════════════════════════════════════
 
-const CLASSIQUE_COLOR = '#017e84';
+const CLASSIQUE_COLOR = '#2563EB';
 
 function docHeaderClassique(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '') {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">

@@ -50,9 +50,9 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: {
               <input value={item.description} onChange={e => update(i, 'description', e.target.value)}
                 placeholder="Description..." className="w-full px-2 py-1.5 text-sm border-0 focus:outline-none bg-transparent placeholder-gray-400 min-w-0" />
               <input type="number" min={1} value={item.quantity} onChange={e => update(i, 'quantity', Number(e.target.value))}
-                className="w-full px-1.5 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84] min-w-0" />
+                className="w-full px-1.5 py-1.5 text-sm text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB] min-w-0" />
               <input type="number" min={0} step={0.01} value={item.unitPrice} onChange={e => update(i, 'unitPrice', Number(e.target.value))}
-                className="w-full px-1.5 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#017e84]/30 focus:border-[#017e84] min-w-0" />
+                className="w-full px-1.5 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-[#2563EB]/30 focus:border-[#2563EB] min-w-0" />
               <span className="text-sm font-semibold text-gray-700 text-right truncate">{fmt(lineTotal)}</span>
               <button type="button" onClick={() => remove(i)} disabled={items.length === 1}
                 className="w-5 h-5 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0">
@@ -63,7 +63,7 @@ function LineItemsTable({ items, onChange, fmt, defaultTaxRate }: {
         })}
       </div>
       <button type="button" onClick={add}
-        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#017e84] hover:text-[#017e84] hover:bg-[#017e84]/5 transition-colors">
+        className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#2563EB]/5 transition-colors">
         <Plus size={14} />
         Ajouter une ligne
       </button>
@@ -105,20 +105,20 @@ function TemplateSelector({ templates, value, onChange }: {
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-        <Layers size={14} className="text-[#017e84]" />
+        <Layers size={14} className="text-[#2563EB]" />
         <span className="max-w-[120px] truncate">{label}</span>
         <ChevronDown size={12} className="text-gray-400" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
           <button type="button" onClick={() => { onChange(LOCAL_TEMPLATE_ID); setOpen(false); }}
-            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === LOCAL_TEMPLATE_ID ? 'text-[#017e84] font-semibold bg-[#017e84]/5' : 'text-gray-700'}`}>
+            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === LOCAL_TEMPLATE_ID ? 'text-[#2563EB] font-semibold bg-[#2563EB]/5' : 'text-gray-700'}`}>
             <span>Aperçu local</span>
-            <span className="text-[10px] bg-[#017e84]/10 text-[#017e84] px-1.5 py-0.5 rounded-full flex-shrink-0">Défaut</span>
+            <span className="text-[10px] bg-[#2563EB]/10 text-[#2563EB] px-1.5 py-0.5 rounded-full flex-shrink-0">Défaut</span>
           </button>
           {templates.map(t => (
             <button key={t.id} type="button" onClick={() => { onChange(t.id); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === t.id ? 'text-[#017e84] font-semibold bg-[#017e84]/5' : 'text-gray-700'}`}>
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-2 ${value === t.id ? 'text-[#2563EB] font-semibold bg-[#2563EB]/5' : 'text-gray-700'}`}>
               <span className="truncate">{t.name}</span>
               {t.isDefault && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full flex-shrink-0">Serveur</span>}
             </button>
@@ -188,7 +188,7 @@ function buildFallbackHtml(p: {
 <body style="width:794px; min-height:1123px; background:#fff;">
 
   <!-- Top accent bar -->
-  <div style="height:5px; background:linear-gradient(90deg,#017e84 0%,#029aa2 50%,#e2f7f8 100%);"></div>
+  <div style="height:5px; background:linear-gradient(90deg,#2563EB 0%,#029aa2 50%,#e2f7f8 100%);"></div>
 
   <div style="padding:40px 52px 48px;">
 
@@ -209,9 +209,9 @@ function buildFallbackHtml(p: {
         </td>
         <td style="vertical-align:top; text-align:right; width:48%;">
           <div style="display:inline-block; text-align:right; margin-bottom:16px;">
-            <div style="font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#017e84; margin-bottom:4px;">FACTURE</div>
+            <div style="font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#2563EB; margin-bottom:4px;">FACTURE</div>
             <div style="font-size:28px; font-weight:800; color:#0f172a; letter-spacing:-0.5px; line-height:1;">${p.docNumber}</div>
-            <div style="height:3px; background:#017e84; border-radius:2px; margin-top:6px;"></div>
+            <div style="height:3px; background:#2563EB; border-radius:2px; margin-top:6px;"></div>
           </div>
           <table cellpadding="0" cellspacing="0" style="margin-left:auto;">
             <tr>
@@ -246,8 +246,8 @@ function buildFallbackHtml(p: {
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
         <td style="vertical-align:top; width:48%; padding-right:16px;">
-          <div style="font-size:9.5px; font-weight:700; color:#017e84; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">FACTURÉ À</div>
-          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; border-top:3px solid #017e84;">
+          <div style="font-size:9.5px; font-weight:700; color:#2563EB; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">FACTURÉ À</div>
+          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; border-top:3px solid #2563EB;">
             <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:2px;">${clientName}</div>
             ${clientAddress ? `<div style="font-size:11px; color:#64748b; margin-top:5px;">${clientAddress}</div>` : ''}
             ${clientEmail ? `<div style="font-size:11px; color:#64748b; margin-top:3px;">${clientEmail}</div>` : ''}
@@ -268,7 +268,7 @@ function buildFallbackHtml(p: {
     <!-- ── ITEMS TABLE ── -->
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:28px;">
       <thead>
-        <tr style="background:#017e84;">
+        <tr style="background:#2563EB;">
           <th style="padding:13px 16px; text-align:left; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:#ffffff;">Désignation</th>
           <th style="padding:13px 16px; text-align:center; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:rgba(255,255,255,0.85); width:70px;">Qté</th>
           <th style="padding:13px 16px; text-align:right; font-size:10.5px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:rgba(255,255,255,0.85); width:140px;">Prix unitaire</th>
@@ -301,7 +301,7 @@ function buildFallbackHtml(p: {
                 <tr>
                   <td style="padding:12px 0 0; font-size:12px; font-weight:800; color:#0f172a;">TOTAL TTC</td>
                   <td style="padding:12px 0 0; text-align:right;">
-                    <span style="font-size:22px; font-weight:800; color:#017e84;">${fmt(p.total)}</span>
+                    <span style="font-size:22px; font-weight:800; color:#2563EB;">${fmt(p.total)}</span>
                   </td>
                 </tr>
               </table>
@@ -326,7 +326,7 @@ function buildFallbackHtml(p: {
     <div style="font-size:10px; color:#cbd5e1;">${[p.company.email, p.company.phone].filter(Boolean).join(' · ')}</div>
     <div style="font-size:10px; color:#94a3b8;">${p.docNumber}</div>
   </div>
-  <div style="height:3px; background:linear-gradient(90deg,#e2f7f8 0%,#029aa2 50%,#017e84 100%);"></div>
+  <div style="height:3px; background:linear-gradient(90deg,#e2f7f8 0%,#029aa2 50%,#2563EB 100%);"></div>
 
 </body>
 </html>`;
@@ -607,8 +607,8 @@ export default function InvoiceDocFormPage() {
               <ArrowLeft size={18} />
             </button>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-[#017e84]/10 rounded-lg flex items-center justify-center">
-                <FileText size={16} className="text-[#017e84]" />
+              <div className="w-8 h-8 bg-[#2563EB]/10 rounded-lg flex items-center justify-center">
+                <FileText size={16} className="text-[#2563EB]" />
               </div>
               <div>
                 <h1 className="font-bold text-gray-900 text-sm">{id ? 'Modifier la facture' : 'Nouvelle facture'}</h1>
@@ -627,8 +627,8 @@ export default function InvoiceDocFormPage() {
               Aperçu
             </button>
             <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#017e84] text-[#017e84] rounded-lg text-sm font-medium hover:bg-[#017e84]/5 transition-colors disabled:opacity-60">
-              {exportingPdf ? <span className="w-3.5 h-3.5 border-2 border-[#017e84]/30 border-t-[#017e84] rounded-full animate-spin" /> : <Download size={14} />}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60">
+              {exportingPdf ? <span className="w-3.5 h-3.5 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" /> : <Download size={14} />}
               PDF
             </button>
             <button type="button" onClick={() => navigate('/invoicing/invoices')}
@@ -636,7 +636,7 @@ export default function InvoiceDocFormPage() {
               Annuler
             </button>
             <button form="invoice-form" type="submit" disabled={loading}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#017e84] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2563EB] text-white rounded-lg text-sm font-medium hover:bg-[#016a70] disabled:opacity-60 transition-colors">
               {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
               {loading ? 'Sauvegarde...' : (id ? 'Mettre à jour' : 'Créer la facture')}
             </button>
@@ -658,7 +658,7 @@ export default function InvoiceDocFormPage() {
               </div>
               <div className="p-3 grid grid-cols-3 gap-2">
                 {([
-                  { id: 'classique', label: 'Classique', color: '#017e84', desc: 'Sobre & professionnel' },
+                  { id: 'classique', label: 'Classique', color: '#2563EB', desc: 'Sobre & professionnel' },
                   { id: 'moderne', label: 'Moderne', color: '#2563eb', desc: 'Élégant & coloré' },
                   { id: 'minimaliste', label: 'Minimaliste', color: '#1e293b', desc: 'Épuré & neutre' },
                 ] as { id: DocumentDesign; label: string; color: string; desc: string }[]).map(({ id: did, label, color, desc }) => (
@@ -666,7 +666,7 @@ export default function InvoiceDocFormPage() {
                     key={did}
                     type="button"
                     onClick={() => setSelectedDesign(did)}
-                    className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left ${selectedDesign === did ? 'border-[#017e84] shadow-md' : 'border-gray-200 hover:border-gray-300'}`}
+                    className={`relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left ${selectedDesign === did ? 'border-[#2563EB] shadow-md' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="h-20 w-full flex flex-col overflow-hidden" style={{ background: '#fff' }}>
                       <div style={{ height: '6px', background: color, flexShrink: 0 }} />
@@ -685,7 +685,7 @@ export default function InvoiceDocFormPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-gray-800">{label}</span>
                         {selectedDesign === did && (
-                          <span className="w-3.5 h-3.5 rounded-full bg-[#017e84] flex items-center justify-center flex-shrink-0">
+                          <span className="w-3.5 h-3.5 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
                             <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </span>
                         )}
@@ -712,19 +712,19 @@ export default function InvoiceDocFormPage() {
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Objet <span className="text-red-500">*</span></label>
                   <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet de la facture"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" required />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Date facture</label>
                   <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Date échéance</label>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -732,25 +732,25 @@ export default function InvoiceDocFormPage() {
                   <label className="text-xs font-semibold text-gray-700">TVA (%)</label>
                   <input type="number" min={0} max={100} step={0.01} value={defaultTaxRate}
                     onChange={e => handleTaxRateChange(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Réduction (%)</label>
                   <input type="number" min={0} max={100} value={discountPct}
                     onChange={e => setDiscountPct(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">Livraison</label>
                   <input type="number" min={0} step={0.01} value={shippingCost}
                     onChange={e => setShippingCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-700">Conditions de paiement</label>
                 <input value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} placeholder="Net 30..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
               </div>
             </div>
           </div>
@@ -795,7 +795,7 @@ export default function InvoiceDocFormPage() {
               )}
               <div className="pt-2 border-t border-gray-200 flex justify-between">
                 <span className="text-sm font-bold text-gray-900">TOTAL TTC</span>
-                <span className="text-lg font-bold text-[#017e84]">{fmt(recap.total)}</span>
+                <span className="text-lg font-bold text-[#2563EB]">{fmt(recap.total)}</span>
               </div>
             </div>
           </div>
@@ -810,13 +810,13 @@ export default function InvoiceDocFormPage() {
                 <label className="text-xs font-semibold text-gray-700">Notes</label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                   placeholder="Notes internes ou pour le client..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none" />
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-700">Conditions générales</label>
                 <textarea value={terms} onChange={e => setTerms(e.target.value)} rows={3}
                   placeholder="Conditions de paiement..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84] resize-none" />
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none" />
               </div>
             </div>
           </div>
@@ -839,7 +839,7 @@ export default function InvoiceDocFormPage() {
                 <div key={label} className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700">{label}</label>
                   <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#017e84]/20 focus:border-[#017e84]" />
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                 </div>
               ))}
             </div>
@@ -848,8 +848,8 @@ export default function InvoiceDocFormPage() {
           {/* Mobile PDF */}
           <div className="sm:hidden">
             <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#017e84] text-[#017e84] rounded-xl text-sm font-medium hover:bg-[#017e84]/5 transition-colors disabled:opacity-60">
-              {exportingPdf ? <span className="w-4 h-4 border-2 border-[#017e84]/30 border-t-[#017e84] rounded-full animate-spin" /> : <Download size={15} />}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-[#2563EB] text-[#2563EB] rounded-xl text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60">
+              {exportingPdf ? <span className="w-4 h-4 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" /> : <Download size={15} />}
               Télécharger PDF
             </button>
           </div>
@@ -860,7 +860,7 @@ export default function InvoiceDocFormPage() {
           <div className="hidden lg:flex flex-col flex-1 border-l border-gray-200 bg-gray-100 overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
               <div className="flex items-center gap-2">
-                <Eye size={13} className="text-[#017e84]" />
+                <Eye size={13} className="text-[#2563EB]" />
                 <span className="text-xs font-semibold text-gray-600">Aperçu en direct</span>
                 {selectedTemplateId === LOCAL_TEMPLATE_ID && (
                   <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
@@ -869,7 +869,7 @@ export default function InvoiceDocFormPage() {
                         key={d}
                         type="button"
                         onClick={() => setSelectedDesign(d)}
-                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md capitalize transition-colors ${selectedDesign === d ? 'bg-white text-[#017e84] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md capitalize transition-colors ${selectedDesign === d ? 'bg-white text-[#2563EB] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                       >
                         {d}
                       </button>
@@ -878,7 +878,7 @@ export default function InvoiceDocFormPage() {
                 )}
               </div>
               <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#017e84] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
                 {exportingPdf ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download size={12} />}
                 Télécharger PDF
               </button>
