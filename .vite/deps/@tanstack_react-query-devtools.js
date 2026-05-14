@@ -3,10 +3,17 @@ import {
   onlineManager,
   require_jsx_runtime,
   useQueryClient
+<<<<<<< HEAD
 } from "./chunk-7OWVEFH7.js";
 import {
   require_react
 } from "./chunk-HA2I5Q66.js";
+=======
+} from "./chunk-2Q3I5DTH.js";
+import {
+  require_react
+} from "./chunk-FYGGDDPD.js";
+>>>>>>> 9598fc5 (message)
 import {
   createComponent,
   createSignal,
@@ -102,7 +109,11 @@ var TanstackQueryDevtools = class {
       if (this.#Component) {
         Devtools = this.#Component;
       } else {
+<<<<<<< HEAD
         Devtools = lazy(() => import("./NXRPVNXJ-RMT2K4TJ.js"));
+=======
+        Devtools = lazy(() => import("./VKXKX7EQ-MMWINRWV.js"));
+>>>>>>> 9598fc5 (message)
         this.#Component = Devtools;
       }
       setupStyleSheet(this.#styleNonce, this.#shadowDOMTarget);
@@ -240,7 +251,11 @@ var TanstackQueryDevtoolsPanel = class {
       if (this.#Component) {
         Devtools = this.#Component;
       } else {
+<<<<<<< HEAD
         Devtools = lazy(() => import("./RXFVSJH2-FWAO7ZFG.js"));
+=======
+        Devtools = lazy(() => import("./ZUJJ2RGI-SYY7IBWM.js"));
+>>>>>>> 9598fc5 (message)
         this.#Component = Devtools;
       }
       setupStyleSheet(this.#styleNonce, this.#shadowDOMTarget);

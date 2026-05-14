@@ -4,7 +4,11 @@ import {
   ChartBar as BarChart2, DollarSign, Users, UserCheck, Settings, CreditCard,
   Building2, Activity, Shield, Barcode,
   MonitorSmartphone, FileText, ShoppingCart, ChevronLeft, ChevronRight, Plus,
+<<<<<<< HEAD
   ClipboardList, Receipt,
+=======
+  ClipboardList, Receipt, UtensilsCrossed, Grid3x3, ChefHat, CalendarCheck,
+>>>>>>> 9598fc5 (message)
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
@@ -186,6 +190,27 @@ function useSidebarNav() {
     };
   }
 
+<<<<<<< HEAD
+=======
+  if (activeModule === 'restaurant' && hasModule('restaurant')) {
+    return {
+      title: 'Restaurant / Bar',
+      sections: [{
+        items: [
+          ...(canPage('restaurant') ? [{ label: 'Tableau de bord', to: ROUTES.RESTAURANT, icon: LayoutDashboard }] : []),
+          ...(canPage('restaurantTables') ? [{ label: 'Tables', to: ROUTES.RESTAURANT_TABLES, icon: Grid3x3 }] : []),
+          ...(canPage('restaurantMenu') ? [{ label: 'Menu', to: ROUTES.RESTAURANT_MENU, icon: UtensilsCrossed }] : []),
+          ...(canPage('restaurantOrders') ? [{ label: 'Commandes', to: ROUTES.RESTAURANT_ORDERS, icon: ShoppingCart }] : []),
+          ...(canPage('restaurantKitchen') ? [{ label: 'Cuisine / Bar', to: ROUTES.RESTAURANT_KITCHEN, icon: ChefHat }] : []),
+          ...(canPage('restaurantBills') ? [{ label: 'Tickets', to: ROUTES.RESTAURANT_BILLS, icon: Receipt }] : []),
+          ...(canPage('restaurantReservations') ? [{ label: 'Réservations', to: ROUTES.RESTAURANT_RESERVATIONS, icon: CalendarCheck }] : []),
+          ...(canPage('restaurantReports') ? [{ label: 'Rapports', to: ROUTES.RESTAURANT_REPORTS, icon: BarChart2 }] : []),
+        ],
+      }],
+    };
+  }
+
+>>>>>>> 9598fc5 (message)
   if (activeModule === 'settings') {
     return {
       title: 'Compte',

@@ -24,6 +24,17 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
+<<<<<<< HEAD
+=======
+      restaurant: false,
+      restaurantTables: false,
+      restaurantMenu: false,
+      restaurantOrders: false,
+      restaurantKitchen: false,
+      restaurantBills: false,
+      restaurantReservations: false,
+      restaurantReports: false,
+>>>>>>> 9598fc5 (message)
     },
   },
 
@@ -50,6 +61,17 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
+<<<<<<< HEAD
+=======
+      restaurant: true,
+      restaurantTables: true,
+      restaurantMenu: true,
+      restaurantOrders: true,
+      restaurantKitchen: true,
+      restaurantBills: true,
+      restaurantReservations: true,
+      restaurantReports: true,
+>>>>>>> 9598fc5 (message)
     },
   },
 
@@ -76,6 +98,17 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
+<<<<<<< HEAD
+=======
+      restaurant: true,
+      restaurantTables: true,
+      restaurantMenu: true,
+      restaurantOrders: true,
+      restaurantKitchen: true,
+      restaurantBills: true,
+      restaurantReservations: true,
+      restaurantReports: true,
+>>>>>>> 9598fc5 (message)
     },
   },
 
@@ -102,6 +135,17 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: false,
       invoicing: false,
+<<<<<<< HEAD
+=======
+      restaurant: true,
+      restaurantTables: true,
+      restaurantMenu: false,
+      restaurantOrders: true,
+      restaurantKitchen: true,
+      restaurantBills: true,
+      restaurantReservations: true,
+      restaurantReports: false,
+>>>>>>> 9598fc5 (message)
     },
   },
 
@@ -128,6 +172,17 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
+<<<<<<< HEAD
+=======
+      restaurant: true,
+      restaurantTables: true,
+      restaurantMenu: false,
+      restaurantOrders: true,
+      restaurantKitchen: true,
+      restaurantBills: true,
+      restaurantReservations: false,
+      restaurantReports: false,
+>>>>>>> 9598fc5 (message)
     },
   },
 } as const;

@@ -54,7 +54,7 @@ import {
   useTransition
 } from "./chunk-4XEUAV2G.js";
 
-// node_modules/@tanstack/query-devtools/build/chunk/QIR4F55C.js
+// node_modules/@tanstack/query-devtools/build/chunk/S7NCRHOU.js
 var isClient = !isServer;
 var isDev = isClient && !!DEV;
 var noop = (() => void 0);
@@ -11106,21 +11106,30 @@ var QueryDetails = () => {
           type: "INVALIDATE",
           queryHash: activeQuery()?.queryHash
         });
-        queryClient.invalidateQueries(activeQuery());
+        queryClient.invalidateQueries({
+          queryKey: activeQuery()?.queryKey,
+          exact: true
+        });
       };
       _el$84.$$click = () => {
         sendDevToolsEvent({
           type: "RESET",
           queryHash: activeQuery()?.queryHash
         });
-        queryClient.resetQueries(activeQuery());
+        queryClient.resetQueries({
+          queryKey: activeQuery()?.queryKey,
+          exact: true
+        });
       };
       _el$86.$$click = () => {
         sendDevToolsEvent({
           type: "REMOVE",
           queryHash: activeQuery()?.queryHash
         });
-        queryClient.removeQueries(activeQuery());
+        queryClient.removeQueries({
+          queryKey: activeQuery()?.queryKey,
+          exact: true
+        });
         setSelectedQueryHash(null);
       };
       _el$88.$$click = () => {
@@ -11168,7 +11177,9 @@ var QueryDetails = () => {
                 type: "RESTORE_ERROR",
                 queryHash: activeQuery()?.queryHash
               });
-              queryClient.resetQueries(activeQuery());
+              queryClient.resetQueries({
+                queryKey: activeQuery()?.queryKey
+              });
             }
           };
           insert(_el$91, () => queryStatus() === "error" ? "Restore" : "Trigger", _el$93);
@@ -12681,4 +12692,4 @@ export {
   ParentPanel,
   ContentView
 };
-//# sourceMappingURL=chunk-OJDGEFW6.js.map
+//# sourceMappingURL=chunk-7ECNVS7Q.js.map

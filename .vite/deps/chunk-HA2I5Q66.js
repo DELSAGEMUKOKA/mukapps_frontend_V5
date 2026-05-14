@@ -968,7 +968,7 @@ var require_react_development = __commonJS({
       exports.useTransition = function() {
         return resolveDispatcher().useTransition();
       };
-      exports.version = "19.2.5";
+      exports.version = "19.2.6";
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(Error());
     })();
   }
@@ -988,4 +988,8 @@ var require_react = __commonJS({
 export {
   require_react
 };
+<<<<<<<< HEAD:.vite/deps/chunk-HA2I5Q66.js
 //# sourceMappingURL=chunk-HA2I5Q66.js.map
+========
+//# sourceMappingURL=chunk-FYGGDDPD.js.map
+>>>>>>>> 9598fc5 (message):.vite/deps/chunk-FYGGDDPD.js

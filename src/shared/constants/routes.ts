@@ -60,6 +60,16 @@ export const ROUTES = {
   SUPERADMIN_ACTIVITIES: '/superadmin/activities',
   SUPERADMIN_SETTINGS: '/superadmin/settings',
 
+  // Restaurant / Bar module
+  RESTAURANT: '/restaurant',
+  RESTAURANT_TABLES: '/restaurant/tables',
+  RESTAURANT_MENU: '/restaurant/menu',
+  RESTAURANT_ORDERS: '/restaurant/orders',
+  RESTAURANT_KITCHEN: '/restaurant/kitchen',
+  RESTAURANT_BILLS: '/restaurant/bills',
+  RESTAURANT_RESERVATIONS: '/restaurant/reservations',
+  RESTAURANT_REPORTS: '/restaurant/reports',
+
   // Errors
   FORBIDDEN: '/403',
   NOT_FOUND: '/404',

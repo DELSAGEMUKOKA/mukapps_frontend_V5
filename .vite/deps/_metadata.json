@@ -1,47 +1,79 @@
 {
+<<<<<<< HEAD
   "hash": "786c9aea",
   "configHash": "4aacf312",
   "lockfileHash": "8e408993",
   "browserHash": "543a24ff",
+=======
+  "hash": "cfdea12a",
+  "configHash": "f869b919",
+  "lockfileHash": "e3b0c442",
+  "browserHash": "fe498158",
+>>>>>>> 9598fc5 (message)
   "optimized": {
     "react/jsx-dev-runtime": {
       "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
+<<<<<<< HEAD
       "fileHash": "9d5b5bff",
+=======
+      "fileHash": "1b54b12a",
+>>>>>>> 9598fc5 (message)
       "needsInterop": true
     },
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
+<<<<<<< HEAD
       "fileHash": "2d49916f",
+=======
+      "fileHash": "b735f87d",
+>>>>>>> 9598fc5 (message)
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
+<<<<<<< HEAD
       "fileHash": "7152999d",
+=======
+      "fileHash": "e2ed6daf",
+>>>>>>> 9598fc5 (message)
       "needsInterop": true
     },
     "@tanstack/react-query": {
       "src": "../../node_modules/@tanstack/react-query/build/modern/index.js",
       "file": "@tanstack_react-query.js",
+<<<<<<< HEAD
       "fileHash": "9584be29",
+=======
+      "fileHash": "261cfa8f",
+>>>>>>> 9598fc5 (message)
       "needsInterop": false
     },
     "@tanstack/react-query-devtools": {
       "src": "../../node_modules/@tanstack/react-query-devtools/build/modern/index.js",
       "file": "@tanstack_react-query-devtools.js",
+<<<<<<< HEAD
       "fileHash": "c5166f7c",
+=======
+      "fileHash": "38f468b0",
+>>>>>>> 9598fc5 (message)
       "needsInterop": false
     },
     "react-router-dom": {
       "src": "../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
+<<<<<<< HEAD
       "fileHash": "0271a99c",
+=======
+      "fileHash": "5152d19d",
+>>>>>>> 9598fc5 (message)
       "needsInterop": false
     }
   },
   "chunks": {
+<<<<<<< HEAD
     "chunk-7OWVEFH7": {
       "file": "chunk-7OWVEFH7.js"
     },
@@ -56,10 +88,29 @@
     },
     "RXFVSJH2-FWAO7ZFG": {
       "file": "RXFVSJH2-FWAO7ZFG.js"
+=======
+    "chunk-2Q3I5DTH": {
+      "file": "chunk-2Q3I5DTH.js"
     },
-    "chunk-OJDGEFW6": {
-      "file": "chunk-OJDGEFW6.js"
+    "chunk-D24B44MJ": {
+      "file": "chunk-D24B44MJ.js"
+>>>>>>> 9598fc5 (message)
     },
+    "chunk-FYGGDDPD": {
+      "file": "chunk-FYGGDDPD.js"
+    },
+<<<<<<< HEAD
+=======
+    "VKXKX7EQ-MMWINRWV": {
+      "file": "VKXKX7EQ-MMWINRWV.js"
+    },
+    "ZUJJ2RGI-SYY7IBWM": {
+      "file": "ZUJJ2RGI-SYY7IBWM.js"
+    },
+    "chunk-7ECNVS7Q": {
+      "file": "chunk-7ECNVS7Q.js"
+    },
+>>>>>>> 9598fc5 (message)
     "chunk-4XEUAV2G": {
       "file": "chunk-4XEUAV2G.js"
     },

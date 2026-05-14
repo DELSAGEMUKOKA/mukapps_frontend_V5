@@ -1,0 +1,1772 @@
+{
+  "info": {
+    "name": "Restaurant / Bar Module — Complet",
+    "_postman_id": "restaurant-bar-module-v2",
+    "description": "Collection complète pour tester le module Restaurant/Bar de Mukapps (v3 — stock bar + shots).\n\nFlux principal :\n1. Auth → token JWT\n2. Shifts → ouvrir la caisse\n3. Tables → créer et gérer\n4. Menu → catégories, articles, modificateurs, planification\n5. Commandes → créer, ajouter avec modificateurs, transférer\n6. Cuisine (KDS) → suivre statuts\n7. Retours cuisine → signaler et traiter\n8. Tickets → brouillon, remise, split bill, paiement avec pourboire\n9. Réservations → créer, confirmer, no-show\n10. Stock Bar → lier articles aux bouteilles, shots, rapport stock\n11. Dashboard → rapports avancés\n12. Unités de vente\n13. Flux E2E complet (avec stock bar)\n\nGestion des shots :\n- stockDeductionQty = fraction de bouteille déduite par vente\n  Shot 4cl/bouteille 1L → 0.04 | Verre vin 15cl → 0.15 | Demi-bouteille → 0.375\n- Commande bloquée si stock insuffisant\n- Déduction automatique à la clôture de la facture\n\nVariables :\n- baseUrl : http://localhost:3000\n- token : (auto après login)\n- productId : ID du produit stock (bouteille)\n- tableId, categoryId, menuItemId, orderId, billId, reservationId, shiftId, etc.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",          "value": "http://localhost:3000", "type": "string" },
+    { "key": "token",            "value": "",                      "type": "string" },
+    { "key": "companyId",        "value": "",                      "type": "string" },
+    { "key": "tableId",          "value": "",                      "type": "string" },
+    { "key": "table2Id",         "value": "",                      "type": "string" },
+    { "key": "categoryId",       "value": "",                      "type": "string" },
+    { "key": "menuItemId",       "value": "",                      "type": "string" },
+    { "key": "menuItem2Id",      "value": "",                      "type": "string" },
+    { "key": "modifierGroupId",  "value": "",                      "type": "string" },
+    { "key": "modifierOptionId", "value": "",                      "type": "string" },
+    { "key": "scheduleId",       "value": "",                      "type": "string" },
+    { "key": "orderId",          "value": "",                      "type": "string" },
+    { "key": "orderItemId",      "value": "",                      "type": "string" },
+    { "key": "kitchenItemId",    "value": "",                      "type": "string" },
+    { "key": "returnId",         "value": "",                      "type": "string" },
+    { "key": "billId",           "value": "",                      "type": "string" },
+    { "key": "draftItemId",      "value": "",                      "type": "string" },
+    { "key": "reservationId",    "value": "",                      "type": "string" },
+    { "key": "shiftId",          "value": "",                      "type": "string" },
+    { "key": "productId",        "value": "",                      "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+
+    {
+      "name": "0. Authentification",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) pm.collectionVariables.set('token', res.data.token);",
+                  "if (res.data && res.data.user && res.data.user.companyId) pm.collectionVariables.set('companyId', res.data.user.companyId);",
+                  "pm.test('Login réussi', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "1. Shifts (Caisses)",
+      "item": [
+        {
+          "name": "Lister les shifts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "Shift en cours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/current", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","current"] }
+          }
+        },
+        {
+          "name": "Ouvrir un shift",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('shiftId', res.data.id);",
+                  "pm.test('Shift ouvert', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openingCash\": 200.00,\n  \"notes\": \"Ouverture shift soir\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts"] }
+          }
+        },
+        {
+          "name": "Détail d'un shift",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/{{shiftId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","{{shiftId}}"] }
+          }
+        },
+        {
+          "name": "Rapport d'un shift",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/{{shiftId}}/report", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","{{shiftId}}","report"] }
+          }
+        },
+        {
+          "name": "Fermer un shift",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"closingCash\": 450.00,\n  \"notes\": \"Fermeture shift soir — bon service\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/{{shiftId}}/close", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","{{shiftId}}","close"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "2. Tables",
+      "item": [
+        {
+          "name": "Statistiques des tables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/stats", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","stats"] }
+          }
+        },
+        {
+          "name": "Lister les tables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "Créer table 1 (Salle)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('tableId', res.data.id);",
+                  "pm.test('Table créée', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"number\": \"T1\",\n  \"name\": \"Table 1\",\n  \"capacity\": 4,\n  \"zone\": \"SALLE\",\n  \"posX\": 10.0,\n  \"posY\": 20.0\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "Créer table 2 (pour transfert)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('table2Id', res.data.id);",
+                  "pm.test('Table 2 créée', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"number\": \"T2\",\n  \"name\": \"Table 2\",\n  \"capacity\": 6,\n  \"zone\": \"SALLE\",\n  \"posX\": 30.0,\n  \"posY\": 20.0\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "Créer table Bar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"number\": \"B1\",\n  \"name\": \"Comptoir Bar\",\n  \"capacity\": 2,\n  \"zone\": \"BAR\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "Créer table Terrasse",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"number\": \"TR1\",\n  \"name\": \"Terrasse 1\",\n  \"capacity\": 8,\n  \"zone\": \"TERRASSE\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "Détail d'une table",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/{{tableId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","{{tableId}}"] }
+          }
+        },
+        {
+          "name": "Modifier une table",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Table VIP 1\",\n  \"capacity\": 6\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/{{tableId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","{{tableId}}"] }
+          }
+        },
+        {
+          "name": "Changer statut — HORS_SERVICE",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"status\": \"HORS_SERVICE\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/{{tableId}}/status", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","{{tableId}}","status"] }
+          }
+        },
+        {
+          "name": "Changer statut — LIBRE",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"status\": \"LIBRE\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/{{tableId}}/status", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","{{tableId}}","status"] }
+          }
+        },
+        {
+          "name": "Mise à jour statut en masse",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"tableIds\": [\"{{tableId}}\", \"{{table2Id}}\"],\n  \"status\": \"LIBRE\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/bulk/status", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","bulk","status"] }
+          }
+        },
+        {
+          "name": "Supprimer une table",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables/{{tableId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables","{{tableId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "3. Menu",
+      "item": [
+        {
+          "name": "Menu complet (structuré)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/full", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","full"] }
+          }
+        },
+        {
+          "name": "Catégories",
+          "item": [
+            {
+              "name": "Lister catégories",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories"] }
+              }
+            },
+            {
+              "name": "Créer catégorie — Boissons (BAR)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('categoryId', res.data.id);",
+                      "pm.test('Catégorie créée', () => pm.response.to.have.status(201));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Boissons\",\n  \"description\": \"Boissons et cocktails\",\n  \"color\": \"#3B82F6\",\n  \"icon\": \"glass\",\n  \"station\": \"BAR\",\n  \"sortOrder\": 1\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories"] }
+              }
+            },
+            {
+              "name": "Créer catégorie — Plats (CUISINE)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Plats\",\n  \"description\": \"Plats principaux\",\n  \"color\": \"#EF4444\",\n  \"icon\": \"utensils\",\n  \"station\": \"CUISINE\",\n  \"sortOrder\": 2\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories"] }
+              }
+            },
+            {
+              "name": "Créer catégorie — Desserts",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Desserts\",\n  \"station\": \"DESSERTS\",\n  \"sortOrder\": 3\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories"] }
+              }
+            },
+            {
+              "name": "Modifier catégorie",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"name\": \"Boissons & Cocktails\", \"sortOrder\": 1 }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories","{{categoryId}}"] }
+              }
+            },
+            {
+              "name": "Supprimer catégorie",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories","{{categoryId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Articles",
+          "item": [
+            {
+              "name": "Lister articles",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+              }
+            },
+            {
+              "name": "Lister par catégorie / disponibles",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items?categoryId={{categoryId}}&available=true", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"], "query": [{"key":"categoryId","value":"{{categoryId}}"},{"key":"available","value":"true"}] }
+              }
+            },
+            {
+              "name": "Créer article — Whisky Single Malt (avec stock lié)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('menuItemId', res.data.id);",
+                      "pm.test('Article créé', () => pm.response.to.have.status(201));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Whisky Single Malt\",\n  \"description\": \"Whisky premium 4cl\",\n  \"price\": 8.00,\n  \"categoryId\": \"{{categoryId}}\",\n  \"station\": \"BAR\",\n  \"preparationTime\": 2,\n  \"tags\": \"alcool,premium\",\n  \"isAvailable\": true,\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.04\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"] }
+              }
+            },
+            {
+              "name": "Créer article — Steak Grillé",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('menuItem2Id', res.data.id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Steak Grillé\",\n  \"description\": \"Steak 250g + frites maison\",\n  \"price\": 18.00,\n  \"categoryId\": \"{{categoryId}}\",\n  \"station\": \"CUISINE\",\n  \"preparationTime\": 15,\n  \"isAvailable\": true\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"] }
+              }
+            },
+            {
+              "name": "Créer article — Coca-Cola",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Coca-Cola\",\n  \"description\": \"33cl\",\n  \"price\": 3.00,\n  \"categoryId\": \"{{categoryId}}\",\n  \"station\": \"BAR\",\n  \"preparationTime\": 1,\n  \"isAvailable\": true\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"] }
+              }
+            },
+            {
+              "name": "Détail d'un article",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}"] }
+              }
+            },
+            {
+              "name": "Modifier un article",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"price\": 9.00, \"preparationTime\": 2 }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}"] }
+              }
+            },
+            {
+              "name": "Marquer indisponible",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"isAvailable\": false }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/availability", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","availability"] }
+              }
+            },
+            {
+              "name": "Remettre disponible",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"isAvailable\": true }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/availability", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","availability"] }
+              }
+            },
+            {
+              "name": "Lier au stock — Shot whisky 4cl (stockDeductionQty = 0.04)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.04\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"] }
+              }
+            },
+            {
+              "name": "Lier au stock — Verre de vin 15cl (stockDeductionQty = 0.15)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.15\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"] }
+              }
+            },
+            {
+              "name": "Supprimer lien stock",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"] }
+              }
+            },
+            {
+              "name": "Supprimer un article",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modificateurs d'articles",
+          "item": [
+            {
+              "name": "Lister groupes d'un article",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers"] }
+              }
+            },
+            {
+              "name": "Créer groupe — Cuisson (requis)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('modifierGroupId', res.data.id);",
+                      "pm.test('Groupe créé', () => pm.response.to.have.status(201));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Cuisson\",\n  \"description\": \"Choisir la cuisson de votre steak\",\n  \"isRequired\": true,\n  \"minChoices\": 1,\n  \"maxChoices\": 1\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers"] }
+              }
+            },
+            {
+              "name": "Créer groupe — Extras (optionnel)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Extras\",\n  \"description\": \"Suppléments au choix\",\n  \"isRequired\": false,\n  \"minChoices\": 0,\n  \"maxChoices\": 3\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers"] }
+              }
+            },
+            {
+              "name": "Ajouter option — Saignant",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('modifierOptionId', res.data.id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Saignant\",\n  \"extraPrice\": 0.00,\n  \"isDefault\": false,\n  \"sortOrder\": 1\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options"] }
+              }
+            },
+            {
+              "name": "Ajouter option — À point",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"À point\",\n  \"extraPrice\": 0.00,\n  \"isDefault\": true,\n  \"sortOrder\": 2\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options"] }
+              }
+            },
+            {
+              "name": "Ajouter option — Sauce Béarnaise (+2€)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sauce Béarnaise\",\n  \"extraPrice\": 2.00,\n  \"isDefault\": false,\n  \"sortOrder\": 3\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options"] }
+              }
+            },
+            {
+              "name": "Modifier une option",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"extraPrice\": 2.50 }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options/{{modifierOptionId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options","{{modifierOptionId}}"] }
+              }
+            },
+            {
+              "name": "Supprimer une option",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options/{{modifierOptionId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options","{{modifierOptionId}}"] }
+              }
+            },
+            {
+              "name": "Modifier un groupe",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"name\": \"Cuisson souhaitée\", \"isRequired\": true }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}"] }
+              }
+            },
+            {
+              "name": "Supprimer un groupe",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Planification menu (Schedules)",
+          "item": [
+            {
+              "name": "Lister les planifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules"] }
+              }
+            },
+            {
+              "name": "Catégories actives maintenant",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules/active-now", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules","active-now"] }
+              }
+            },
+            {
+              "name": "Créer planning — Service déjeuner",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "if (res.data && res.data.id) pm.collectionVariables.set('scheduleId', res.data.id);",
+                      "pm.test('Planning créé', () => pm.response.to.have.status(201));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Service déjeuner\",\n  \"daysOfWeek\": [1, 2, 3, 4, 5],\n  \"startTime\": \"11:30\",\n  \"endTime\": \"14:30\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules"] }
+              }
+            },
+            {
+              "name": "Créer planning — Service dîner",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Service dîner\",\n  \"daysOfWeek\": [0, 1, 2, 3, 4, 5, 6],\n  \"startTime\": \"18:00\",\n  \"endTime\": \"23:00\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules"] }
+              }
+            },
+            {
+              "name": "Modifier un planning",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"startTime\": \"12:00\", \"endTime\": \"15:00\" }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules/{{scheduleId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules","{{scheduleId}}"] }
+              }
+            },
+            {
+              "name": "Supprimer un planning",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/restaurant/schedules/{{scheduleId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","schedules","{{scheduleId}}"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "4. Commandes",
+      "item": [
+        {
+          "name": "Lister les commandes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+          }
+        },
+        {
+          "name": "Lister commandes EN_COURS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders?status=EN_COURS", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders"], "query": [{"key":"status","value":"EN_COURS"}] }
+          }
+        },
+        {
+          "name": "Créer commande SUR_PLACE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('orderId', res.data.id);",
+                  "pm.test('Commande créée', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"tableId\": \"{{tableId}}\",\n  \"type\": \"SUR_PLACE\",\n  \"guestCount\": 3,\n  \"notes\": \"Clients anniversaire\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders"] }
+          }
+        },
+        {
+          "name": "Créer commande A_EMPORTER",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"A_EMPORTER\",\n  \"guestCount\": 1,\n  \"notes\": \"Commande à emporter — client M. Dupont\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders"] }
+          }
+        },
+        {
+          "name": "Détail commande",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}"] }
+          }
+        },
+        {
+          "name": "Ajouter articles (standard)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.items && res.data.items.length > 0) pm.collectionVariables.set('orderItemId', res.data.items[0].id);",
+                  "pm.test('Articles ajoutés', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menuItemId}}\",\n      \"quantity\": 2,\n      \"notes\": \"Bien frais\"\n    },\n    {\n      \"menuItemId\": \"{{menuItem2Id}}\",\n      \"quantity\": 1\n    }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items"] }
+          }
+        },
+        {
+          "name": "Ajouter article avec modificateurs",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menuItemId}}\",\n      \"quantity\": 1,\n      \"notes\": \"Sans glace\",\n      \"modifiers\": [\n        {\n          \"groupId\": \"{{modifierGroupId}}\",\n          \"optionId\": \"{{modifierOptionId}}\"\n        }\n      ]\n    }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items"] }
+          }
+        },
+        {
+          "name": "Ajouter article avec unité de vente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menuItemId}}\",\n      \"quantity\": 2,\n      \"unitId\": \"UNIT_ID_ICI\",\n      \"notes\": \"2 shots whisky\"\n    }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items"] }
+          }
+        },
+        {
+          "name": "Modifier article de commande",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"quantity\": 3, \"notes\": \"Extra serré\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items/{{orderItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items","{{orderItemId}}"] }
+          }
+        },
+        {
+          "name": "Retirer article de commande",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items/{{orderItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items","{{orderItemId}}"] }
+          }
+        },
+        {
+          "name": "Envoyer en cuisine / bar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/send", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","send"] }
+          }
+        },
+        {
+          "name": "Annuler commande",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","cancel"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "5. Transfert de table",
+      "item": [
+        {
+          "name": "Lister les transferts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/transfers", "host": ["{{baseUrl}}"], "path": ["api","restaurant","transfers"] }
+          }
+        },
+        {
+          "name": "Transférer commande → Table 2",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"toTableId\": \"{{table2Id}}\",\n  \"reason\": \"Déplacement à la demande du client\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/transfer", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","transfer"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "6. Cuisine / Bar (KDS)",
+      "item": [
+        {
+          "name": "Articles actifs (toutes stations)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen"] }
+          }
+        },
+        {
+          "name": "Articles actifs — Station BAR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen?station=BAR", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen"], "query": [{"key":"station","value":"BAR"}] }
+          }
+        },
+        {
+          "name": "Articles actifs — Station CUISINE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen?station=CUISINE", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen"], "query": [{"key":"station","value":"CUISINE"}] }
+          }
+        },
+        {
+          "name": "Articles prêts à servir",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen/ready", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen","ready"] }
+          }
+        },
+        {
+          "name": "Marquer EN_PREPARATION",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["// Utiliser un kitchenItemId récupéré depuis la liste des articles actifs"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen/items/{{kitchenItemId}}/prepare", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen","items","{{kitchenItemId}}","prepare"] }
+          }
+        },
+        {
+          "name": "Marquer PRET",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen/items/{{kitchenItemId}}/ready", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen","items","{{kitchenItemId}}","ready"] }
+          }
+        },
+        {
+          "name": "Marquer SERVI",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/kitchen/items/{{kitchenItemId}}/served", "host": ["{{baseUrl}}"], "path": ["api","restaurant","kitchen","items","{{kitchenItemId}}","served"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "7. Retours cuisine",
+      "item": [
+        {
+          "name": "Lister les retours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/returns", "host": ["{{baseUrl}}"], "path": ["api","restaurant","returns"] }
+          }
+        },
+        {
+          "name": "Lister retours en attente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/returns?status=PENDING", "host": ["{{baseUrl}}"], "path": ["api","restaurant","returns"], "query": [{"key":"status","value":"PENDING"}] }
+          }
+        },
+        {
+          "name": "Signaler retour — Action REMOVE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('returnId', res.data.id);",
+                  "pm.test('Retour créé', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"orderItemId\": \"{{orderItemId}}\",\n  \"reason\": \"Article pas à la bonne cuisson\",\n  \"quantity\": 1,\n  \"action\": \"REMOVE\",\n  \"notes\": \"Client insatisfait\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/returns", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","returns"] }
+          }
+        },
+        {
+          "name": "Signaler retour — Action REPLACE",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"orderItemId\": \"{{orderItemId}}\",\n  \"reason\": \"Article incorrect livré\",\n  \"quantity\": 1,\n  \"action\": \"REPLACE\",\n  \"newItemId\": \"{{menuItem2Id}}\",\n  \"notes\": \"Remplacer par le bon article\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/returns", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","returns"] }
+          }
+        },
+        {
+          "name": "Signaler retour — Action DISCOUNT",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"orderItemId\": \"{{orderItemId}}\",\n  \"reason\": \"Retard important\",\n  \"quantity\": 1,\n  \"action\": \"DISCOUNT\",\n  \"creditAmount\": 5.00,\n  \"notes\": \"Remise accordée\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/returns", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","returns"] }
+          }
+        },
+        {
+          "name": "Traiter un retour",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/returns/{{returnId}}/process", "host": ["{{baseUrl}}"], "path": ["api","restaurant","returns","{{returnId}}","process"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "8. Tickets (Facturation)",
+      "item": [
+        {
+          "name": "Lister tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+          }
+        },
+        {
+          "name": "Lister tickets BROUILLON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills?status=BROUILLON", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills"], "query": [{"key":"status","value":"BROUILLON"}] }
+          }
+        },
+        {
+          "name": "Récupérer ticket d'une commande (auto-crée)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('billId', res.data.id);",
+                  "pm.test('Ticket récupéré', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/bill", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","bill"] }
+          }
+        },
+        {
+          "name": "Créer ticket brouillon",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) { pm.collectionVariables.set('billId', res.data.id); }",
+                  "if (res.data && res.data.draftItems && res.data.draftItems.length > 0) pm.collectionVariables.set('draftItemId', res.data.draftItems[0].id);",
+                  "pm.test('Brouillon créé', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"notes\": \"Table anniversaire\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/bill/draft", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","bill","draft"] }
+          }
+        },
+        {
+          "name": "Détail d'un ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}"] }
+          }
+        },
+        {
+          "name": "Brouillon — Ajouter article",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.draftItems && res.data.draftItems.length > 0) pm.collectionVariables.set('draftItemId', res.data.draftItems[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"menuItemId\": \"{{menuItemId}}\",\n  \"quantity\": 1,\n  \"notes\": \"Sans glaçon\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/draft/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","draft","items"] }
+          }
+        },
+        {
+          "name": "Brouillon — Modifier quantité",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"quantity\": 2, \"notes\": \"Avec glaçons\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/draft/items/{{draftItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","draft","items","{{draftItemId}}"] }
+          }
+        },
+        {
+          "name": "Brouillon — Supprimer article",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/draft/items/{{draftItemId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","draft","items","{{draftItemId}}"] }
+          }
+        },
+        {
+          "name": "Brouillon — Modifier notes",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"notes\": \"Client fidèle, offrir un dessert\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/draft/notes", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","draft","notes"] }
+          }
+        },
+        {
+          "name": "Appliquer une remise (10%)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"discount\": 3.00,\n  \"reason\": \"Client fidèle — remise 10%\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/discount", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","discount"] }
+          }
+        },
+        {
+          "name": "Valider brouillon → OUVERTE",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/validate", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","validate"] }
+          }
+        },
+        {
+          "name": "Paiement complet (CASH + pourboire)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 25.00,\n  \"tip\": 3.00,\n  \"paymentMethod\": \"CASH\",\n  \"notes\": \"Paiement espèces avec pourboire\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/payment", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","payment"] }
+          }
+        },
+        {
+          "name": "Paiement partiel (Carte)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 15.00,\n  \"tip\": 0.00,\n  \"paymentMethod\": \"CARD\",\n  \"reference\": \"TXN-001234\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/payment", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","payment"] }
+          }
+        },
+        {
+          "name": "Paiement Mobile Money",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 10.00,\n  \"paymentMethod\": \"MOBILE_MONEY\",\n  \"reference\": \"MOMO-98765\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/payment", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","payment"] }
+          }
+        },
+        {
+          "name": "Clôturer le ticket",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/close", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","close"] }
+          }
+        },
+        {
+          "name": "Annuler un ticket",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","cancel"] }
+          }
+        },
+        {
+          "name": "Split Bill — Division égale",
+          "item": [
+            {
+              "name": "Calculer split en 3 parts égales",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"splitCount\": 3 }" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/split/equal", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","split","equal"] }
+              }
+            },
+            {
+              "name": "Payer part 1 (CASH)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"amount\": 9.00,\n  \"tip\": 1.00,\n  \"paymentMethod\": \"CASH\",\n  \"partLabel\": \"Invité 1\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/split/pay-part", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","split","pay-part"] }
+              }
+            },
+            {
+              "name": "Payer part 2 (CARD)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"amount\": 9.00,\n  \"paymentMethod\": \"CARD\",\n  \"partLabel\": \"Invité 2\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/split/pay-part", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","split","pay-part"] }
+              }
+            },
+            {
+              "name": "Payer part 3 (MOBILE_MONEY)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"amount\": 9.00,\n  \"paymentMethod\": \"MOBILE_MONEY\",\n  \"partLabel\": \"Invité 3\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/split/pay-part", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","split","pay-part"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Split Bill — Par articles",
+          "item": [
+            {
+              "name": "Calculer split par articles",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"splits\": [\n    {\n      \"guestLabel\": \"Alice\",\n      \"itemIds\": [\"DRAFT_ITEM_ID_1\"]\n    },\n    {\n      \"guestLabel\": \"Bob\",\n      \"itemIds\": [\"DRAFT_ITEM_ID_2\", \"DRAFT_ITEM_ID_3\"]\n    }\n  ]\n}" },
+                "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/split/by-items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","split","by-items"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "9. Réservations",
+      "item": [
+        {
+          "name": "Lister réservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations"], "query": [{"key":"page","value":"1"},{"key":"limit","value":"20"}] }
+          }
+        },
+        {
+          "name": "Lister par date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations?date=2026-05-14", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations"], "query": [{"key":"date","value":"2026-05-14"}] }
+          }
+        },
+        {
+          "name": "Lister réservations confirmées",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations?status=CONFIRMEE", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations"], "query": [{"key":"status","value":"CONFIRMEE"}] }
+          }
+        },
+        {
+          "name": "Créer réservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('reservationId', res.data.id);",
+                  "pm.test('Réservation créée', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"tableId\": \"{{tableId}}\",\n  \"guestName\": \"Jean Dupont\",\n  \"guestPhone\": \"+33612345678\",\n  \"guestCount\": 4,\n  \"reservationDate\": \"2026-05-20T20:00:00.000Z\",\n  \"duration\": 120,\n  \"notes\": \"Anniversaire — prévoir gâteau\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations"] }
+          }
+        },
+        {
+          "name": "Créer réservation sans table",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"guestName\": \"Marie Martin\",\n  \"guestPhone\": \"+33698765432\",\n  \"guestCount\": 2,\n  \"reservationDate\": \"2026-05-20T19:00:00.000Z\",\n  \"duration\": 90\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations"] }
+          }
+        },
+        {
+          "name": "Détail réservation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}"] }
+          }
+        },
+        {
+          "name": "Confirmer réservation",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}/confirm", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}","confirm"] }
+          }
+        },
+        {
+          "name": "Marquer arrivée client",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}/arrive", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}","arrive"] }
+          }
+        },
+        {
+          "name": "Terminer réservation",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}/complete", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}","complete"] }
+          }
+        },
+        {
+          "name": "Marquer NO_SHOW",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}/no-show", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}","no-show"] }
+          }
+        },
+        {
+          "name": "Annuler réservation",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/reservations/{{reservationId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api","restaurant","reservations","{{reservationId}}","cancel"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "10. Stock Bar (Boissons & Shots)",
+      "description": "Gestion du stock des boissons liées aux articles du menu.\n\nConcept :\n- Chaque article de menu (ex: 'Shot Whisky') peut être lié à un produit en stock (ex: 'Bouteille Whisky Johnnie Walker')\n- stockDeductionQty = fraction déduite par vente\n  Exemple shots :\n  - Shot 4cl (bouteille 1L)  → 0.04\n  - Shot 3cl (bouteille 70cl) → 0.0429\n  - Verre de vin 15cl        → 0.15\n  - Demi-bouteille champagne → 0.375\n- À chaque clôture de facture, le stock est automatiquement déduit\n- La commande est bloquée si le stock est insuffisant",
+      "item": [
+        {
+          "name": "Rapport stock bar (tous articles liés)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/bar-stock-report",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","bar-stock-report"]
+            }
+          }
+        },
+        {
+          "name": "Lier article → produit : Shot Whisky 4cl",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.04\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"]
+            }
+          }
+        },
+        {
+          "name": "Lier article → produit : Verre de vin 15cl",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"]
+            }
+          }
+        },
+        {
+          "name": "Lier article → produit : Demi-bouteille champagne (0.375L)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.375\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"]
+            }
+          }
+        },
+        {
+          "name": "Lier article → produit : Bouteille entière 70cl",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.70\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer lien stock d'un article",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"]
+            }
+          }
+        },
+        {
+          "name": "Modifier article avec stock lié (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 8.50,\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.04\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","restaurant","menu","items","{{menuItemId}}"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "11. Dashboard & Rapports (avancé)",
+      "item": [
+        {
+          "name": "Dashboard principal (KPIs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard"] }
+          }
+        },
+        {
+          "name": "Rapport journalier",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/daily?date=2026-05-13", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","daily"], "query": [{"key":"date","value":"2026-05-13"}] }
+          }
+        },
+        {
+          "name": "Top articles vendus",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/items?startDate=2026-05-01&endDate=2026-05-13&limit=10", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","items"], "query": [{"key":"startDate","value":"2026-05-01"},{"key":"endDate","value":"2026-05-13"},{"key":"limit","value":"10"}] }
+          }
+        },
+        {
+          "name": "Performance serveurs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/servers?startDate=2026-05-01&endDate=2026-05-13", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","servers"], "query": [{"key":"startDate","value":"2026-05-01"},{"key":"endDate","value":"2026-05-13"}] }
+          }
+        },
+        {
+          "name": "Occupation des tables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/tables?startDate=2026-05-01&endDate=2026-05-13", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","tables"], "query": [{"key":"startDate","value":"2026-05-01"},{"key":"endDate","value":"2026-05-13"}] }
+          }
+        },
+        {
+          "name": "Heures de pointe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/peak-hours?startDate=2026-05-01&endDate=2026-05-13", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","peak-hours"], "query": [{"key":"startDate","value":"2026-05-01"},{"key":"endDate","value":"2026-05-13"}] }
+          }
+        },
+        {
+          "name": "Rapport pourboires par serveur",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/tips?startDate=2026-05-01&endDate=2026-05-13", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","tips"], "query": [{"key":"startDate","value":"2026-05-01"},{"key":"endDate","value":"2026-05-13"}] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "12. Unités de vente (Multi-unités)",
+      "item": [
+        {
+          "name": "Lister unités d'un produit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units"] }
+          }
+        },
+        {
+          "name": "Créer unité — Shot 4cl",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unitName\": \"Shot\",\n  \"quantityInStockUnit\": 0.04,\n  \"sellingPrice\": 5.00,\n  \"sortOrder\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units"] }
+          }
+        },
+        {
+          "name": "Créer unité — Verre 15cl",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unitName\": \"Verre\",\n  \"quantityInStockUnit\": 0.15,\n  \"sellingPrice\": 12.00,\n  \"sortOrder\": 2\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units"] }
+          }
+        },
+        {
+          "name": "Créer unité — Bouteille 70cl",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"unitName\": \"Bouteille\",\n  \"quantityInStockUnit\": 0.70,\n  \"sellingPrice\": 60.00,\n  \"sortOrder\": 3\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units"] }
+          }
+        },
+        {
+          "name": "Créer unités en lot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"units\": [\n    { \"unitName\": \"Shot\", \"quantityInStockUnit\": 0.04, \"sellingPrice\": 5.00, \"sortOrder\": 1 },\n    { \"unitName\": \"Verre\", \"quantityInStockUnit\": 0.15, \"sellingPrice\": 12.00, \"sortOrder\": 2 },\n    { \"unitName\": \"Bouteille\", \"quantityInStockUnit\": 0.70, \"sellingPrice\": 60.00, \"sortOrder\": 3 }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units/bulk", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units","bulk"] }
+          }
+        },
+        {
+          "name": "Modifier une unité",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"sellingPrice\": 5.50 }" },
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units/UNIT_ID_ICI", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units","UNIT_ID_ICI"] }
+          }
+        },
+        {
+          "name": "Supprimer une unité",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/products/PRODUCT_ID_ICI/units/UNIT_ID_ICI", "host": ["{{baseUrl}}"], "path": ["api","products","PRODUCT_ID_ICI","units","UNIT_ID_ICI"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "13. Flux Complet — Scénario End-to-End",
+      "description": "Scénario complet restaurant/bar avec toutes les nouvelles fonctionnalités :\n1. Ouvrir shift\n2. Créer tables + menu + modificateurs\n3. Ouvrir commande avec articles + options\n4. Envoyer cuisine → suivre KDS\n5. Signaler retour cuisine\n6. Créer ticket + remise + split bill\n7. Payer avec pourboire\n8. Clôturer → table libérée, stock déduit\n9. Fermer shift + rapport\n10. Consulter heures de pointe + tips",
+      "item": [
+        {
+          "name": "E1 — Ouvrir shift",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('shiftId',r.data.id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"openingCash\": 300.00 }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts"] }
+          }
+        },
+        {
+          "name": "E2 — Créer table",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('tableId',r.data.id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"number\": \"E1\", \"capacity\": 4, \"zone\": \"SALLE\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/tables", "host": ["{{baseUrl}}"], "path": ["api","restaurant","tables"] }
+          }
+        },
+        {
+          "name": "E3 — Créer catégorie",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('categoryId',r.data.id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"Alcools E2E\", \"station\": \"BAR\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/categories", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","categories"] }
+          }
+        },
+        {
+          "name": "E4 — Créer article (Shot Whisky)",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('menuItemId',r.data.id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"Shot Whisky 4cl\", \"price\": 8.00, \"categoryId\": \"{{categoryId}}\", \"station\": \"BAR\", \"isAvailable\": true }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items"] }
+          }
+        },
+        {
+          "name": "E4b — Lier article au stock bouteille (0.04 / shot 4cl)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"linkedProductId\": \"{{productId}}\",\n  \"stockDeductionQty\": 0.04\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/stock-link", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","stock-link"] }
+          }
+        },
+        {
+          "name": "E4c — Vérifier rapport stock bar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/bar-stock-report", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","bar-stock-report"] }
+          }
+        },
+        {
+          "name": "E5 — Créer groupe modificateur",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('modifierGroupId',r.data.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"Taille\", \"isRequired\": false, \"maxChoices\": 1 }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers"] }
+          }
+        },
+        {
+          "name": "E6 — Ajouter option (Grand format +2€)",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('modifierOptionId',r.data.id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"Grand format\", \"extraPrice\": 2.00 }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/items/{{menuItemId}}/modifiers/{{modifierGroupId}}/options", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","items","{{menuItemId}}","modifiers","{{modifierGroupId}}","options"] }
+          }
+        },
+        {
+          "name": "E7 — Ouvrir commande",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('orderId',r.data.id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"tableId\": \"{{tableId}}\", \"type\": \"SUR_PLACE\", \"guestCount\": 2 }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders"] }
+          }
+        },
+        {
+          "name": "E8 — Ajouter articles avec modificateur",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.items&&r.data.items.length>0) pm.collectionVariables.set('orderItemId',r.data.items[0].id);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menuItemId}}\",\n      \"quantity\": 2,\n      \"modifiers\": [{\"groupId\": \"{{modifierGroupId}}\", \"optionId\": \"{{modifierOptionId}}\"}]\n    }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/items", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","items"] }
+          }
+        },
+        {
+          "name": "E9 — Envoyer en cuisine",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/send", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","send"] }
+          }
+        },
+        {
+          "name": "E10 — Créer ticket brouillon",
+          "event": [{ "listen": "test", "script": { "exec": ["const r=pm.response.json(); if(r.data&&r.data.id) pm.collectionVariables.set('billId',r.data.id); if(r.data&&r.data.draftItems&&r.data.draftItems[0]) pm.collectionVariables.set('draftItemId',r.data.draftItems[0].id); pm.test('OK',()=>pm.response.to.have.status(201));"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"notes\": \"Test E2E\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/orders/{{orderId}}/bill/draft", "host": ["{{baseUrl}}"], "path": ["api","restaurant","orders","{{orderId}}","bill","draft"] }
+          }
+        },
+        {
+          "name": "E11 — Appliquer remise",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"discount\": 2.00, \"reason\": \"Remise fidélité\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/discount", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","discount"] }
+          }
+        },
+        {
+          "name": "E12 — Valider brouillon",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/validate", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","validate"] }
+          }
+        },
+        {
+          "name": "E13 — Payer (CASH + pourboire)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"amount\": 22.00, \"tip\": 2.00, \"paymentMethod\": \"CASH\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/payment", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","payment"] }
+          }
+        },
+        {
+          "name": "E14 — Clôturer (libère table, déduit stock bar automatiquement)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/bills/{{billId}}/close", "host": ["{{baseUrl}}"], "path": ["api","restaurant","bills","{{billId}}","close"] }
+          }
+        },
+        {
+          "name": "E14b — Vérifier stock bar après clôture",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/menu/bar-stock-report", "host": ["{{baseUrl}}"], "path": ["api","restaurant","menu","bar-stock-report"] }
+          }
+        },
+        {
+          "name": "E15 — Fermer shift",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"closingCash\": 324.00, \"notes\": \"Bonne soirée\" }" },
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/{{shiftId}}/close", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","{{shiftId}}","close"] }
+          }
+        },
+        {
+          "name": "E16 — Rapport shift",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/shifts/{{shiftId}}/report", "host": ["{{baseUrl}}"], "path": ["api","restaurant","shifts","{{shiftId}}","report"] }
+          }
+        },
+        {
+          "name": "E17 — Rapport heures de pointe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/peak-hours", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","peak-hours"] }
+          }
+        },
+        {
+          "name": "E18 — Rapport pourboires",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/restaurant/dashboard/reports/tips", "host": ["{{baseUrl}}"], "path": ["api","restaurant","dashboard","reports","tips"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

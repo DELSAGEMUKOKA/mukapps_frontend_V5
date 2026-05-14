@@ -1,29 +1,7 @@
 // src/modules/magasin/api/stockApi.ts
 import apiClient from '@/core/api/axiosConfig';
-
-export interface Product {
-  id: string;
-  name: string;
-  categoryId: string | null;
-  category?: { id: string; name: string; color?: string } | null;
-  unit: string;
-  description: string | null;
-  barcode: string | null;
-  sku: string | null;
-  costPrice: string;
-  sellingPrice: string;
-  quantity: number;
-  minStockLevel: number;
-  expirationDate: string | null;
-  imageUrl: string | null;
-  tags: string | null;
-  supplier: string | null;
-  location: string | null;
-  isArchived: boolean;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Product, ApiResponse, PaginatedResponse } from '@/shared/types';
+import { batchApi } from './batchApi';
 
 export interface ProductForMovement {
   id: string;
@@ -124,6 +102,15 @@ export interface ProductsResponse {
   };
 }
 
+export interface StockMovementWithBatches extends StockMovement {
+  batchMovements?: Array<{
+    batchId: string;
+    batchNumber: string;
+    quantity: number;
+    expiryDate: string;
+  }>;
+}
+
 // Fonction utilitaire pour gérer les erreurs
 const safeRequest = async <T>(requestFn: () => Promise<any>, fallback: T): Promise<T> => {
   try {
@@ -192,33 +179,85 @@ export const stockApi = {
   },
 
   /**
+   * Récupère les mouvements de stock avec détails des lots
+   * GET /api/magasin/stock/movements?includeBatchDetails=true
+   */
+  getMovementsWithBatches: async (params?: { page?: number; limit?: number; productId?: string }): Promise<{ movements: StockMovementWithBatches[]; pagination: any }> => {
+    return safeRequest(
+      () => apiClient.get('/magasin/stock/movements', { params: { ...params, includeBatchDetails: true } }),
+      { movements: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } }
+    );
+  },
+
+  /**
    * Crée un nouveau mouvement de stock
    * POST /api/magasin/stock/movements
+   * @deprecated Pour les produits avec gestion de lots, utiliser batchApi.consumeFefo ou batchApi.addBatch
    */
- createMovement: async (data: StockMovementFormData): Promise<StockMovementResponse> => {
-  try {
-    // Transformer les données pour correspondre au format attendu par le backend
-    const payload = {
-      productId: data.productId,
-      quantity: data.quantity,
-      type: data.type === 'in' ? 'IN' : data.type === 'out' ? 'OUT' : 'ADJUSTMENT',
-      reason: data.reason,
-      reference: data.reference || undefined,
-      notes: data.notes || undefined,
-    };
-    
-    console.log('Envoi mouvement stock:', payload);
-    const response = await apiClient.post('/magasin/stock/movements', payload);
-    return response.data?.data ?? response.data;
-  } catch (error: any) {
-    console.error('Erreur createMovement:', error.response?.data || error.message);
-    throw error;
-  }
-},
+  createMovement: async (data: StockMovementFormData): Promise<StockMovementResponse> => {
+    try {
+      // Transformer les données pour correspondre au format attendu par le backend
+      const payload = {
+        productId: data.productId,
+        quantity: data.quantity,
+        type: data.type === 'in' ? 'IN' : data.type === 'out' ? 'OUT' : 'ADJUSTMENT',
+        reason: data.reason,
+        reference: data.reference || undefined,
+        notes: data.notes || undefined,
+      };
+      
+      console.log('Envoi mouvement stock:', payload);
+      const response = await apiClient.post('/magasin/stock/movements', payload);
+      return response.data?.data ?? response.data;
+    } catch (error: any) {
+      console.error('Erreur createMovement:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Crée un mouvement de stock avec gestion de lots (entrée)
+   * Utilise batchApi.addBatch pour ajouter un lot
+   */
+  createMovementWithBatch: async (data: StockMovementFormData & { batchNumber?: string; expiryDate?: string; costPrice?: number }): Promise<StockMovementResponse> => {
+    try {
+      if (data.type === 'in' && data.batchNumber && data.expiryDate) {
+        // Ajouter un lot via batchApi
+        const batchResponse = await batchApi.addBatch(data.productId, {
+          batchNumber: data.batchNumber,
+          quantity: data.quantity,
+          costPrice: data.costPrice || 0,
+          expiryDate: data.expiryDate,
+          notes: data.notes,
+        });
+        
+        if (batchResponse.data.success) {
+          // Créer le mouvement de stock traditionnel pour traçabilité
+          const payload = {
+            productId: data.productId,
+            quantity: data.quantity,
+            type: 'IN',
+            reason: data.reason,
+            reference: data.reference || `BATCH_${data.batchNumber}`,
+            notes: data.notes,
+          };
+          const response = await apiClient.post('/magasin/stock/movements', payload);
+          return response.data?.data ?? response.data;
+        }
+      }
+      
+      // Fallback au mouvement traditionnel
+      return await stockApi.createMovement(data);
+    } catch (error: any) {
+      console.error('Erreur createMovementWithBatch:', error.response?.data || error.message);
+      throw error;
+    }
+  },
 
   /**
    * Ajuste le stock d'un produit
    * POST /api/magasin/stock/adjust
+   * @deprecated Pour les produits avec gestion de lots, utiliser batchApi.adjustBatchQuantity
    */
   adjustStock: async (payload: AdjustStockPayload): Promise<Product> => {
     const response = await apiClient.post('/magasin/stock/adjust', payload);
@@ -226,8 +265,31 @@ export const stockApi = {
   },
 
   /**
+   * Ajuste le stock avec gestion de lots
+   * Utilise batchApi pour les produits avec lots
+   */
+  adjustStockWithBatch: async (payload: AdjustStockPayload & { batchId?: string }): Promise<Product> => {
+    try {
+      if (payload.batchId) {
+        // Ajuster un lot spécifique
+        const batchResponse = await batchApi.adjustBatchQuantity(payload.batchId, payload.quantity, payload.reason);
+        if (batchResponse.data.success) {
+          return batchResponse.data.data as unknown as Product;
+        }
+      }
+      
+      // Fallback à l'ajustement traditionnel
+      return await stockApi.adjustStock(payload);
+    } catch (error: any) {
+      console.error('Erreur adjustStockWithBatch:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
    * Met à jour le stock directement via le produit
    * PATCH /api/magasin/products/:productId/stock
+   * @deprecated Utiliser batchApi pour les produits avec gestion de lots
    */
   updateProductStock: async (productId: string, payload: UpdateStockPayload): Promise<Product> => {
     const response = await apiClient.patch(`/magasin/products/${productId}/stock`, payload);
@@ -251,11 +313,9 @@ export const stockApi = {
     try {
       const response = await apiClient.get('/magasin/products');
       const data = response.data?.data || response.data;
-      // Si la réponse est un tableau direct
       if (Array.isArray(data)) {
         return data;
       }
-      // Si la réponse a une propriété products
       return data?.products || data?.data || [];
     } catch (error) {
       console.error('Erreur getProductsSimple:', error);
@@ -273,13 +333,50 @@ export const stockApi = {
         id: p.id,
         name: p.name,
         barcode: p.barcode || '',
-        currentStock: p.quantity,
-        minStockLevel: p.minStockLevel,
-        unit: p.unit,
+        currentStock: p.stock,
+        minStockLevel: p.minStock || 0,
+        unit: p.unit || 'pièce',
       }));
     } catch (error) {
       console.error('Erreur getAllProductsForMovement:', error);
       return [];
     }
   },
+
+  /**
+   * Récupère les détails de stock avec lots pour un produit
+   * Combine les informations du produit et des lots
+   */
+  getProductStockDetails: async (productId: string) => {
+    try {
+      const [productResponse, batchesResponse, summaryResponse] = await Promise.all([
+        apiClient.get(`/magasin/products/${productId}`),
+        batchApi.getProductBatches(productId),
+        batchApi.getStockSummary(productId),
+      ]);
+      
+      return {
+        product: productResponse.data?.data,
+        batches: batchesResponse.data?.data,
+        summary: summaryResponse.data?.data,
+      };
+    } catch (error: any) {
+      console.error('Erreur getProductStockDetails:', error.response?.data || error.message);
+      return null;
+    }
+  },
+
+  /**
+   * Exporte le rapport de stock complet (produits + lots)
+   */
+  exportStockReport: async (format: 'csv' | 'pdf' = 'csv'): Promise<Blob> => {
+    const response = await apiClient.get('/magasin/stock/export', {
+      params: { format, includeBatches: true },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
+
+// ❌ SUPPRIMEZ CETTE LIGNE - L'interface est déjà exportée avec export interface
+// export type { Product, StockMovementWithBatches };

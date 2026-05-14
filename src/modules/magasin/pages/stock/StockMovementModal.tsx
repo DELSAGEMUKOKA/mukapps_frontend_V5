@@ -1,7 +1,8 @@
-// src/modules/magasin/pages/stock/StockMovementModal.tsx
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Package, Barcode } from 'lucide-react';
+import { X, Search, Package, Barcode, Layers, AlertTriangle, ArrowUp, ArrowDown, RefreshCw, Calendar, Undo } from 'lucide-react';
 import type { ProductForMovement, StockMovementFormData } from '../../api/stockApi';
+import { useQuery } from '@tanstack/react-query';
+import { batchApi } from '../../api/batchApi';
 
 interface StockMovementModalProps {
   show: boolean;
@@ -11,6 +12,75 @@ interface StockMovementModalProps {
   onClose: () => void;
   onSubmit: (data: StockMovementFormData) => void;
 }
+
+interface BatchInfo {
+  id: string;
+  batchNumber: string;
+  quantity: number;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  isExpired: boolean;
+}
+
+type MovementType = 'IN' | 'OUT' | 'ADJUSTMENT' | 'EXPIRY' | 'RETURN';
+
+interface MovementTypeInfo {
+  code: MovementType;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  withBatch: boolean;
+}
+
+const MOVEMENT_TYPES: MovementTypeInfo[] = [
+  {
+    code: 'IN',
+    label: 'ENTRÉE',
+    description: 'Achat de stock',
+    icon: <ArrowUp size={14} />,
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    withBatch: true
+  },
+  {
+    code: 'OUT',
+    label: 'SORTIE',
+    description: 'Vente de stock',
+    icon: <ArrowDown size={14} />,
+    color: 'text-red-600',
+    bgColor: 'bg-red-100',
+    withBatch: true
+  },
+  {
+    code: 'ADJUSTMENT',
+    label: 'AJUSTEMENT',
+    description: 'Correction de stock',
+    icon: <RefreshCw size={14} />,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    withBatch: true
+  },
+  {
+    code: 'EXPIRY',
+    label: 'EXPIRATION',
+    description: 'Perte produit expiré',
+    icon: <Calendar size={14} />,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    withBatch: true
+  },
+  {
+    code: 'RETURN',
+    label: 'RETOUR',
+    description: 'Retour client',
+    icon: <Undo size={14} />,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    withBatch: true
+  }
+];
 
 export function StockMovementModal({
   show,
@@ -23,6 +93,9 @@ export function StockMovementModal({
   const [selectedProduct, setSelectedProduct] = useState<ProductForMovement | null>(initialProduct || null);
   const [productSearchTerm, setProductSearchTerm] = useState(initialProduct?.name || '');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [showBatchSelection, setShowBatchSelection] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<BatchInfo | null>(null);
+  const [movementType, setMovementType] = useState<MovementType>('IN');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<StockMovementFormData>({
@@ -34,10 +107,28 @@ export function StockMovementModal({
     notes: '',
   });
 
+  const { data: batchesData, isLoading: isLoadingBatches } = useQuery({
+    queryKey: ['product-batches', selectedProduct?.id, movementType],
+    queryFn: async () => {
+      if (!selectedProduct?.id) {
+        return { data: { data: [] } };
+      }
+      const includeExpired = movementType === 'EXPIRY';
+      const response = await batchApi.getProductBatches(selectedProduct.id, includeExpired);
+      return response;
+    },
+    enabled: !!selectedProduct?.id && showBatchSelection && (movementType === 'OUT' || movementType === 'EXPIRY' || movementType === 'ADJUSTMENT'),
+  });
+
+  const batches = (batchesData?.data?.data || []) as BatchInfo[];
+
   useEffect(() => {
     if (show) {
       setSelectedProduct(initialProduct || null);
       setProductSearchTerm(initialProduct?.name || '');
+      setSelectedBatch(null);
+      setShowBatchSelection(false);
+      setMovementType('IN');
       setFormData({
         productId: initialProduct?.id || '',
         type: 'in',
@@ -75,6 +166,8 @@ export function StockMovementModal({
     setProductSearchTerm(product.name);
     setFormData({ ...formData, productId: product.id });
     setShowProductDropdown(false);
+    setSelectedBatch(null);
+    setShowBatchSelection(false);
   };
 
   const handleProductSearchChange = (value: string) => {
@@ -86,36 +179,112 @@ export function StockMovementModal({
     }
   };
 
+  const handleMovementTypeChange = (type: MovementType) => {
+    setMovementType(type);
+    setSelectedBatch(null);
+    setShowBatchSelection(false);
+    let newType: 'in' | 'out' | 'adjustment' = 'in';
+    if (type === 'OUT') newType = 'out';
+    else if (type === 'ADJUSTMENT') newType = 'adjustment';
+    else newType = 'in';
+    
+    setFormData({ 
+      ...formData, 
+      type: newType,
+      reason: getDefaultReason(type),
+      quantity: 0
+    });
+  };
+
+  const getDefaultReason = (type: MovementType): string => {
+    switch (type) {
+      case 'IN': return 'Achat fournisseur';
+      case 'OUT': return 'Vente client';
+      case 'ADJUSTMENT': return 'Correction inventaire';
+      case 'EXPIRY': return 'Produit expiré - mise au rebut';
+      case 'RETURN': return 'Retour client';
+      default: return '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    let notes = formData.notes || '';
+    
+    if (selectedBatch) {
+      notes = `${notes} [Lot: ${selectedBatch.batchNumber}]`.trim();
+    }
+    
+    const movementInfo = MOVEMENT_TYPES.find(t => t.code === movementType);
+    notes = `[${movementInfo?.label}] ${notes}`.trim();
+    
+    onSubmit({
+      ...formData,
+      notes,
+      reason: formData.reason || getDefaultReason(movementType),
+    });
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'in': return 'Entrée';
-      case 'out': return 'Sortie';
-      case 'adjustment': return 'Ajustement';
-      default: return type;
+  const getAvailableStock = () => {
+    if (selectedBatch && (movementType === 'OUT' || movementType === 'EXPIRY')) {
+      return selectedBatch.quantity;
+    }
+    if (movementType === 'EXPIRY') {
+      const expiredBatches = batches.filter(b => b.isExpired);
+      return expiredBatches.reduce((sum, b) => sum + b.quantity, 0);
+    }
+    return selectedProduct?.currentStock || 0;
+  };
+
+  const isStockSufficient = () => {
+    if (movementType === 'IN' || movementType === 'RETURN') return true;
+    if (movementType === 'ADJUSTMENT') return true;
+    if (movementType === 'OUT' || movementType === 'EXPIRY') {
+      if (selectedBatch) {
+        return selectedBatch.quantity >= formData.quantity;
+      }
+      return getAvailableStock() >= formData.quantity;
+    }
+    return true;
+  };
+
+  const canSelectBatch = () => {
+    return movementType === 'OUT' || movementType === 'EXPIRY' || movementType === 'ADJUSTMENT';
+  };
+
+  const getBatchFilterLabel = () => {
+    switch (movementType) {
+      case 'OUT': return 'Lots disponibles';
+      case 'EXPIRY': return 'Lots expirés';
+      case 'ADJUSTMENT': return 'Tous les lots';
+      default: return 'Lots';
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'in': return 'text-green-600';
-      case 'out': return 'text-red-600';
-      case 'adjustment': return 'text-blue-600';
-      default: return 'text-gray-600';
+  const getFilteredBatches = () => {
+    switch (movementType) {
+      case 'OUT': return batches.filter(b => !b.isExpired && b.quantity > 0);
+      case 'EXPIRY': return batches.filter(b => b.isExpired);
+      case 'ADJUSTMENT': return batches;
+      default: return batches;
     }
   };
+
+  const getMovementTypeInfo = (type: MovementType): MovementTypeInfo => {
+    return MOVEMENT_TYPES.find(t => t.code === type) || MOVEMENT_TYPES[0];
+  };
+
+  const currentMovementInfo = getMovementTypeInfo(movementType);
+  const filteredBatches = getFilteredBatches();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Nouveau mouvement</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Ajouter ou retirer du stock</p>
+            <h2 className="text-lg font-bold text-gray-900">Nouveau mouvement de stock</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Gestion des entrées, sorties, ajustements, expirations et retours</p>
           </div>
           <button
             onClick={onClose}
@@ -206,6 +375,8 @@ export function StockMovementModal({
                         setSelectedProduct(null);
                         setProductSearchTerm('');
                         setFormData({ ...formData, productId: '' });
+                        setSelectedBatch(null);
+                        setShowBatchSelection(false);
                       }}
                       className="text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-100"
                     >
@@ -217,21 +388,32 @@ export function StockMovementModal({
             </div>
 
             {/* Type de mouvement */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <div className="col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Type de mouvement <span className="text-red-500">*</span>
               </label>
-    
-<select
-  value={formData.type}
-  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'in' | 'out' | 'adjustment' })}
-  className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-  required
->
-  <option value="in">📥 Entrée (IN) - Réapprovisionnement</option>
-  <option value="out">📤 Sortie (OUT) - Vente, utilisation</option>
-  <option value="adjustment">⚖️ Ajustement (ADJUSTMENT) - Correction</option>
-</select>
+              <div className="grid grid-cols-5 gap-2">
+                {MOVEMENT_TYPES.map((type) => (
+                  <button
+                    key={type.code}
+                    type="button"
+                    onClick={() => handleMovementTypeChange(type.code)}
+                    className={`p-3 rounded-lg border-2 transition-all text-center ${
+                      movementType === type.code
+                        ? `${type.bgColor} border-${type.color.split('-')[1]}-400`
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className={`flex justify-center mb-1 ${type.color}`}>
+                      {type.icon}
+                    </div>
+                    <p className={`text-xs font-semibold ${movementType === type.code ? type.color : 'text-gray-600'}`}>
+                      {type.label}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{type.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Quantité */}
@@ -248,7 +430,126 @@ export function StockMovementModal({
                 step="1"
                 required
               />
+              {movementType !== 'IN' && movementType !== 'RETURN' && formData.quantity > getAvailableStock() && (
+                <p className="text-xs text-red-500 mt-1">
+                  ⚠️ Stock insuffisant (disponible: {getAvailableStock()})
+                </p>
+              )}
             </div>
+
+            {/* Info sur le mouvement */}
+            <div className={`p-3 rounded-lg ${currentMovementInfo.bgColor} ${currentMovementInfo.color}`}>
+              <div className="flex items-center gap-2">
+                {currentMovementInfo.icon}
+                <span className="text-xs font-medium">
+                  {currentMovementInfo.description}
+                  {currentMovementInfo.withBatch && (
+                    <span className="ml-1 text-[10px] opacity-75">(avec gestion de lots)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Sélection du lot */}
+            {canSelectBatch() && selectedProduct && (
+              <div className="col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    {getBatchFilterLabel()}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowBatchSelection(!showBatchSelection)}
+                    className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    <Layers size={12} />
+                    {showBatchSelection ? 'Masquer les lots' : 'Choisir un lot spécifique'}
+                  </button>
+                </div>
+
+                {showBatchSelection && (
+                  <div className="mt-2">
+                    {isLoadingBatches ? (
+                      <div className="text-center py-4 text-gray-500">Chargement des lots...</div>
+                    ) : filteredBatches.length === 0 ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                        <AlertTriangle size={16} className="text-yellow-600 mx-auto mb-1" />
+                        <p className="text-xs text-yellow-700">
+                          {movementType === 'EXPIRY' 
+                            ? 'Aucun lot expiré pour ce produit'
+                            : movementType === 'OUT'
+                            ? 'Aucun lot disponible pour ce produit'
+                            : 'Aucun lot trouvé'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">N° Lot</th>
+                              <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">Quantité</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Expiration</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Statut</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {filteredBatches.map((batch) => {
+                              const isSelected = selectedBatch?.id === batch.id;
+                              const isDisabled = movementType === 'OUT' && batch.quantity === 0;
+                              
+                              let statusLabel = 'Actif';
+                              let statusColor = 'text-green-600';
+                              if (batch.isExpired) {
+                                statusLabel = 'Expiré';
+                                statusColor = 'text-red-600';
+                              } else if (!batch.isExpired && batch.daysUntilExpiry <= 30) {
+                                statusLabel = 'Expire bientôt';
+                                statusColor = 'text-orange-600';
+                              }
+                              
+                              return (
+                                <tr key={batch.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                                  <td className="px-3 py-2 font-mono text-xs">{batch.batchNumber}</td>
+                                  <td className="px-3 py-2 text-right font-medium">{batch.quantity}</td>
+                                  <td className="px-3 py-2 text-xs">
+                                    {new Date(batch.expiryDate).toLocaleDateString('fr-FR')}
+                                    <span className="ml-1 text-xs">({batch.daysUntilExpiry}j)</span>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <span className={`text-xs ${statusColor}`}>{statusLabel}</span>
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isDisabled) {
+                                          setSelectedBatch(isSelected ? null : batch);
+                                          setFormData({ ...formData, quantity: 0 });
+                                        }
+                                      }}
+                                      disabled={isDisabled}
+                                      className={`px-2 py-1 text-xs rounded ${
+                                        isSelected
+                                          ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                      } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                      {isSelected ? 'Annuler' : 'Sélectionner'}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Raison */}
             <div className="col-span-2">
@@ -260,7 +561,7 @@ export function StockMovementModal({
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ex: Achat fournisseur, Vente client, Perte, Casse, Inventaire..."
+                placeholder={getDefaultReason(movementType)}
                 required
               />
             </div>
@@ -275,7 +576,7 @@ export function StockMovementModal({
                 value={formData.reference}
                 onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Bon de commande, facture #..."
+                placeholder="Facture #, Bon de commande..."
               />
             </div>
 
@@ -286,32 +587,41 @@ export function StockMovementModal({
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
+                rows={2}
                 placeholder="Informations complémentaires..."
               />
             </div>
           </div>
 
-          {/* Aperçu du mouvement */}
-          {formData.productId && formData.quantity > 0 && selectedProduct && (
+          {/* Aperçu */}
+          {formData.productId && formData.quantity > 0 && selectedProduct && isStockSufficient() && (
             <div className="mt-5 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs font-semibold text-gray-500 mb-2">APERÇU DU MOUVEMENT</p>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">
-                    {getTypeLabel(formData.type)} de <span className="font-bold">{formData.quantity}</span> {selectedProduct.unit}
+                    <span className="font-semibold">{currentMovementInfo.label}</span> de{' '}
+                    <span className="font-bold">{formData.quantity}</span> {selectedProduct.unit}
+                    {selectedBatch && (
+                      <span className="text-xs text-gray-500 ml-2">(Lot: {selectedBatch.batchNumber})</span>
+                    )}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Stock actuel: {selectedProduct.currentStock} → 
-                    <span className={`font-bold ml-1 ${formData.type === 'in' ? 'text-green-600' : formData.type === 'out' ? 'text-red-600' : 'text-blue-600'}`}>
-                      {formData.type === 'in' 
-                        ? selectedProduct.currentStock + formData.quantity
-                        : selectedProduct.currentStock - formData.quantity}
-                    </span>
-                  </p>
+                  {movementType !== 'IN' && movementType !== 'RETURN' && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Stock actuel: {selectedProduct.currentStock} → 
+                      <span className="font-bold ml-1 text-red-600">
+                        {selectedProduct.currentStock - formData.quantity}
+                      </span>
+                    </p>
+                  )}
+                  {movementType === 'OUT' && !selectedBatch && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      🔄 La méthode FEFO sera appliquée automatiquement
+                    </p>
+                  )}
                 </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium bg-${formData.type === 'in' ? 'green' : formData.type === 'out' ? 'red' : 'blue'}-100 ${getTypeColor(formData.type)}`}>
-                  {getTypeLabel(formData.type)}
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${currentMovementInfo.bgColor} ${currentMovementInfo.color}`}>
+                  {currentMovementInfo.label}
                 </div>
               </div>
             </div>
@@ -327,7 +637,7 @@ export function StockMovementModal({
             </button>
             <button
               type="submit"
-              disabled={saving || !formData.productId || formData.quantity <= 0}
+              disabled={saving || !formData.productId || formData.quantity <= 0 || !isStockSufficient()}
               className="flex-1 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
@@ -336,7 +646,7 @@ export function StockMovementModal({
                   Enregistrement...
                 </span>
               ) : (
-                'Enregistrer le mouvement'
+                `Enregistrer le mouvement`
               )}
             </button>
           </div>

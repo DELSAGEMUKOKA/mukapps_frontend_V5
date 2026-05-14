@@ -1,9 +1,16 @@
 import {
   require_react_dom
+<<<<<<< HEAD
 } from "./chunk-POQVU2VI.js";
 import {
   require_react
 } from "./chunk-HA2I5Q66.js";
+=======
+} from "./chunk-D24B44MJ.js";
+import {
+  require_react
+} from "./chunk-FYGGDDPD.js";
+>>>>>>> 9598fc5 (message)
 import {
   __commonJS
 } from "./chunk-5WRI5ZAA.js";
@@ -20052,9 +20059,9 @@ var require_react_dom_client_development = __commonJS({
       };
       (function() {
         var isomorphicReactPackageVersion = React.version;
-        if ("19.2.5" !== isomorphicReactPackageVersion)
+        if ("19.2.6" !== isomorphicReactPackageVersion)
           throw Error(
-            'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.5\nLearn more: https://react.dev/warnings/version-mismatch")
+            'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.6\nLearn more: https://react.dev/warnings/version-mismatch")
           );
       })();
       "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
@@ -20078,10 +20085,10 @@ var require_react_dom_client_development = __commonJS({
       if (!(function() {
         var internals = {
           bundleType: 1,
-          version: "19.2.5",
+          version: "19.2.6",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.2.5"
+          reconcilerVersion: "19.2.6"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -20172,7 +20179,7 @@ var require_react_dom_client_development = __commonJS({
         listenToAllSupportedEvents(container);
         return new ReactDOMHydrationRoot(initialChildren);
       };
-      exports.version = "19.2.5";
+      exports.version = "19.2.6";
       "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(Error());
     })();
   }

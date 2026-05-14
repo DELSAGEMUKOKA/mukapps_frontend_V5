@@ -1,6 +1,10 @@
 import {
   require_react
+<<<<<<<< HEAD:.vite/deps/chunk-7OWVEFH7.js
 } from "./chunk-HA2I5Q66.js";
+========
+} from "./chunk-FYGGDDPD.js";
+>>>>>>>> 9598fc5 (message):.vite/deps/chunk-2Q3I5DTH.js
 import {
   __commonJS,
   __toESM
@@ -441,8 +445,8 @@ function timeUntilStale(updatedAt, staleTime) {
 function resolveStaleTime(staleTime, query) {
   return typeof staleTime === "function" ? staleTime(query) : staleTime;
 }
-function resolveEnabled(enabled, query) {
-  return typeof enabled === "function" ? enabled(query) : enabled;
+function resolveQueryBoolean(option, query) {
+  return typeof option === "function" ? option(query) : option;
 }
 function matchQuery(filters, query) {
   const {
@@ -782,7 +786,8 @@ function dehydrateQuery(query, serializeData, shouldRedactErrors) {
     ...query.state.status === "pending" && {
       promise: dehydratePromise()
     },
-    ...query.meta && { meta: query.meta }
+    ...query.meta && { meta: query.meta },
+    ...query.queryType && { queryType: query.queryType }
   };
 }
 function defaultShouldDehydrateMutation(mutation) {
@@ -828,7 +833,15 @@ function hydrate(client, dehydratedState, options) {
     );
   });
   queries.forEach(
-    ({ queryKey, state, queryHash, meta, promise, dehydratedAt }) => {
+    ({
+      queryKey,
+      state,
+      queryHash,
+      meta,
+      promise,
+      dehydratedAt,
+      queryType
+    }) => {
       const syncData = promise ? tryResolveSync(promise) : void 0;
       const rawData = state.data === void 0 ? syncData?.data : state.data;
       const data = rawData === void 0 ? rawData : deserializeData(rawData);
@@ -843,7 +856,19 @@ function hydrate(client, dehydratedState, options) {
           const { fetchStatus: _ignored, ...serializedState } = state;
           query.setState({
             ...serializedState,
-            data
+            data,
+            // If the query was pending at the moment of dehydration, but resolved to have data
+            // before hydration, we can assume the query should be hydrated as successful.
+            //
+            // Since you can opt into dehydrating failed queries, and those can have data from
+            // previous successful fetches, we make sure we only do this for pending queries.
+            ...state.status === "pending" && data !== void 0 && {
+              status: "success",
+              // Preserve existing fetchStatus if the existing query is actively fetching.
+              ...!existingQueryIsFetching && {
+                fetchStatus: "idle"
+              }
+            }
           });
         }
       } else {
@@ -854,7 +879,8 @@ function hydrate(client, dehydratedState, options) {
             ...options?.defaultOptions?.queries,
             queryKey,
             queryHash,
-            meta
+            meta,
+            _type: queryType
           },
           // Reset fetch status to idle to avoid
           // query being stuck in fetching state upon hydration
@@ -862,11 +888,15 @@ function hydrate(client, dehydratedState, options) {
             ...state,
             data,
             fetchStatus: "idle",
-            status: data !== void 0 ? "success" : state.status
+            // Like above, if the query was pending at the moment of dehydration but has data,
+            // we can assume it should be hydrated as successful.
+            status: state.status === "pending" && data !== void 0 ? "success" : state.status
           }
         );
       }
-      if (promise && !existingQueryIsPending && !existingQueryIsFetching && // Only hydrate if dehydration is newer than any existing data,
+      if (promise && // If the data was synchronously available, there is no need to set up
+      // a retryer and thus no reason to call fetch
+      !syncData && !existingQueryIsPending && !existingQueryIsFetching && // Only hydrate if dehydration is newer than any existing data,
       // this is always true for new queries
       (dehydratedAt === void 0 || dehydratedAt > query.state.dataUpdatedAt)) {
         query.fetch(void 0, {
@@ -1161,8 +1191,118 @@ var Removable = class {
   }
 };
 
+// node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+function infiniteQueryBehavior(pages) {
+  return {
+    onFetch: (context, query) => {
+      const options = context.options;
+      const direction = context.fetchOptions?.meta?.fetchMore?.direction;
+      const oldPages = context.state.data?.pages || [];
+      const oldPageParams = context.state.data?.pageParams || [];
+      let result = { pages: [], pageParams: [] };
+      let currentPage = 0;
+      const fetchFn = async () => {
+        let cancelled = false;
+        const addSignalProperty = (object) => {
+          addConsumeAwareSignal(
+            object,
+            () => context.signal,
+            () => cancelled = true
+          );
+        };
+        const queryFn = ensureQueryFn(context.options, context.fetchOptions);
+        const fetchPage = async (data, param, previous) => {
+          if (cancelled) {
+            return Promise.reject(context.signal.reason);
+          }
+          if (param == null && data.pages.length) {
+            return Promise.resolve(data);
+          }
+          const createQueryFnContext = () => {
+            const queryFnContext2 = {
+              client: context.client,
+              queryKey: context.queryKey,
+              pageParam: param,
+              direction: previous ? "backward" : "forward",
+              meta: context.options.meta
+            };
+            addSignalProperty(queryFnContext2);
+            return queryFnContext2;
+          };
+          const queryFnContext = createQueryFnContext();
+          const page = await queryFn(queryFnContext);
+          const { maxPages } = context.options;
+          const addTo = previous ? addToStart : addToEnd;
+          return {
+            pages: addTo(data.pages, page, maxPages),
+            pageParams: addTo(data.pageParams, param, maxPages)
+          };
+        };
+        if (direction && oldPages.length) {
+          const previous = direction === "backward";
+          const pageParamFn = previous ? getPreviousPageParam : getNextPageParam;
+          const oldData = {
+            pages: oldPages,
+            pageParams: oldPageParams
+          };
+          const param = pageParamFn(options, oldData);
+          result = await fetchPage(oldData, param, previous);
+        } else {
+          const remainingPages = pages ?? oldPages.length;
+          do {
+            const param = currentPage === 0 ? oldPageParams[0] ?? options.initialPageParam : getNextPageParam(options, result);
+            if (currentPage > 0 && param == null) {
+              break;
+            }
+            result = await fetchPage(result, param);
+            currentPage++;
+          } while (currentPage < remainingPages);
+        }
+        return result;
+      };
+      if (context.options.persister) {
+        context.fetchFn = () => {
+          return context.options.persister?.(
+            fetchFn,
+            {
+              client: context.client,
+              queryKey: context.queryKey,
+              meta: context.options.meta,
+              signal: context.signal
+            },
+            query
+          );
+        };
+      } else {
+        context.fetchFn = fetchFn;
+      }
+    }
+  };
+}
+function getNextPageParam(options, { pages, pageParams }) {
+  const lastIndex = pages.length - 1;
+  return pages.length > 0 ? options.getNextPageParam(
+    pages[lastIndex],
+    pages,
+    pageParams[lastIndex],
+    pageParams
+  ) : void 0;
+}
+function getPreviousPageParam(options, { pages, pageParams }) {
+  return pages.length > 0 ? options.getPreviousPageParam?.(pages[0], pages, pageParams[0], pageParams) : void 0;
+}
+function hasNextPage(options, data) {
+  if (!data) return false;
+  return getNextPageParam(options, data) != null;
+}
+function hasPreviousPage(options, data) {
+  if (!data || !options.getPreviousPageParam) return false;
+  return getPreviousPageParam(options, data) != null;
+}
+
 // node_modules/@tanstack/query-core/build/modern/query.js
 var Query = class extends Removable {
+  #queryType;
   #initialState;
   #revertState;
   #cache;
@@ -1187,11 +1327,17 @@ var Query = class extends Removable {
   get meta() {
     return this.options.meta;
   }
+  get queryType() {
+    return this.#queryType;
+  }
   get promise() {
     return this.#retryer?.promise;
   }
   setOptions(options) {
     this.options = { ...this.#defaultOptions, ...options };
+    if (options?._type) {
+      this.#queryType = options._type;
+    }
     this.updateGcTime(this.options.gcTime);
     if (this.state && this.state.data === void 0) {
       const defaultState = getDefaultState(this.options);
@@ -1218,8 +1364,8 @@ var Query = class extends Removable {
     });
     return data;
   }
-  setState(state, setStateOptions) {
-    this.#dispatch({ type: "setState", state, setStateOptions });
+  setState(state) {
+    this.#dispatch({ type: "setState", state });
   }
   cancel(options) {
     const promise = this.#retryer?.promise;
@@ -1239,7 +1385,7 @@ var Query = class extends Removable {
   }
   isActive() {
     return this.observers.some(
-      (observer) => resolveEnabled(observer.options.enabled, this) !== false
+      (observer) => resolveQueryBoolean(observer.options.enabled, this) !== false
     );
   }
   isDisabled() {
@@ -1396,7 +1542,10 @@ var Query = class extends Removable {
       return context2;
     };
     const context = createFetchContext();
-    this.options.behavior?.onFetch(context, this);
+    const behavior = this.#queryType === "infinite" ? infiniteQueryBehavior(
+      this.options.pages
+    ) : this.options.behavior;
+    behavior?.onFetch(context, this);
     this.#revertState = this.state;
     if (this.state.fetchStatus === "idle" || this.state.fetchMeta !== context.fetchOptions?.meta) {
       this.#dispatch({ type: "fetch", meta: context.fetchOptions?.meta });
@@ -1659,7 +1808,7 @@ var QueryObserver = class extends Subscribable {
     const prevOptions = this.options;
     const prevQuery = this.#currentQuery;
     this.options = this.#client.defaultQueryOptions(options);
-    if (this.options.enabled !== void 0 && typeof this.options.enabled !== "boolean" && typeof this.options.enabled !== "function" && typeof resolveEnabled(this.options.enabled, this.#currentQuery) !== "boolean") {
+    if (this.options.enabled !== void 0 && typeof this.options.enabled !== "boolean" && typeof this.options.enabled !== "function" && typeof resolveQueryBoolean(this.options.enabled, this.#currentQuery) !== "boolean") {
       throw new Error(
         "Expected enabled to be a boolean or a callback that returns a boolean"
       );
@@ -1683,11 +1832,11 @@ var QueryObserver = class extends Subscribable {
       this.#executeFetch();
     }
     this.updateResult();
-    if (mounted && (this.#currentQuery !== prevQuery || resolveEnabled(this.options.enabled, this.#currentQuery) !== resolveEnabled(prevOptions.enabled, this.#currentQuery) || resolveStaleTime(this.options.staleTime, this.#currentQuery) !== resolveStaleTime(prevOptions.staleTime, this.#currentQuery))) {
+    if (mounted && (this.#currentQuery !== prevQuery || resolveQueryBoolean(this.options.enabled, this.#currentQuery) !== resolveQueryBoolean(prevOptions.enabled, this.#currentQuery) || resolveStaleTime(this.options.staleTime, this.#currentQuery) !== resolveStaleTime(prevOptions.staleTime, this.#currentQuery))) {
       this.#updateStaleTimeout();
     }
     const nextRefetchInterval = this.#computeRefetchInterval();
-    if (mounted && (this.#currentQuery !== prevQuery || resolveEnabled(this.options.enabled, this.#currentQuery) !== resolveEnabled(prevOptions.enabled, this.#currentQuery) || nextRefetchInterval !== this.#currentRefetchInterval)) {
+    if (mounted && (this.#currentQuery !== prevQuery || resolveQueryBoolean(this.options.enabled, this.#currentQuery) !== resolveQueryBoolean(prevOptions.enabled, this.#currentQuery) || nextRefetchInterval !== this.#currentRefetchInterval)) {
       this.#updateRefetchInterval(nextRefetchInterval);
     }
   }
@@ -1782,7 +1931,7 @@ var QueryObserver = class extends Subscribable {
   #updateRefetchInterval(nextInterval) {
     this.#clearRefetchInterval();
     this.#currentRefetchInterval = nextInterval;
-    if (environmentManager.isServer() || resolveEnabled(this.options.enabled, this.#currentQuery) === false || !isValidTimeout(this.#currentRefetchInterval) || this.#currentRefetchInterval === 0) {
+    if (environmentManager.isServer() || resolveQueryBoolean(this.options.enabled, this.#currentQuery) === false || !isValidTimeout(this.#currentRefetchInterval) || this.#currentRefetchInterval === 0) {
       return;
     }
     this.#refetchIntervalId = timeoutManager.setInterval(() => {
@@ -1909,7 +2058,7 @@ var QueryObserver = class extends Subscribable {
       isStale: isStale(query, options),
       refetch: this.refetch,
       promise: this.#currentThenable,
-      isEnabled: resolveEnabled(options.enabled, query) !== false
+      isEnabled: resolveQueryBoolean(options.enabled, query) !== false
     };
     const nextResult = result;
     if (this.options.experimental_prefetchInRender) {
@@ -2016,138 +2165,29 @@ var QueryObserver = class extends Subscribable {
   }
 };
 function shouldLoadOnMount(query, options) {
-  return resolveEnabled(options.enabled, query) !== false && query.state.data === void 0 && !(query.state.status === "error" && options.retryOnMount === false);
+  return resolveQueryBoolean(options.enabled, query) !== false && query.state.data === void 0 && !(query.state.status === "error" && resolveQueryBoolean(options.retryOnMount, query) === false);
 }
 function shouldFetchOnMount(query, options) {
   return shouldLoadOnMount(query, options) || query.state.data !== void 0 && shouldFetchOn(query, options, options.refetchOnMount);
 }
 function shouldFetchOn(query, options, field) {
-  if (resolveEnabled(options.enabled, query) !== false && resolveStaleTime(options.staleTime, query) !== "static") {
+  if (resolveQueryBoolean(options.enabled, query) !== false && resolveStaleTime(options.staleTime, query) !== "static") {
     const value = typeof field === "function" ? field(query) : field;
     return value === "always" || value !== false && isStale(query, options);
   }
   return false;
 }
 function shouldFetchOptionally(query, prevQuery, options, prevOptions) {
-  return (query !== prevQuery || resolveEnabled(prevOptions.enabled, query) === false) && (!options.suspense || query.state.status !== "error") && isStale(query, options);
+  return (query !== prevQuery || resolveQueryBoolean(prevOptions.enabled, query) === false) && (!options.suspense || query.state.status !== "error") && isStale(query, options);
 }
 function isStale(query, options) {
-  return resolveEnabled(options.enabled, query) !== false && query.isStaleByTime(resolveStaleTime(options.staleTime, query));
+  return resolveQueryBoolean(options.enabled, query) !== false && query.isStaleByTime(resolveStaleTime(options.staleTime, query));
 }
 function shouldAssignObserverCurrentProperties(observer, optimisticResult) {
   if (!shallowEqualObjects(observer.getCurrentResult(), optimisticResult)) {
     return true;
   }
   return false;
-}
-
-// node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
-function infiniteQueryBehavior(pages) {
-  return {
-    onFetch: (context, query) => {
-      const options = context.options;
-      const direction = context.fetchOptions?.meta?.fetchMore?.direction;
-      const oldPages = context.state.data?.pages || [];
-      const oldPageParams = context.state.data?.pageParams || [];
-      let result = { pages: [], pageParams: [] };
-      let currentPage = 0;
-      const fetchFn = async () => {
-        let cancelled = false;
-        const addSignalProperty = (object) => {
-          addConsumeAwareSignal(
-            object,
-            () => context.signal,
-            () => cancelled = true
-          );
-        };
-        const queryFn = ensureQueryFn(context.options, context.fetchOptions);
-        const fetchPage = async (data, param, previous) => {
-          if (cancelled) {
-            return Promise.reject();
-          }
-          if (param == null && data.pages.length) {
-            return Promise.resolve(data);
-          }
-          const createQueryFnContext = () => {
-            const queryFnContext2 = {
-              client: context.client,
-              queryKey: context.queryKey,
-              pageParam: param,
-              direction: previous ? "backward" : "forward",
-              meta: context.options.meta
-            };
-            addSignalProperty(queryFnContext2);
-            return queryFnContext2;
-          };
-          const queryFnContext = createQueryFnContext();
-          const page = await queryFn(queryFnContext);
-          const { maxPages } = context.options;
-          const addTo = previous ? addToStart : addToEnd;
-          return {
-            pages: addTo(data.pages, page, maxPages),
-            pageParams: addTo(data.pageParams, param, maxPages)
-          };
-        };
-        if (direction && oldPages.length) {
-          const previous = direction === "backward";
-          const pageParamFn = previous ? getPreviousPageParam : getNextPageParam;
-          const oldData = {
-            pages: oldPages,
-            pageParams: oldPageParams
-          };
-          const param = pageParamFn(options, oldData);
-          result = await fetchPage(oldData, param, previous);
-        } else {
-          const remainingPages = pages ?? oldPages.length;
-          do {
-            const param = currentPage === 0 ? oldPageParams[0] ?? options.initialPageParam : getNextPageParam(options, result);
-            if (currentPage > 0 && param == null) {
-              break;
-            }
-            result = await fetchPage(result, param);
-            currentPage++;
-          } while (currentPage < remainingPages);
-        }
-        return result;
-      };
-      if (context.options.persister) {
-        context.fetchFn = () => {
-          return context.options.persister?.(
-            fetchFn,
-            {
-              client: context.client,
-              queryKey: context.queryKey,
-              meta: context.options.meta,
-              signal: context.signal
-            },
-            query
-          );
-        };
-      } else {
-        context.fetchFn = fetchFn;
-      }
-    }
-  };
-}
-function getNextPageParam(options, { pages, pageParams }) {
-  const lastIndex = pages.length - 1;
-  return pages.length > 0 ? options.getNextPageParam(
-    pages[lastIndex],
-    pages,
-    pageParams[lastIndex],
-    pageParams
-  ) : void 0;
-}
-function getPreviousPageParam(options, { pages, pageParams }) {
-  return pages.length > 0 ? options.getPreviousPageParam?.(pages[0], pages, pageParams[0], pageParams) : void 0;
-}
-function hasNextPage(options, data) {
-  if (!data) return false;
-  return getNextPageParam(options, data) != null;
-}
-function hasPreviousPage(options, data) {
-  if (!data || !options.getPreviousPageParam) return false;
-  return getPreviousPageParam(options, data) != null;
 }
 
 // node_modules/@tanstack/query-core/build/modern/infiniteQueryObserver.js
@@ -2161,13 +2201,11 @@ var InfiniteQueryObserver = class extends QueryObserver {
     this.fetchPreviousPage = this.fetchPreviousPage.bind(this);
   }
   setOptions(options) {
-    super.setOptions({
-      ...options,
-      behavior: infiniteQueryBehavior()
-    });
+    options._type = "infinite";
+    super.setOptions(options);
   }
   getOptimisticResult(options) {
-    options.behavior = infiniteQueryBehavior();
+    options._type = "infinite";
     return super.getOptimisticResult(options);
   }
   fetchNextPage(options) {
@@ -2894,6 +2932,11 @@ var QueriesObserver = class extends Subscribable {
     }
     return input;
   }
+  #shouldSkipCombine() {
+    return this.#options?.combine !== void 0 && this.#observers.some((observer, index) => {
+      return observer.options.suspense && this.#result[index]?.data === void 0;
+    });
+  }
   #findMatchingObservers(queries) {
     const prevObserversMap = /* @__PURE__ */ new Map();
     this.#observers.forEach((observer) => {
@@ -2927,10 +2970,11 @@ var QueriesObserver = class extends Subscribable {
   }
   #notify() {
     if (this.hasListeners()) {
-      const previousResult = this.#combinedResult;
       const newTracked = this.#trackResult(this.#result, this.#observerMatches);
-      const newResult = this.#combineResult(newTracked, this.#options?.combine);
-      if (previousResult !== newResult) {
+      const shouldSkipCombine = this.#shouldSkipCombine();
+      const previousResult = this.#combinedResult;
+      const newResult = shouldSkipCombine ? previousResult : this.#combineResult(newTracked, this.#options?.combine);
+      if (shouldSkipCombine || previousResult !== newResult) {
         notifyManager.batch(() => {
           this.listeners.forEach((listener) => {
             listener(this.#result);
@@ -3211,14 +3255,14 @@ var QueryClient = class {
     return this.fetchQuery(options).then(noop).catch(noop);
   }
   fetchInfiniteQuery(options) {
-    options.behavior = infiniteQueryBehavior(options.pages);
+    options._type = "infinite";
     return this.fetchQuery(options);
   }
   prefetchInfiniteQuery(options) {
     return this.fetchInfiniteQuery(options).then(noop).catch(noop);
   }
   ensureInfiniteQueryData(options) {
-    options.behavior = infiniteQueryBehavior(options.pages);
+    options._type = "infinite";
     return this.ensureQueryData(options);
   }
   resumePausedMutations() {
@@ -3962,4 +4006,8 @@ export {
   mutationOptions,
   useInfiniteQuery
 };
+<<<<<<<< HEAD:.vite/deps/chunk-7OWVEFH7.js
 //# sourceMappingURL=chunk-7OWVEFH7.js.map
+========
+//# sourceMappingURL=chunk-2Q3I5DTH.js.map
+>>>>>>>> 9598fc5 (message):.vite/deps/chunk-2Q3I5DTH.js

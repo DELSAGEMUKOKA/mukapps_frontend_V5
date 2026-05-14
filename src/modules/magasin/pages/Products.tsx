@@ -5,6 +5,7 @@ import {
   TriangleAlert as AlertTriangle, Upload, Download, FileText,
   ChevronFirst, ChevronLast, ChevronLeft, ChevronRight,
   TrendingUp, X, CircleAlert as AlertCircle, CircleCheck as CheckCircle2,
+  Layers
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -16,6 +17,8 @@ import { ROUTES } from '@/shared/constants/routes';
 import type { Product } from '@/shared/types';
 import { exportProductsToExcel, downloadProductTemplate, importProductsFromExcel, type ParsedProductRow } from '../utils/productExcel';
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { BatchManager } from './stock/BatchManager';
+import Modal from '@/shared/ui/Modal';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -52,6 +55,10 @@ export default function Products() {
   const [limit, setLimit] = useState(20);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
+  
+  // États pour le modal de gestion des lots
+  const [batchProduct, setBatchProduct] = useState<Product | null>(null);
+  const [showBatchModal, setShowBatchModal] = useState(false);
 
   const [importState, setImportState] = useState<{
     status: 'idle' | 'preview' | 'importing' | 'done';
@@ -87,11 +94,8 @@ export default function Products() {
       search: search || undefined, 
       categoryId: categoryFilter || undefined 
     }),
-    // POINT CLÉ: Garde les données précédentes pendant le chargement
     placeholderData: keepPreviousData,
-    // Cache pendant 1 minute
     staleTime: 60 * 1000,
-    // Ne pas refetch au focus
     refetchOnWindowFocus: false,
   });
 
@@ -126,7 +130,6 @@ export default function Products() {
   // ============ EXTRACTION DES DONNÉES AVEC useMemo ============
   const products: Product[] = useMemo(() => {
     if (!data) return [];
-    // Structure: { data: { data: [...], pagination: {...} } }
     return data?.data?.data || data?.data?.products || data?.data || [];
   }, [data]);
 
@@ -154,6 +157,17 @@ export default function Products() {
   }, [products]);
 
   const { totalWithStock, lowStock, outOfStock } = stats;
+
+  const openBatchModal = (product: Product) => {
+    setBatchProduct(product);
+    setShowBatchModal(true);
+  };
+
+  const closeBatchModal = () => {
+    setShowBatchModal(false);
+    setBatchProduct(null);
+    refetch();
+  };
 
   const handleExport = async () => {
     if (total === 0) {
@@ -280,13 +294,20 @@ export default function Products() {
             <Upload size={15} />
             Import
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+          <button
+            onClick={handleTemplate}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <FileText size={15} />
+            Template
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Download size={15} />
+            Export
+          </button>
           <Link
             to={ROUTES.PRODUCT_ADD}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
@@ -403,6 +424,12 @@ export default function Products() {
                             {fmt(p.stock)} {p.unit || 'PCS'}
                           </p>
                           <p className="text-xs text-gray-400">Valeur: {fmt(stockValue)} {currency}</p>
+                          <button
+                            onClick={() => openBatchModal(p)}
+                            className="text-xs text-indigo-500 hover:text-indigo-600 mt-1 flex items-center gap-1"
+                          >
+                            <Layers size={10} /> Gérer les lots
+                          </button>
                         </td>
                         <td className="px-4 py-3.5">
                           {expiry ? (
@@ -444,6 +471,13 @@ export default function Products() {
                               className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                             >
                               <Eye size={15} />
+                            </button>
+                            <button
+                              onClick={() => openBatchModal(p)}
+                              title="Gérer les lots"
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            >
+                              <Layers size={15} />
                             </button>
                             <button
                               onClick={() => setArchiveTarget(p)}
@@ -517,6 +551,24 @@ export default function Products() {
         </div>
       </SmartLoader>
 
+      {/* Modal de gestion des lots */}
+      <Modal
+        isOpen={showBatchModal}
+        onClose={closeBatchModal}
+        title={`Gestion des lots - ${batchProduct?.name || ''}`}
+        size="lg"
+      >
+        {batchProduct && (
+          <BatchManager
+            productId={batchProduct.id}
+            productName={batchProduct.name}
+            productUnit={batchProduct.unit}
+            onBatchAdded={closeBatchModal}
+            onBatchUpdated={closeBatchModal}
+          />
+        )}
+      </Modal>
+
       <ConfirmationModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -538,7 +590,82 @@ export default function Products() {
       {importState.status !== 'idle' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]">
-            {/* Contenu du modal d'import inchangé */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold text-gray-900">
+                {importState.status === 'importing' ? 'Import en cours...' : 
+                 importState.status === 'done' ? 'Import terminé' : 
+                 `Aperçu - ${importState.filename}`}
+              </h3>
+              <button onClick={resetImport} className="p-1 rounded-lg hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {importState.status === 'preview' && (
+                <>
+                  <div className="flex gap-2 mb-4 border-b">
+                    <button
+                      onClick={() => setImportTab('preview')}
+                      className={`px-3 py-1.5 text-sm font-medium ${importTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                    >
+                      Valides ({importState.valid.length})
+                    </button>
+                    <button
+                      onClick={() => setImportTab('errors')}
+                      className={`px-3 py-1.5 text-sm font-medium ${importTab === 'errors' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+                    >
+                      Erreurs ({importState.errors.length})
+                    </button>
+                  </div>
+                  {importTab === 'preview' && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">{importState.valid.length} produit(s) prêt(s) à importer</p>
+                      {importState.categoryWarnings.length > 0 && (
+                        <div className="bg-yellow-50 p-3 rounded-lg">
+                          <p className="text-xs text-yellow-700">⚠️ {importState.categoryWarnings.join(', ')}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {importTab === 'errors' && (
+                    <div className="space-y-1">
+                      {importState.errors.map((err, i) => (
+                        <p key={i} className="text-xs text-red-600">• {err}</p>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {importState.status === 'importing' && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-sm text-gray-600">
+                    Importation: {importState.importProgress.created}/{importState.importProgress.total}
+                  </p>
+                </div>
+              )}
+              {importState.status === 'done' && (
+                <div className="text-center py-8">
+                  <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
+                  <p className="text-lg font-semibold text-gray-900">Import terminé</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {importState.importProgress.created} importé(s), {importState.importProgress.failed} échec(s)
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              {importState.status === 'preview' && importState.valid.length > 0 && (
+                <button onClick={handleConfirmImport} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+                  Confirmer l'import
+                </button>
+              )}
+              {importState.status === 'done' && (
+                <button onClick={resetImport} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+                  Fermer
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
