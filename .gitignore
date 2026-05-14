@@ -1,7 +1,4 @@
-node_modules/
-.vite/
-dist/
-build/
-dev-dist/
-.cache/
-.next/
+node_modules
+dist
+dist-ssr
+*.local
