@@ -4,32 +4,31 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, Search, Clock, CheckCircle, XCircle, 
-  Coffee, Package, Users, RefreshCw
+  Coffee, Package, Users, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ordersApi, type Order } from '../api/restaurantApi';
+import { ordersApi, type Order, type OrderStatus } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
-// ✅ Configuration COMPLÈTE des statuts avec toutes les valeurs possibles
+// Configuration des statuts - Version corrigée avec les valeurs du backend
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  // Statuts standards
+  // Statuts du backend
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
   EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw },
   SERVIE: { label: 'Servie', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
+  SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
+  ANNULE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
   ANNULEE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
-  
-  // Variantes possibles (si l'API utilise d'autres valeurs)
-  EN_COUR: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw },
-  COMPLETED: { label: 'Terminée', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
-  CANCELLED: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
-  PENDING: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
-  IN_PROGRESS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw },
-  
-  // Fallback pour les statuts inconnus
-  UNKNOWN: { label: 'Statut inconnu', color: 'text-gray-600', bg: 'bg-gray-100', icon: Clock },
+  // Fallback
+  UNKNOWN: { label: 'Statut inconnu', color: 'text-gray-600', bg: 'bg-gray-100', icon: AlertCircle },
+};
+
+// Fonction utilitaire pour récupérer la config d'un statut
+const getStatusConfig = (status: string) => {
+  return STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN;
 };
 
 // Interface pour la réponse de l'API
@@ -48,7 +47,7 @@ export default function Orders() {
   const currency = useCurrency();
 
   // Filtres
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
   const [search, setSearch] = useState('');
 
   // Requête
@@ -61,6 +60,7 @@ export default function Orders() {
     }),
   });
 
+  // ✅ CORRECTION: Utiliser 'orders' au lieu de 'items'
   const orders = (ordersData?.data as OrdersApiResponse)?.orders ?? [];
 
   // Mutation pour annuler une commande
@@ -86,7 +86,7 @@ export default function Orders() {
           </p>
         </div>
         <button
-          onClick={() => navigate('/restaurant/new-order')}
+          onClick={() => navigate('/restaurant/orders/new')}
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
         >
           <Plus size={16} /> Nouvelle commande
@@ -115,7 +115,7 @@ export default function Orders() {
         />
         <StatCard 
           label="Servies" 
-          value={orders.filter((o: Order) => o.status === 'SERVIE').length} 
+          value={orders.filter((o: Order) => o.status === 'SERVIE' || o.status === 'SERVI').length} 
           icon={CheckCircle} 
           color="bg-emerald-500" 
         />
@@ -125,25 +125,26 @@ export default function Orders() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher une commande..."
-              className="pl-4 pr-4 py-2 border border-gray-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
             className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
           >
             <option value="">Tous les statuts</option>
             <option value="EN_ATTENTE">En attente</option>
             <option value="EN_COURS">En cours</option>
             <option value="SERVIE">Servie</option>
-            <option value="ANNULEE">Annulée</option>
+            <option value="ANNULE">Annulée</option>
           </select>
         </div>
 
@@ -167,7 +168,7 @@ export default function Orders() {
           </p>
           {!search && !statusFilter && (
             <button
-              onClick={() => navigate('/restaurant/new-order')}
+              onClick={() => navigate('/restaurant/orders/new')}
               className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600"
             >
               Nouvelle commande
@@ -220,20 +221,23 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
   onView: () => void; 
   onCancel: () => void;
 }) {
-  // ✅ Récupération du statut avec fallback
-  const statusKey = order.status || 'UNKNOWN';
-  const statusConfig = STATUS_CONFIG[statusKey] || STATUS_CONFIG.UNKNOWN;
+  // Récupération du statut avec fallback
+  const statusConfig = getStatusConfig(order.status);
+  const StatusIcon = statusConfig.icon;
   
   // Format date
   const date = new Date(order.createdAt);
   const formattedDate = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+  // Vérifier si la commande peut être annulée (non annulée et non servie)
+  const canCancel = order.status !== 'ANNULE' && order.status !== 'ANNULEE' && order.status !== 'SERVIE' && order.status !== 'SERVI';
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-all">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', statusConfig.bg)}>
-            <statusConfig.icon size={18} className={statusConfig.color} />
+            <StatusIcon size={18} className={statusConfig.color} />
           </div>
           <div>
             <p className="font-bold text-gray-800">
@@ -285,7 +289,7 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
             >
               Détails
             </button>
-            {order.status !== 'ANNULEE' && order.status !== 'SERVIE' && (
+            {canCancel && (
               <button
                 onClick={onCancel}
                 className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"

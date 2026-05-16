@@ -5,7 +5,7 @@ import { API } from '@/shared/constants/apiEndpoints';
 
 export type TableStatus = 'LIBRE' | 'OCCUPEE' | 'RESERVEE' | 'HORS_SERVICE';
 export type OrderType = 'SUR_PLACE' | 'A_EMPORTER';
-export type OrderStatus = 'EN_ATTENTE' | 'EN_COURS' | 'SERVIE' | 'ANNULEE';
+export type OrderStatus = 'EN_ATTENTE' | 'EN_COURS' | 'SERVIE' | 'SERVI' | 'ANNULEE' | 'ANNULE';
 export type KitchenStatus = 'EN_ATTENTE' | 'EN_PREPARATION' | 'PRET' | 'SERVI';
 export type BillStatus = 'BROUILLON' | 'OUVERTE' | 'PAYEE_PARTIEL' | 'PAYEE' | 'CLOTUREE' | 'ANNULEE';
 export type ReservationStatus = 'EN_ATTENTE' | 'CONFIRMEE' | 'ARRIVEE' | 'COMPLETEE' | 'ANNULEE' | 'NO_SHOW';
@@ -133,8 +133,6 @@ export interface MenuItem {
   updatedAt: string;
 }
 
-// ✅ CORRECTION : MenuFull est un tableau de catégories avec leurs items
-// L'API retourne directement : { success, message, data: [...] }
 export type MenuFull = (MenuCategory & { items: MenuItem[] })[];
 
 // ─── Modifiers (Options d'articles) ───────────────────────────────────────────
@@ -223,6 +221,11 @@ export interface Order {
   openedAt?: string;
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 
 // ─── Kitchen ─────────────────────────────────────────────────────────────────
@@ -242,6 +245,7 @@ export interface KitchenItem {
   notes?: string;
   status: KitchenStatus;
   station: Station;
+  createdAt: string;
   sentAt?: string;
   preparedAt?: string;
   readyAt?: string;
@@ -339,6 +343,14 @@ export interface Reservation {
   updatedAt: string;
 }
 
+export interface PaginatedReservations {
+  reservations: Reservation[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface RestaurantDashboard {
@@ -353,11 +365,16 @@ export interface RestaurantDashboard {
 
 export interface DailyReport {
   date: string;
-  revenue: number;
-  orders: number;
-  guests: number;
-  tablesTurned: number;
-  averageTicket?: number;
+  totalRevenue: number;
+  totalBills: number;
+  avgBill: number;
+  byPaymentMethod: Record<PaymentMethod, number>;
+  byServer: {
+    name: string;
+    userId: string;
+    count: number;
+    revenue: number;
+  }[];
 }
 
 export interface TopItem {
@@ -398,10 +415,19 @@ export interface TipsReport {
 
 // ─── Stock Bar Report ─────────────────────────────────────────────────────────
 
+// src/modules/restaurant/api/restaurantApi.ts
+
 export interface BarStockReportItem {
   menuItemId: string;
   menuItemName: string;
-  linkedProductId: string;
+  linkedProduct?: {
+    id: string;
+    name: string;
+    quantity: number;
+    unit: string;
+  };
+  linkedProductId?: string;
+  productId?: string;  // ✅ Ajouter cette ligne pour l'ID direct
   productName: string;
   currentStock: number;
   stockUnit: string;
@@ -409,10 +435,8 @@ export interface BarStockReportItem {
   estimatedRemainingShots: number;
 }
 
-export interface BarStockReport {
-  items: BarStockReportItem[];
-  generatedAt: string;
-}
+// ✅ CORRECTION: L'API retourne directement un tableau d'items
+export type BarStockReport = BarStockReportItem[];
 
 // ─── Transfer ─────────────────────────────────────────────────────────────────
 
@@ -664,6 +688,9 @@ export const ordersApi = {
 
   createBillDraft: (orderId: string, notes?: string) =>
     apiPost<ApiResponse<Bill>>(API.RESTAURANT.ORDER_BILL_DRAFT(orderId), { notes }),
+    
+  markAsServed: (orderId: string) =>
+    apiPost<ApiResponse<Order>>(`/restaurant/orders/${orderId}/serve`),
 };
 
 // ─── Transfers API ────────────────────────────────────────────────────────────
@@ -884,4 +911,11 @@ export const productUnitsApi = {
 
   delete: (productId: string, unitId: string) =>
     apiDelete<ApiResponse<void>>(API.RESTAURANT.PRODUCT_UNIT_BY_ID(productId, unitId)),
+};
+
+// ─── Stock API pour ajustement ────────────────────────────────────────────────
+
+export const stockApi = {
+  adjustStock: (productId: string, quantity: number, reason?: string) =>
+    apiPatch<ApiResponse<{ id: string; quantity: number }>>(`/magasin/products/${productId}/stock/adjust`, { quantity, reason }),
 };

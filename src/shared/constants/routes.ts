@@ -69,6 +69,8 @@ export const ROUTES = {
   RESTAURANT_BILLS: '/restaurant/bills',
   RESTAURANT_RESERVATIONS: '/restaurant/reservations',
   RESTAURANT_REPORTS: '/restaurant/reports',
+  RESTAURANT_BAR_STOCK: '/restaurant/bar-stock',
+  RESTAURANT_SHIFTS: '/restaurant/shifts',
 
   // Errors
   FORBIDDEN: '/403',

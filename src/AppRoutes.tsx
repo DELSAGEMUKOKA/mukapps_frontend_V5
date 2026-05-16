@@ -23,10 +23,7 @@ import { clientRoutes } from '@/modules/client/routes';
 import { usersRoutes } from '@/modules/users/routes';
 import { superadminRoutes } from '@/modules/superadmin/routes';
 import { invoicingRoutes } from '@/modules/invoicing/routes';
-<<<<<<< HEAD
-=======
 import { restaurantRoutes } from '@/modules/restaurant/routes';
->>>>>>> 9598fc5 (message)
 
 const isStandalone =
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -87,10 +84,7 @@ const router = createBrowserRouter([
           ...usersRoutes,
           ...superadminRoutes,
           ...invoicingRoutes,
-<<<<<<< HEAD
-=======
           ...restaurantRoutes,
->>>>>>> 9598fc5 (message)
         ],
       },
     ],

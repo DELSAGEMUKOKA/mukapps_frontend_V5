@@ -18,19 +18,48 @@ import { cn } from '@/lib/utils';
 // CONSTANTS
 // ============================================================================
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: React.ElementType; nextStatus?: OrderStatus }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; nextStatus?: string }> = {
+  // Statuts actifs
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock, nextStatus: 'EN_COURS' },
-  EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw, nextStatus: 'SERVIE' },
+  EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw, nextStatus: 'SERVI' },
+  
+  // Servi (deux variantes pour compatibilité)
+  SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
   SERVIE: { label: 'Servie', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
+  
+  // Annulé (deux variantes pour compatibilité)
+  ANNULE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
   ANNULEE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
 };
 
-const ITEM_STATUS_CONFIG = {
+const ITEM_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50' },
+  ENVOYE: { label: 'Envoyé', color: 'text-sky-600', bg: 'bg-sky-50' },
   EN_PREPARATION: { label: 'En préparation', color: 'text-blue-600', bg: 'bg-blue-50' },
   PRET: { label: 'Prêt', color: 'text-emerald-600', bg: 'bg-emerald-50' },
   SERVI: { label: 'Servi', color: 'text-gray-400', bg: 'bg-gray-100' },
-  ENVOYE: { label: 'Envoyé', color: 'text-sky-600', bg: 'bg-sky-50' },
+};
+
+// ✅ UNE SEULE FOIS - Fonction utilitaire pour obtenir la config du statut de commande
+const getStatusConfig = (status: string | undefined) => {
+  if (!status) return { 
+    label: 'Statut inconnu', 
+    color: 'text-gray-600', 
+    bg: 'bg-gray-100', 
+    icon: AlertCircle 
+  };
+  return STATUS_CONFIG[status] || { 
+    label: status, 
+    color: 'text-gray-600', 
+    bg: 'bg-gray-100', 
+    icon: AlertCircle 
+  };
+};
+
+// Fonction utilitaire pour obtenir la config du statut d'article
+const getItemStatusConfig = (status: string | undefined) => {
+  if (!status) return ITEM_STATUS_CONFIG.EN_ATTENTE;
+  return ITEM_STATUS_CONFIG[status] || ITEM_STATUS_CONFIG.EN_ATTENTE;
 };
 
 // ============================================================================
@@ -130,7 +159,6 @@ function AddItemModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-900">Ajouter des articles</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
@@ -138,7 +166,6 @@ function AddItemModal({
           </button>
         </div>
 
-        {/* Search & Tabs */}
         <div className="px-6 py-3 border-b border-gray-100">
           <div className="relative mb-3">
             <input
@@ -167,7 +194,6 @@ function AddItemModal({
           </div>
         </div>
 
-        {/* Items grid */}
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="text-center py-8">Chargement...</div>
@@ -204,7 +230,6 @@ function AddItemModal({
           )}
         </div>
 
-        {/* Selected items footer */}
         {selectedItems.size > 0 && (
           <div className="border-t border-gray-100 p-4">
             <div className="space-y-2 max-h-40 overflow-y-auto mb-3">
@@ -259,19 +284,22 @@ function OrderItemRow({ item, onUpdate, onRemove, isUpdating }: {
   const [isEditing, setIsEditing] = useState(false);
   const [quantity, setQuantity] = useState(item.quantity);
   const [notes, setNotes] = useState(item.notes || '');
-  const statusConfig = ITEM_STATUS_CONFIG[item.status as keyof typeof ITEM_STATUS_CONFIG] || ITEM_STATUS_CONFIG.EN_ATTENTE;
+  const statusConfig = getItemStatusConfig(item.status);
 
   const handleSave = () => {
     onUpdate(item.id, quantity, notes || undefined);
     setIsEditing(false);
   };
 
+  // Utiliser menuItem.name ou fallback
+  const itemName = item.menuItem?.name || 'Article';
+
   return (
     <div className="bg-gray-50 rounded-lg p-3">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-800">{item.menuItemName || item.menuItem?.name}</span>
+            <span className="font-medium text-gray-800">{itemName}</span>
             <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', statusConfig.bg, statusConfig.color)}>
               {statusConfig.label}
             </span>
@@ -371,7 +399,18 @@ export default function OrderDetail() {
 
   const order = orderData?.data;
 
-  // Mutations
+  // ✅ Mutation pour marquer comme servi
+  const markAsServedMutation = useMutation({
+    mutationFn: () => ordersApi.markAsServed(id!),
+    onSuccess: () => {
+      toast.success('Commande marquée comme servie');
+      queryClient.invalidateQueries({ queryKey: ['restaurant-order', id] });
+      queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Mutations existantes
   const updateItemMutation = useMutation({
     mutationFn: ({ itemId, quantity, notes }: { itemId: string; quantity: number; notes?: string }) =>
       ordersApi.updateItem(id!, itemId, { quantity, notes }),
@@ -425,15 +464,6 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: () => ordersApi.cancel(id!), // À remplacer par un vrai endpoint de changement de statut
-    onSuccess: () => {
-      toast.success('Statut mis à jour');
-      queryClient.invalidateQueries({ queryKey: ['restaurant-order', id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   // Handlers
   const handleUpdateItem = (itemId: string, quantity: number, notes?: string) => {
     setUpdatingItemId(itemId);
@@ -457,19 +487,21 @@ export default function OrderDetail() {
     sendOrderMutation.mutate();
   };
 
-  const handleUpdateStatus = () => {
-    const currentStatus = order?.status;
-    const nextStatus = STATUS_CONFIG[currentStatus as OrderStatus]?.nextStatus;
-    if (nextStatus) {
-      updateStatusMutation.mutate();
-    }
+  const handleMarkAsServed = () => {
+    markAsServedMutation.mutate();
   };
 
   const totalAmount = useMemo(() => {
     return order?.items?.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0) ?? 0;
   }, [order]);
 
-  const statusConfig = order ? STATUS_CONFIG[order.status] : null;
+  const statusConfig = getStatusConfig(order?.status);
+  const StatusIcon = statusConfig.icon;
+
+  // Vérifier si la commande peut être modifiée
+  const isEditable = order?.status !== 'ANNULE' && order?.status !== 'ANNULEE' && order?.status !== 'SERVI' && order?.status !== 'SERVIE';
+  const canSendToKitchen = order?.status === 'EN_COURS' && (order?.items?.length ?? 0) > 0;
+  const canMarkAsServed = order?.status === 'EN_COURS' && (order?.items?.length ?? 0) > 0;
 
   if (isLoading) return <SmartLoader isLoading={true}><div /></SmartLoader>;
 
@@ -490,8 +522,6 @@ export default function OrderDetail() {
       </div>
     );
   }
-
-  const isEditable = order.status !== 'ANNULEE' && order.status !== 'SERVIE';
 
   return (
     <div className="h-[calc(100vh-64px)] overflow-y-auto p-6">
@@ -515,15 +545,12 @@ export default function OrderDetail() {
 
         {/* Carte principale de la commande */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-          {/* Header avec statut et actions */}
           <div className="p-5 border-b border-gray-100">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                {statusConfig && (
-                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', statusConfig.bg)}>
-                    <statusConfig.icon size={18} className={statusConfig.color} />
-                  </div>
-                )}
+                <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', statusConfig.bg)}>
+                  <StatusIcon size={18} className={statusConfig.color} />
+                </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
                     {order.orderNumber || `#${order.id.slice(-6)}`}
@@ -535,13 +562,11 @@ export default function OrderDetail() {
               </div>
 
               <div className="flex items-center gap-2">
-                {statusConfig && (
-                  <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', statusConfig.bg, statusConfig.color)}>
-                    {statusConfig.label}
-                  </span>
-                )}
+                <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', statusConfig.bg, statusConfig.color)}>
+                  {statusConfig.label}
+                </span>
                 
-                {isEditable && order.status !== 'EN_COURS' && (
+                {canSendToKitchen && (
                   <button
                     onClick={handleSendOrder}
                     disabled={sendOrderMutation.isPending}
@@ -552,14 +577,14 @@ export default function OrderDetail() {
                   </button>
                 )}
 
-                {isEditable && statusConfig?.nextStatus && (
+                {canMarkAsServed && (
                   <button
-                    onClick={handleUpdateStatus}
-                    disabled={updateStatusMutation.isPending}
+                    onClick={handleMarkAsServed}
+                    disabled={markAsServedMutation.isPending}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600"
                   >
                     <CheckCircle size={12} />
-                    Marquer {STATUS_CONFIG[statusConfig.nextStatus]?.label}
+                    Marquer servi
                   </button>
                 )}
 

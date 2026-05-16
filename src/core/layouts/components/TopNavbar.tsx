@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { 
-  Store, Users, UserCheck, Settings, Shield, Bell, LogOut, ChevronDown,
-  Search, Menu, LayoutDashboard, CreditCard, Grid3x3, Package, ShoppingCart,
-  Archive, DollarSign, ChartBar as BarChart2, Tag, Calendar, FileText,
-  MonitorSmartphone, Barcode, X, Receipt, MoreVertical
-} from 'lucide-react';
-=======
 import { Store, Users, UserCheck, Settings, Shield, Bell, LogOut, ChevronDown, Search, Menu, LayoutDashboard, CreditCard, Grid3x3, Package, ShoppingCart, Archive, DollarSign, ChartBar as BarChart2, Tag, Calendar, FileText, MonitorSmartphone, Barcode, X, Receipt, MoveVertical as MoreVertical, UtensilsCrossed } from 'lucide-react';
->>>>>>> 9598fc5 (message)
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
 import { usePermissions } from '@/core/hooks/usePermissions';
@@ -94,12 +85,9 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
     if (hasModule('invoicing') && canPage('invoicing')) {
       items.push({ label: 'Facturation', sublabel: 'Devis, Proformas, factures', icon: Receipt, to: ROUTES.INVOICING, moduleKey: 'invoicing' });
     }
-<<<<<<< HEAD
-=======
     if (hasModule('restaurant') && canPage('restaurant')) {
       items.push({ label: 'Restaurant / Bar', sublabel: 'Tables, commandes, tickets', icon: UtensilsCrossed, to: ROUTES.RESTAURANT, moduleKey: 'restaurant' });
     }
->>>>>>> 9598fc5 (message)
     if (hasModule('invoicing') && canPage('quotes')) {
       items.push({ label: 'Devis', sublabel: 'Facturation', icon: Receipt, to: ROUTES.INVOICING_QUOTES, moduleKey: 'invoicing' });
     }
@@ -262,12 +250,9 @@ export default function TopNavbar() {
         ...(hasModule('invoicing') && canPage('invoicing')
           ? [{ key: 'invoicing' as ActiveModule, label: 'Facturation', icon: Receipt, to: ROUTES.INVOICING, paths: ['/invoicing'] }]
           : []),
-<<<<<<< HEAD
-=======
         ...(hasModule('restaurant') && canPage('restaurant')
           ? [{ key: 'restaurant' as ActiveModule, label: 'Restaurant', icon: UtensilsCrossed, to: ROUTES.RESTAURANT, paths: ['/restaurant'] }]
           : []),
->>>>>>> 9598fc5 (message)
         ...(canPage('settings')
           ? [{ key: 'settings' as ActiveModule, label: 'Paramètres', icon: Settings, to: ROUTES.SETTINGS, paths: ['/settings', '/subscription'] }]
           : []),

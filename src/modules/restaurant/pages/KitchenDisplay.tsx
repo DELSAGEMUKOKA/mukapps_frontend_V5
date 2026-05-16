@@ -4,18 +4,23 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ChefHat, Wine, Cake, Clock, CheckCircle, PlayCircle, 
-  Package, Search, Filter, RefreshCw, Bell, BellRing,
-  Users, UtensilsCrossed, AlertCircle, Printer, Volume2
+  Package, Search, RefreshCw, BellRing,
+  Users, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { kitchenApi, ordersApi, type KitchenItem, type Station, type Order } from '../api/restaurantApi';
+import { kitchenApi, type KitchenItem, type Station } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { cn } from '@/lib/utils';
-import { useCurrency } from '@/shared/hooks/useCurrency';
 
 // ============================================================================
 // CONSTANTS & CONFIGURATION
 // ============================================================================
+
+const SLA_CONFIG: Record<Station, number> = {
+  BAR: 5,
+  CUISINE: 15,
+  DESSERTS: 8,
+};
 
 const STATION_CONFIG: Record<Station, { label: string; Icon: React.ElementType; color: string; bg: string; border: string; order: number }> = {
   BAR: { label: 'Bar', Icon: Wine, color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', order: 1 },
@@ -24,80 +29,114 @@ const STATION_CONFIG: Record<Station, { label: string; Icon: React.ElementType; 
 };
 
 const STATUS_CONFIG = {
-  EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock, nextStatus: 'EN_PREPARATION' },
-  EN_PREPARATION: { label: 'En préparation', color: 'text-blue-600', bg: 'bg-blue-50', icon: PlayCircle, nextStatus: 'PRET' },
-  PRET: { label: 'Prêt', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle, nextStatus: 'SERVI' },
-  SERVI: { label: 'Servi', color: 'text-gray-400', bg: 'bg-gray-100', icon: CheckCircle, nextStatus: null },
+  EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock, nextStatus: 'EN_PREPARATION' as const, order: 0 },
+  EN_PREPARATION: { label: 'En préparation', color: 'text-blue-600', bg: 'bg-blue-50', icon: PlayCircle, nextStatus: 'PRET' as const, order: 1 },
+  PRET: { label: 'Prêt', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle, nextStatus: 'SERVI' as const, order: 2 },
+  SERVI: { label: 'Servi', color: 'text-gray-400', bg: 'bg-gray-100', icon: CheckCircle, nextStatus: null, order: 3 },
 };
 
-// Durée de rafraîchissement automatique (en ms)
-const REFRESH_INTERVAL = 10000; // 10 secondes
+const REFRESH_INTERVAL = 10000;
 
 // ============================================================================
-// TYPES
+// FONCTION UTILITAIRE
 // ============================================================================
 
-interface GroupedKitchenItems {
-  [station: string]: KitchenItem[];
-}
+// Récupère la date de l'item (sentAt ou createdAt)
+const getItemDate = (item: KitchenItem): string => {
+  return item.sentAt || item.createdAt || new Date().toISOString();
+};
 
 // ============================================================================
 // COMPOSANTS
 // ============================================================================
 
-// Timer pour afficher le temps écoulé
-function ElapsedTime({ createdAt }: { createdAt: string }) {
-  const [elapsed, setElapsed] = useState<string>('');
+function ElapsedTime({ sentAt, station }: { sentAt: string; station: Station }) {
+  const [elapsed, setElapsed] = useState<{ mins: number; secs: number }>({ mins: 0, secs: 0 });
+  const sla = SLA_CONFIG[station] || 10;
 
   useEffect(() => {
     const updateElapsed = () => {
-      const created = new Date(createdAt);
+      const created = new Date(sentAt);
       const now = new Date();
       const diffMs = now.getTime() - created.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffSecs = Math.floor((diffMs % 60000) / 1000);
-      
-      if (diffMins > 0) {
-        setElapsed(`${diffMins} min`);
-      } else {
-        setElapsed(`${diffSecs} sec`);
-      }
+      const mins = Math.floor(diffMs / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      setElapsed({ mins, secs });
     };
 
     updateElapsed();
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [createdAt]);
+  }, [sentAt]);
 
-  const isUrgent = (() => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now.getTime() - created.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    return diffMins >= 10;
-  })();
+  const isOverSLA = elapsed.mins >= sla;
+  const isUrgent = elapsed.mins >= Math.floor(sla * 0.8);
 
   return (
-    <span className={cn(
-      'text-[10px] font-mono flex items-center gap-1',
-      isUrgent ? 'text-red-500 font-bold' : 'text-gray-400'
-    )}>
-      <Clock size={10} />
-      {elapsed}
-      {isUrgent && <AlertCircle size={10} className="text-red-500 animate-pulse" />}
+    <div className="flex flex-col">
+      <span className={cn(
+        'text-xs font-mono flex items-center gap-1',
+        isOverSLA && 'text-red-500 font-bold animate-pulse',
+        isUrgent && !isOverSLA && 'text-orange-500 font-semibold'
+      )}>
+        <Clock size={12} />
+        {elapsed.mins > 0 ? `${elapsed.mins} min ${elapsed.secs}s` : `${elapsed.secs}s`}
+        {isOverSLA && <AlertCircle size={12} className="text-red-500" />}
+      </span>
+      {!isOverSLA && (
+        <span className="text-[9px] text-gray-400">
+          Objectif: {sla} min
+        </span>
+      )}
+    </div>
+  );
+}
+
+function NewItemBadge({ sentAt }: { sentAt: string }) {
+  const [isNew, setIsNew] = useState(true);
+
+  useEffect(() => {
+    const created = new Date(sentAt);
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffMins = diffMs / 60000;
+    
+    if (diffMins > 1) {
+      setIsNew(false);
+    } else {
+      const timer = setTimeout(() => setIsNew(false), 60000);
+      return () => clearTimeout(timer);
+    }
+  }, [sentAt]);
+
+  if (!isNew) return null;
+  
+  return (
+    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded-full animate-pulse">
+      NOUVEAU
     </span>
   );
 }
 
-// Carte d'un article en cuisine
-function KitchenItemCard({ item, onStatusChange, isUpdating }: { 
+function KitchenItemCard({ 
+  item, 
+  onStatusChange, 
+  isUpdating,
+  isUrgent
+}: { 
   item: KitchenItem; 
   onStatusChange: (id: string, status: string) => void;
   isUpdating: boolean;
+  isUrgent?: boolean;
 }) {
-  const statusConfig = STATUS_CONFIG[item.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.EN_ATTENTE;
+  const statusKey = item.status as keyof typeof STATUS_CONFIG;
+  const statusConfig = STATUS_CONFIG[statusKey] || STATUS_CONFIG.EN_ATTENTE;
   const nextStatus = statusConfig.nextStatus;
-  const nextStatusConfig = nextStatus ? STATUS_CONFIG[nextStatus as keyof typeof STATUS_CONFIG] : null;
+  const nextStatusConfig = nextStatus ? STATUS_CONFIG[nextStatus] : null;
+
+  const orderInfo = item.order;
+  const tableNumber = orderInfo?.table?.number;
+  const orderNumber = orderInfo?.orderNumber;
 
   const handleNextAction = () => {
     if (nextStatus) {
@@ -107,45 +146,47 @@ function KitchenItemCard({ item, onStatusChange, isUpdating }: {
 
   return (
     <div className={cn(
-      'bg-white rounded-xl border p-4 transition-all hover:shadow-md',
+      'relative bg-white rounded-xl border p-4 transition-all hover:shadow-md',
       item.status === 'EN_ATTENTE' && 'border-l-4 border-l-amber-500',
       item.status === 'EN_PREPARATION' && 'border-l-4 border-l-blue-500',
       item.status === 'PRET' && 'border-l-4 border-l-emerald-500',
-      item.status === 'SERVI' && 'opacity-60'
+      item.status === 'SERVI' && 'opacity-60',
+      isUrgent && 'ring-2 ring-red-400 ring-offset-1'
     )}>
-      {/* Header */}
+      <NewItemBadge sentAt={getItemDate(item)} />
+      
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-gray-800 text-sm">
-              #{item.order?.orderNumber?.slice(-6) ?? item.orderId.slice(-6)}
+              #{orderNumber?.slice(-6) ?? item.orderId?.slice(-6)}
             </p>
-            {item.order?.table && (
-              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                <Users size={9} /> Table {item.order.table.number}
+            {tableNumber && (
+              <span className="text-[11px] text-gray-500 flex items-center gap-0.5 bg-gray-100 px-2 py-0.5 rounded-full">
+                <Users size={10} /> Table {tableNumber}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs font-semibold text-gray-700">{item.menuItem?.name}</span>
-            <span className="text-[10px] text-gray-400">x{item.quantity}</span>
+          
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <span className="text-sm font-semibold text-gray-800">{item.menuItem?.name}</span>
+            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 rounded">x{item.quantity}</span>
           </div>
         </div>
+        
         <div className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', statusConfig.bg, statusConfig.color)}>
           {statusConfig.label}
         </div>
       </div>
 
-      {/* Notes */}
       {item.notes && (
         <div className="mb-3 p-2 bg-amber-50 rounded-lg text-xs text-amber-700">
           📝 {item.notes}
         </div>
       )}
 
-      {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-        <ElapsedTime createdAt={item.sentAt || item.createdAt} />
+        <ElapsedTime sentAt={getItemDate(item)} station={item.station} />
         
         {nextStatusConfig && item.status !== 'SERVI' && (
           <button
@@ -170,7 +211,6 @@ function KitchenItemCard({ item, onStatusChange, isUpdating }: {
   );
 }
 
-// Colonne par station
 function StationColumn({ 
   station, 
   items, 
@@ -186,58 +226,86 @@ function StationColumn({
 }) {
   const config = STATION_CONFIG[station];
   const Icon = config.Icon;
+  const sla = SLA_CONFIG[station];
   
-  const pendingItems = items.filter(i => i.status !== 'SERVI');
-  const servedItems = items.filter(i => i.status === 'SERVI');
-  const hasSound = pendingItems.length > 0;
+  const sortedItems = useMemo(() => {
+    const order = {
+      EN_ATTENTE: 0,
+      EN_PREPARATION: 1,
+      PRET: 2,
+      SERVI: 3,
+    };
+    return [...items].sort((a, b) => {
+      const statusDiff = order[a.status as keyof typeof order] - order[b.status as keyof typeof order];
+      if (statusDiff !== 0) return statusDiff;
+      const dateA = new Date(getItemDate(a));
+      const dateB = new Date(getItemDate(b));
+      return dateA.getTime() - dateB.getTime();
+    });
+  }, [items]);
 
-  // Son de notification quand nouvel article
-  useEffect(() => {
-    if (pendingItems.length > 0 && 'Notification' in window) {
-      // Jouer un son (optionnel)
-      // new Audio('/notification.mp3').play().catch(() => {});
-    }
-  }, [pendingItems.length]);
+  const pendingItems = sortedItems.filter(i => i.status !== 'SERVI');
+  const servedItems = sortedItems.filter(i => i.status === 'SERVI');
+  const urgentItems = pendingItems.filter(i => {
+    const sentAt = new Date(getItemDate(i));
+    return (Date.now() - sentAt.getTime()) / 60000 >= sla * 0.8;
+  });
 
   return (
-    <div className="flex-1 min-w-[280px] bg-gray-50 rounded-xl flex flex-col h-full">
-      {/* Header de la colonne */}
-      <div className={cn(
-        'p-3 rounded-t-xl border-b flex items-center justify-between',
-        config.bg,
-        config.border
-      )}>
-        <div className="flex items-center gap-2">
-          <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center bg-white', config.color)}>
-            <Icon size={16} />
+    <div className="flex-1 min-w-[320px] bg-gray-50 rounded-xl flex flex-col h-full">
+      <div className={cn('p-3 rounded-t-xl border-b', config.bg, config.border)}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center bg-white', config.color)}>
+              <Icon size={16} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800">{title || config.label}</h3>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] text-gray-500">
+                  {pendingItems.length} en cours • {servedItems.length} servis
+                </p>
+                {urgentItems.length > 0 && (
+                  <span className="text-[10px] text-red-500 flex items-center gap-0.5">
+                    <AlertCircle size={10} /> {urgentItems.length} urgent{urgentItems.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-gray-800">{title || config.label}</h3>
-            <p className="text-[10px] text-gray-500">
-              {pendingItems.length} en cours • {servedItems.length} servis
-            </p>
-          </div>
+          {pendingItems.length > 0 && (
+            <BellRing size={14} className="text-amber-500 animate-pulse" />
+          )}
         </div>
-        {hasSound && <BellRing size={14} className="text-amber-500 animate-pulse" />}
       </div>
 
-      {/* Liste des articles */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-        {/* Articles en attente/preparation/pret */}
-        {pendingItems.map(item => (
-          <KitchenItemCard
-            key={item.id}
-            item={item}
-            onStatusChange={onStatusChange}
-            isUpdating={updatingId === item.id}
-          />
-        ))}
+        {pendingItems.map(item => {
+          const sentAt = new Date(getItemDate(item));
+          const isUrgent = (Date.now() - sentAt.getTime()) / 60000 >= sla * 0.8;
+          
+          return (
+            <KitchenItemCard
+              key={item.id}
+              item={item}
+              onStatusChange={onStatusChange}
+              isUpdating={updatingId === item.id}
+              isUrgent={isUrgent}
+            />
+          );
+        })}
 
-        {/* Articles servis (collapsés par défaut) */}
+        {pendingItems.length === 0 && servedItems.length === 0 && (
+          <div className="text-center py-8">
+            <Package size={32} className="mx-auto text-gray-300 mb-2" />
+            <p className="text-xs text-gray-400">Aucun article</p>
+          </div>
+        )}
+
         {servedItems.length > 0 && (
           <details className="mt-3">
             <summary className="text-xs font-medium text-gray-400 cursor-pointer hover:text-gray-600">
-              Servis ({servedItems.length})
+              ✓ Servis ({servedItems.length})
             </summary>
             <div className="mt-2 space-y-2">
               {servedItems.map(item => (
@@ -250,13 +318,6 @@ function StationColumn({
               ))}
             </div>
           </details>
-        )}
-
-        {pendingItems.length === 0 && servedItems.length === 0 && (
-          <div className="text-center py-8">
-            <Package size={32} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-xs text-gray-400">Aucun article</p>
-          </div>
         )}
       </div>
     </div>
@@ -275,7 +336,6 @@ export default function KitchenDisplay() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Requête pour récupérer les articles actifs
   const { data: kitchenData, isLoading, error, refetch } = useQuery({
     queryKey: ['restaurant-kitchen', selectedStation],
     queryFn: () => kitchenApi.getActive({ station: selectedStation !== 'all' ? selectedStation : undefined }),
@@ -283,51 +343,11 @@ export default function KitchenDisplay() {
     refetchInterval: autoRefresh ? REFRESH_INTERVAL : false,
   });
 
-  // Rafraîchissement manuel avec feedback
-  const handleManualRefresh = useCallback(async () => {
-    await refetch();
-    setLastRefresh(new Date());
-    toast.success('Affichage rafraîchi');
-  }, [refetch]);
-
-  // Regrouper les articles par station
-  const groupedItems = useMemo(() => {
-    const items = kitchenData?.data ?? [];
-    
-    // Filtrer par recherche
-    let filtered = items;
-    if (searchTerm) {
-      filtered = items.filter(item => 
-        item.menuItem?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.order?.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // Grouper par station
-    const grouped: GroupedKitchenItems = {};
-    filtered.forEach(item => {
-      const station = item.station;
-      if (!grouped[station]) grouped[station] = [];
-      grouped[station].push(item);
-    });
-    
-    // Trier les articles dans chaque station (les plus anciens d'abord)
-    Object.keys(grouped).forEach(station => {
-      grouped[station].sort((a, b) => 
-        new Date(a.sentAt || a.createdAt).getTime() - new Date(b.sentAt || b.createdAt).getTime()
-      );
-    });
-    
-    return grouped;
-  }, [kitchenData, searchTerm]);
-
-  // Mutations pour changer le statut
   const statusMutations = {
     markPrepare: useMutation({
       mutationFn: kitchenApi.markPrepare,
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['restaurant-kitchen'] });
-        queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
       },
       onError: (e: Error) => toast.error(e.message),
     }),
@@ -335,7 +355,6 @@ export default function KitchenDisplay() {
       mutationFn: kitchenApi.markReady,
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['restaurant-kitchen'] });
-        queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
         toast.success('Article prêt à être servi !', { icon: '✅' });
       },
       onError: (e: Error) => toast.error(e.message),
@@ -344,7 +363,6 @@ export default function KitchenDisplay() {
       mutationFn: kitchenApi.markServed,
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['restaurant-kitchen'] });
-        queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
       },
       onError: (e: Error) => toast.error(e.message),
     }),
@@ -369,18 +387,34 @@ export default function KitchenDisplay() {
     }
   };
 
-  // Notification sonore pour les nouveaux articles (optionnel)
-  useEffect(() => {
-    if (kitchenData?.data && kitchenData.data.length > 0) {
-      // Jouer une notification (à activer avec permission utilisateur)
-      // const pendingCount = kitchenData.data.filter(i => i.status === 'EN_ATTENTE').length;
-      // if (pendingCount > 0 && document.hidden) {
-      //   new Audio('/notification.mp3').play();
-      // }
-    }
-  }, [kitchenData]);
+  const handleManualRefresh = useCallback(async () => {
+    await refetch();
+    setLastRefresh(new Date());
+    toast.success('Affichage rafraîchi');
+  }, [refetch]);
 
-  // Calcul des statistiques
+  const groupedItems = useMemo(() => {
+    const items = kitchenData?.data ?? [];
+    
+    let filtered = items;
+    if (searchTerm) {
+      filtered = items.filter(item => 
+        item.menuItem?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.order?.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.order?.table?.number?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    const grouped: Record<string, KitchenItem[]> = {};
+    filtered.forEach(item => {
+      const station = item.station;
+      if (!grouped[station]) grouped[station] = [];
+      grouped[station].push(item);
+    });
+    
+    return grouped;
+  }, [kitchenData, searchTerm]);
+
   const stats = useMemo(() => {
     const items = kitchenData?.data ?? [];
     return {
@@ -400,7 +434,7 @@ export default function KitchenDisplay() {
           <AlertCircle size={32} className="text-red-500" />
         </div>
         <p className="text-sm font-semibold text-gray-700">Erreur de chargement</p>
-        <p className="text-xs text-gray-400 mt-1">{error.message}</p>
+        <p className="text-xs text-gray-400 mt-1">{(error as Error).message}</p>
         <button
           onClick={() => refetch()}
           className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold"
@@ -411,39 +445,33 @@ export default function KitchenDisplay() {
     );
   }
 
-  // Ordre des stations
-  const stationOrder = ['CUISINE', 'BAR', 'DESSERTS'];
+  const stationOrder: Station[] = ['CUISINE', 'BAR', 'DESSERTS'];
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-100">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-5 py-3 shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Cuisine & Bar</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Gestion des commandes en temps réel
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">Gestion des commandes en temps réel</p>
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Stats rapides */}
             <div className="flex gap-2">
-              <div className="bg-amber-50 px-2 py-1 rounded-lg text-center">
+              <div className="bg-amber-50 px-3 py-1.5 rounded-xl text-center">
                 <p className="text-[10px] text-amber-600 font-semibold">En attente</p>
-                <p className="text-sm font-bold text-amber-700">{stats.enAttente}</p>
+                <p className="text-lg font-bold text-amber-700">{stats.enAttente}</p>
               </div>
-              <div className="bg-blue-50 px-2 py-1 rounded-lg text-center">
+              <div className="bg-blue-50 px-3 py-1.5 rounded-xl text-center">
                 <p className="text-[10px] text-blue-600 font-semibold">Préparation</p>
-                <p className="text-sm font-bold text-blue-700">{stats.enPreparation}</p>
+                <p className="text-lg font-bold text-blue-700">{stats.enPreparation}</p>
               </div>
-              <div className="bg-emerald-50 px-2 py-1 rounded-lg text-center">
+              <div className="bg-emerald-50 px-3 py-1.5 rounded-xl text-center">
                 <p className="text-[10px] text-emerald-600 font-semibold">Prêts</p>
-                <p className="text-sm font-bold text-emerald-700">{stats.pret}</p>
+                <p className="text-lg font-bold text-emerald-700">{stats.pret}</p>
               </div>
             </div>
 
-            {/* Contrôles */}
             <div className="h-6 w-px bg-gray-200" />
 
             <button
@@ -457,65 +485,38 @@ export default function KitchenDisplay() {
               <RefreshCw size={16} className={autoRefresh ? 'animate-spin-slow' : ''} />
             </button>
 
-            <button
-              onClick={handleManualRefresh}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-              title="Rafraîchir"
-            >
+            <button onClick={handleManualRefresh} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
               <RefreshCw size={16} />
             </button>
           </div>
         </div>
 
-        {/* Dernier rafraîchissement */}
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-2">
-            {/* Filtre par station */}
             <div className="flex gap-1 bg-gray-100 rounded-xl p-0.5">
-              <button
-                onClick={() => setSelectedStation('all')}
-                className={cn(
-                  'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                  selectedStation === 'all'
-                    ? 'bg-white shadow-sm text-gray-800'
-                    : 'text-gray-500 hover:text-gray-700'
-                )}
-              >
-                Toutes
-              </button>
+              <button onClick={() => setSelectedStation('all')} className={cn(
+                'px-3 py-1 rounded-lg text-xs font-medium',
+                selectedStation === 'all' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+              )}>Toutes</button>
               {stationOrder.map((station) => {
-                const config = STATION_CONFIG[station as Station];
+                const config = STATION_CONFIG[station];
                 return (
-                  <button
-                    key={station}
-                    onClick={() => setSelectedStation(station as Station)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                      selectedStation === station
-                        ? 'bg-white shadow-sm text-gray-800'
-                        : 'text-gray-500 hover:text-gray-700'
-                    )}
-                  >
-                    <config.Icon size={12} />
-                    {config.label}
+                  <button key={station} onClick={() => setSelectedStation(station)} className={cn(
+                    'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium',
+                    selectedStation === station ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
+                  )}>
+                    <config.Icon size={12} /> {config.label}
                   </button>
                 );
               })}
             </div>
 
-            {/* Recherche */}
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher un article ou commande..."
-                className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+              <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher..." className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-64" />
             </div>
           </div>
-
           <p className="text-[10px] text-gray-400">
             Dernier refresh: {lastRefresh.toLocaleTimeString()}
             {autoRefresh && ` • Auto refresh tous les ${REFRESH_INTERVAL / 1000}s`}
@@ -523,57 +524,34 @@ export default function KitchenDisplay() {
         </div>
       </div>
 
-      {/* Grille des stations */}
       <div className="flex-1 overflow-x-auto p-4">
         {selectedStation === 'all' ? (
-          <div className="flex gap-4 h-full min-w-[800px]">
+          <div className="flex gap-4 h-full min-w-[960px]">
             {stationOrder.map((station) => (
-              <StationColumn
-                key={station}
-                station={station as Station}
-                items={groupedItems[station] || []}
-                onStatusChange={handleStatusChange}
-                updatingId={updatingId}
-              />
+              <StationColumn key={station} station={station} items={groupedItems[station] || []}
+                onStatusChange={handleStatusChange} updatingId={updatingId} />
             ))}
           </div>
         ) : (
           <div className="max-w-md mx-auto h-full">
-            <StationColumn
-              station={selectedStation}
-              items={groupedItems[selectedStation] || []}
-              onStatusChange={handleStatusChange}
-              updatingId={updatingId}
-            />
+            <StationColumn station={selectedStation} items={groupedItems[selectedStation] || []}
+              onStatusChange={handleStatusChange} updatingId={updatingId} />
           </div>
         )}
       </div>
 
-      {/* Footer avec instructions */}
       <div className="bg-white border-t border-gray-200 px-5 py-2 shrink-0">
         <div className="flex items-center justify-between text-[10px] text-gray-400">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-amber-500" />
-              En attente
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              En préparation
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              Prêt
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-gray-400" />
-              Servi
-            </span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> En attente</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> En préparation</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Prêt</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-gray-400" /> Servi</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span>🔔 Les nouveaux articles clignotent</span>
-            <span>⏱️ Temps écoulé en rouge après 10 min</span>
-            <span>🎯 Cliquez sur les boutons pour changer le statut</span>
+          <div className="flex items-center gap-4">
+            <span>🔔 Nouveaux articles clignotent</span>
+            <span>⚠️ Rouge = temps dépassé</span>
+            <span>🎯 Cliquez pour changer statut</span>
           </div>
         </div>
       </div>

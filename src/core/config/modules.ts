@@ -57,21 +57,12 @@ export const AVAILABLE_MODULES: ModuleConfig[] = [
     requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
   },
   {
-<<<<<<< HEAD
-    name: 'invoicing',
-    label: 'invoicing',
-    description: 'Gestion de invoicing et tables',
-    icon: 'UtensilsCrossed',
-    routes: ['/invoicing'],
-    requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR'],
-=======
     name: 'restaurant',
     label: 'Restaurant / Bar',
     description: 'Gestion des tables, menu, commandes, tickets et réservations',
     icon: 'UtensilsCrossed',
     routes: ['/restaurant', '/restaurant/tables', '/restaurant/menu', '/restaurant/orders', '/restaurant/kitchen', '/restaurant/bills', '/restaurant/reservations', '/restaurant/reports'],
     requiredRoles: ['ADMIN', 'SUPERVISOR', 'OPERATOR', 'CASHIER'],
->>>>>>> 9598fc5 (message)
   },
   {
     name: 'invoicing',

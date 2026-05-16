@@ -15,9 +15,9 @@ import { productApi } from '@/modules/magasin/api/productApi';
 import { ProductSearchInput } from '../components/ProductSearchInput';
 import type { Product } from '@/shared/types';
 
-// ============================================================================
+// ======
 // TYPES & CONSTANTS
-// ============================================================================
+// ======
 
 type ViewMode = 'grid' | 'list';
 
@@ -50,9 +50,9 @@ const CAT_STYLES: {
   { keywords: ['grill', 'bbq', 'grillé', 'grille', 'braise'], Icon: Flame, color: 'text-red-600', bg: 'bg-red-50' },
 ];
 
-// ============================================================================
+// ======
 // UTILITIES
-// ============================================================================
+// ======
 
 const getCategoryStyle = (name: string) => {
   const lower = name.toLowerCase();
@@ -64,9 +64,9 @@ const formatCurrency = (value: number, currency: string) => {
   return `${currency}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-// ============================================================================
+// ======
 // CONFIRMATION MODAL
-// ============================================================================
+// ======
 
 interface ConfirmModalProps {
   title?: string;
@@ -131,9 +131,9 @@ function ConfirmModal({
   );
 }
 
-// ============================================================================
+// ======
 // CATEGORY FORM MODAL
-// ============================================================================
+// ======
 
 interface CategoryFormProps {
   initial?: Partial<MenuCategory>;
@@ -239,9 +239,9 @@ function CategoryForm({ initial, onSave, onClose, loading }: CategoryFormProps) 
   );
 }
 
-// ============================================================================
+// ======
 // ITEM FORM MODAL
-// ============================================================================
+// ======
 
 interface ItemFormData {
   name: string;
@@ -683,9 +683,9 @@ function ItemForm({ categories, initial, onSave, onClose, loading }: ItemFormPro
   );
 }
 
-// ============================================================================
+// ======
 // STATS CARD COMPONENT
-// ============================================================================
+// ======
 
 interface StatsCardProps {
   label: string;
@@ -710,9 +710,9 @@ function StatsCard({ label, value, icon: Icon, color }: StatsCardProps) {
   );
 }
 
-// ============================================================================
+// ======
 // MAIN MENU COMPONENT
-// ============================================================================
+// ======
 
 type WithItems = MenuCategory & { items: MenuItem[] };
 

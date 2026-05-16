@@ -1,10 +1,10 @@
 import {
   require_react
-<<<<<<<< HEAD:.vite/deps/chunk-POQVU2VI.js
+<:.vite/deps/chunk-POQVU2VI.js
 } from "./chunk-HA2I5Q66.js";
-========
+=
 } from "./chunk-FYGGDDPD.js";
->>>>>>>> 9598fc5 (message):.vite/deps/chunk-D24B44MJ.js
+>:.vite/deps/chunk-D24B44MJ.js
 import {
   __commonJS
 } from "./chunk-5WRI5ZAA.js";
@@ -269,8 +269,8 @@ var require_react_dom = __commonJS({
 export {
   require_react_dom
 };
-<<<<<<<< HEAD:.vite/deps/chunk-POQVU2VI.js
+<:.vite/deps/chunk-POQVU2VI.js
 //# sourceMappingURL=chunk-POQVU2VI.js.map
-========
+=
 //# sourceMappingURL=chunk-D24B44MJ.js.map
->>>>>>>> 9598fc5 (message):.vite/deps/chunk-D24B44MJ.js
+>:.vite/deps/chunk-D24B44MJ.js

@@ -5,9 +5,9 @@ import { Search, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/shared/types';
 
-// ============================================================================
+// ======
 // TYPES
-// ============================================================================
+// ======
 
 export interface ProductSearchInputProps {
   /** Valeur actuelle du champ de recherche */
@@ -34,9 +34,9 @@ export interface ProductSearchInputProps {
   maxSuggestions?: number;
 }
 
-// ============================================================================
+// ======
 // COMPOSANT PRINCIPAL
-// ============================================================================
+// ======
 
 export function ProductSearchInput({
   value,
@@ -272,8 +272,8 @@ export function ProductSearchInput({
   );
 }
 
-// ============================================================================
+// ======
 // EXPORT PAR DÉFAUT
-// ============================================================================
+// ======
 
 export default ProductSearchInput;

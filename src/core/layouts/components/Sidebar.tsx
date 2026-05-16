@@ -4,11 +4,7 @@ import {
   ChartBar as BarChart2, DollarSign, Users, UserCheck, Settings, CreditCard,
   Building2, Activity, Shield, Barcode,
   MonitorSmartphone, FileText, ShoppingCart, ChevronLeft, ChevronRight, Plus,
-<<<<<<< HEAD
-  ClipboardList, Receipt,
-=======
   ClipboardList, Receipt, UtensilsCrossed, Grid3x3, ChefHat, CalendarCheck,
->>>>>>> 9598fc5 (message)
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
@@ -190,8 +186,6 @@ function useSidebarNav() {
     };
   }
 
-<<<<<<< HEAD
-=======
   if (activeModule === 'restaurant' && hasModule('restaurant')) {
     return {
       title: 'Restaurant / Bar',
@@ -210,7 +204,6 @@ function useSidebarNav() {
     };
   }
 
->>>>>>> 9598fc5 (message)
   if (activeModule === 'settings') {
     return {
       title: 'Compte',

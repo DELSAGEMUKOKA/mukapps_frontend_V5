@@ -1,10 +1,6 @@
 import type { StateCreator } from 'zustand';
 
-<<<<<<< HEAD
-export type ActiveModule = 'dashboard' | 'magasin' | 'product' | 'sales' | 'stock' | 'finance' | 'reports' | 'clients' | 'users' | 'settings' | 'superadmin' | 'invoicing' | null;
-=======
 export type ActiveModule = 'dashboard' | 'magasin' | 'product' | 'sales' | 'stock' | 'finance' | 'reports' | 'clients' | 'users' | 'settings' | 'superadmin' | 'invoicing' | 'restaurant' | null;
->>>>>>> 9598fc5 (message)
 
 export interface UiSlice {
   sidebarOpen: boolean;

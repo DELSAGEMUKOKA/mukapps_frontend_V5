@@ -15,9 +15,9 @@ import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 
-// ============================================================================
+// ======
 // TYPES
-// ============================================================================
+// ======
 
 interface CartItem {
   id: string;
@@ -39,9 +39,9 @@ interface Table {
   status: string;
 }
 
-// ============================================================================
+// ======
 // CONSTANTS
-// ============================================================================
+// ======
 
 const STATION_ICONS: Record<Station, React.ElementType> = {
   BAR: Wine,
@@ -55,9 +55,9 @@ const STATION_LABELS: Record<Station, string> = {
   DESSERTS: 'Desserts',
 };
 
-// ============================================================================
+// ======
 // COMPOSANTS
-// ============================================================================
+// ======
 
 // Modal de sélection de table
 function TableSelectionModal({
@@ -431,9 +431,9 @@ function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
   );
 }
 
-// ============================================================================
+// ======
 // COMPOSANT PRINCIPAL
-// ============================================================================
+// ======
 
 export default function NewOrder() {
   const navigate = useNavigate();

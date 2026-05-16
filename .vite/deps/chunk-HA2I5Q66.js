@@ -988,8 +988,8 @@ var require_react = __commonJS({
 export {
   require_react
 };
-<<<<<<<< HEAD:.vite/deps/chunk-HA2I5Q66.js
+<:.vite/deps/chunk-HA2I5Q66.js
 //# sourceMappingURL=chunk-HA2I5Q66.js.map
-========
+=
 //# sourceMappingURL=chunk-FYGGDDPD.js.map
->>>>>>>> 9598fc5 (message):.vite/deps/chunk-FYGGDDPD.js
+>:.vite/deps/chunk-FYGGDDPD.js

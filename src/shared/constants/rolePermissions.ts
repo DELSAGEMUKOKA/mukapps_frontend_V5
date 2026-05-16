@@ -1,3 +1,5 @@
+// src/shared/constants/rolePermissions.ts
+
 import { ROLES } from './roles';
 
 export const ROLE_PERMISSIONS = {
@@ -24,8 +26,6 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
-<<<<<<< HEAD
-=======
       restaurant: false,
       restaurantTables: false,
       restaurantMenu: false,
@@ -34,7 +34,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: false,
       restaurantReservations: false,
       restaurantReports: false,
->>>>>>> 9598fc5 (message)
+      restaurantBarStock: false,   // ← Ajouté
+      restaurantShifts: false,      // ← Ajouté
     },
   },
 
@@ -61,8 +62,6 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
-<<<<<<< HEAD
-=======
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: true,
@@ -71,7 +70,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: true,
->>>>>>> 9598fc5 (message)
+      restaurantBarStock: true,    // ← Ajouté
+      restaurantShifts: true,       // ← Ajouté
     },
   },
 
@@ -98,8 +98,6 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
-<<<<<<< HEAD
-=======
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: true,
@@ -108,7 +106,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: true,
->>>>>>> 9598fc5 (message)
+      restaurantBarStock: true,    // ← Ajouté
+      restaurantShifts: true,       // ← Ajouté
     },
   },
 
@@ -135,8 +134,6 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: false,
       invoicing: false,
-<<<<<<< HEAD
-=======
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: false,
@@ -145,7 +142,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: false,
->>>>>>> 9598fc5 (message)
+      restaurantBarStock: false,   // ← Ajouté (opérateur peut-être pas accès)
+      restaurantShifts: false,      // ← Ajouté
     },
   },
 
@@ -172,8 +170,6 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
-<<<<<<< HEAD
-=======
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: false,
@@ -182,7 +178,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: false,
       restaurantReports: false,
->>>>>>> 9598fc5 (message)
+      restaurantBarStock: false,   // ← Ajouté
+      restaurantShifts: false,      // ← Ajouté
     },
   },
 } as const;

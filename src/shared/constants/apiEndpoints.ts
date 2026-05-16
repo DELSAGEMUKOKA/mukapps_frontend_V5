@@ -116,9 +116,9 @@ export const API = {
     HISTORY: (productId: string) => `/magasin/stock/${productId}/history`,
   },
 
-  // ============================================
+  // ==
   // NOUVEAUX ENDPOINTS POUR LA GESTION DES LOTS
-  // ============================================
+  // ==
   BATCH: {
     // Lots
     BASE: '/stock/batches',
@@ -249,9 +249,9 @@ export const API = {
     PREVIEW: '/invoicing/templates/preview',
   },
 
-<<<<<<< HEAD
-=======
-  // ==================== RESTAURANT MODULE ====================
+
+
+  // ====== RESTAURANT MODULE ======
   RESTAURANT: {
     // ─────────────────────────────────────────────
     // 1. Tables
@@ -314,7 +314,7 @@ export const API = {
     ORDER_TRANSFER: (orderId: string) => `/restaurant/orders/${orderId}/transfer`,
     ORDER_BILL: (orderId: string) => `/restaurant/orders/${orderId}/bill`,
     ORDER_BILL_DRAFT: (orderId: string) => `/restaurant/orders/${orderId}/bill/draft`,
-
+ORDER_SERVE: (id: string) => `/restaurant/orders/${id}/serve`,
     // ─────────────────────────────────────────────
     // 8. Transferts de table
     // ─────────────────────────────────────────────
@@ -381,9 +381,10 @@ export const API = {
    PRODUCT_UNITS: (productId: string) => `/magasin/products/${productId}/units`,
 PRODUCT_UNIT_BY_ID: (productId: string, unitId: string) => `/magasin/products/${productId}/units/${unitId}`,
 PRODUCT_UNITS_BULK: (productId: string) => `/magasin/products/${productId}/units/bulk`,
+  PRODUCT_STOCK_ADJUST: (productId: string) => `/magasin/products/${productId}/stock/adjust`,
   },
 
->>>>>>> 9598fc5 (message)
+
   // Clients
   CLIENTS: {
     BASE: '/client',
