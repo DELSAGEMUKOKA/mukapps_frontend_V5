@@ -25,6 +25,7 @@ export interface ApiResponse<T> {
 export interface PaginatedData<T> {
   tables?: T[];
   items?: T[];
+   bills?: T[];
   total: number;
   page: number;
   limit: number;
@@ -311,11 +312,11 @@ export interface Bill {
   orderId: string;
   order?: Order;
   status: BillStatus;
-  totalAmount: number;
-  discount?: number;
+  totalAmount: number ;
+  discount?: number ;
   discountReason?: string;
-  paidAmount: number;
-  remainingAmount: number;
+  paidAmount: number ;
+  remainingAmount: number ;
   draftItems: BillItem[];
   payments: BillPayment[];
   splits?: BillSplit[];
@@ -741,8 +742,16 @@ export const returnsApi = {
 
 // ─── Bills API ────────────────────────────────────────────────────────────────
 
+// ─── Bills API ────────────────────────────────────────────────────────────────
+
 export const billsApi = {
-  getAll: (params?: { page?: number; limit?: number; status?: BillStatus }) =>
+  getAll: (params?: { 
+    page?: number; 
+    limit?: number; 
+    status?: BillStatus;
+    startDate?: string;
+    endDate?: string;
+  }) =>
     apiGet<ApiResponse<PaginatedData<Bill>>>(
       API.RESTAURANT.BILLS,
       params as Record<string, unknown>,

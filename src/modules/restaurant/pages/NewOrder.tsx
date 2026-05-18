@@ -151,7 +151,7 @@ function ModifiersModal({
     {
       id: 'cuisson',
       name: 'Cuisson',
-      isRequired: true,
+      isRequired: false,
       minChoices: 1,
       maxChoices: 1,
       options: [
@@ -223,51 +223,7 @@ function ModifiersModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-          {modifierGroups.map((group) => (
-            <div key={group.id}>
-              <label className="text-xs font-semibold text-gray-600 block mb-2">
-                {group.name}
-                {group.isRequired && <span className="text-red-500 ml-1">*</span>}
-                {group.maxChoices > 1 && (
-                  <span className="text-gray-400 text-[10px] ml-2">
-                    (max {group.maxChoices})
-                  </span>
-                )}
-              </label>
-              <div className="space-y-2">
-                {group.options.map((option) => {
-                  const isSelected = selectedModifiers.get(group.id) === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      onClick={() => {
-                        const newSelected = new Map(selectedModifiers);
-                        if (isSelected) {
-                          newSelected.delete(group.id);
-                        } else {
-                          newSelected.set(group.id, option.id);
-                        }
-                        setSelectedModifiers(newSelected);
-                      }}
-                      className={cn(
-                        'w-full flex items-center justify-between p-3 rounded-xl border transition-all',
-                        isSelected
-                          ? 'border-orange-400 bg-orange-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      )}
-                    >
-                      <span className="text-sm font-medium text-gray-700">{option.name}</span>
-                      {option.extraPrice > 0 && (
-                        <span className="text-xs font-semibold text-orange-600">
-                          +{option.extraPrice.toLocaleString()} FCFA
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+       
 
           <div>
             <label className="text-xs font-semibold text-gray-600 block mb-2">
@@ -287,19 +243,9 @@ function ModifiersModal({
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-gray-600">Quantité</span>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center"
-              >
-                <Minus size={12} />
-              </button>
+             
               <span className="w-8 text-center font-semibold">{quantity}</span>
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center"
-              >
-                <Plus size={12} />
-              </button>
+             
             </div>
           </div>
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">

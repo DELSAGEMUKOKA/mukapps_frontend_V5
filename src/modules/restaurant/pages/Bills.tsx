@@ -1,4 +1,4 @@
-// src/modules/restaurant/pages/Bills.tsx
+ // src/modules/restaurant/pages/Bills.tsx
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -100,7 +100,6 @@ function PaymentModal({
         </div>
 
         <div className="p-6 space-y-5">
-          {/* Méthode de paiement */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Mode de paiement</p>
             <div className="grid grid-cols-3 gap-2">
@@ -126,7 +125,6 @@ function PaymentModal({
             </div>
           </div>
 
-          {/* Montant espèces */}
           {method === 'CASH' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -176,7 +174,6 @@ function PaymentModal({
             </div>
           )}
 
-          {/* Pourboire */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Pourboire (optionnel)</p>
             <div className="flex gap-2">
@@ -543,23 +540,27 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
   const [discountValue, setDiscountValue] = useState(0);
   const [discountReason, setDiscountReason] = useState('');
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['restaurant-bills'] });
-    queryClient.invalidateQueries({ queryKey: ['restaurant-bill', bill.id] });
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['restaurant-bills'] });
+    await queryClient.invalidateQueries({ queryKey: ['restaurant-bill', bill.id] });
+    await queryClient.refetchQueries({ queryKey: ['restaurant-bill', bill.id] });
   };
 
   const validateMutation = useMutation({
     mutationFn: () => billsApi.validate(bill.id),
-    onSuccess: () => { toast.success('Facture validée'); invalidate(); },
+    onSuccess: async () => {
+      toast.success('Facture validée');
+      await invalidate();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const discountMutation = useMutation({
     mutationFn: ({ discount, reason }: { discount: number; reason?: string }) =>
       billsApi.applyDiscount(bill.id, discount, reason),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Remise appliquée');
-      invalidate();
+      await invalidate();
       setShowDiscountPanel(false);
       setDiscountValue(0);
     },
@@ -569,9 +570,9 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
   const paymentMutation = useMutation({
     mutationFn: ({ amount, paymentMethod, tip }: { amount: number; paymentMethod: PaymentMethod; tip?: number }) =>
       billsApi.pay(bill.id, { amount, paymentMethod, tip }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Paiement enregistré');
-      invalidate();
+      await invalidate();
       setShowPaymentModal(false);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -579,33 +580,44 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
 
   const splitEqualMutation = useMutation({
     mutationFn: (splitCount: number) => billsApi.splitEqual(bill.id, splitCount),
-    onSuccess: () => { toast.success('Facture divisée'); invalidate(); setShowSplitEqualModal(false); },
+    onSuccess: async () => {
+      toast.success('Facture divisée');
+      await invalidate();
+      setShowSplitEqualModal(false);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const splitByItemsMutation = useMutation({
     mutationFn: (splits: { guestLabel: string; itemIds: string[] }[]) => billsApi.splitByItems(bill.id, splits),
-    onSuccess: () => { toast.success('Facture divisée par article'); invalidate(); setShowSplitByItemsModal(false); },
+    onSuccess: async () => {
+      toast.success('Facture divisée par article');
+      await invalidate();
+      setShowSplitByItemsModal(false);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const closeMutation = useMutation({
     mutationFn: () => billsApi.close(bill.id),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Facture clôturée — Table libérée');
-      invalidate();
+      await invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const cancelMutation = useMutation({
     mutationFn: () => billsApi.cancel(bill.id),
-    onSuccess: () => { toast.success('Facture annulée'); invalidate(); onBack(); },
+    onSuccess: async () => {
+      toast.success('Facture annulée');
+      await invalidate();
+      onBack();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const totalNet = bill.totalAmount - (bill.discount || 0);
-  // remainingAmount peut être absent ou mal initialisé par l'API — on le recalcule depuis totalNet et paidAmount
   const remaining = bill.remainingAmount ?? (totalNet - (bill.paidAmount || 0));
   const effectiveRemaining = remaining > 0 ? remaining : totalNet > (bill.paidAmount || 0) ? totalNet - (bill.paidAmount || 0) : 0;
   const statusConfig = BILL_STATUS_CONFIG[bill.status];
@@ -625,7 +637,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
@@ -641,12 +652,9 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
           </button>
         </div>
 
-        {/* Indicateur d'étape */}
         {bill.status !== 'ANNULEE' && <StepIndicator currentStatus={bill.status} />}
 
-        {/* Carte principale */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          {/* En-tête facture */}
           <div className="p-5 border-b border-gray-100">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
@@ -677,7 +685,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
             )}
           </div>
 
-          {/* Articles */}
           <div className="p-5 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Articles</h3>
             <div className="space-y-2.5">
@@ -696,9 +703,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
             </div>
           </div>
 
-          {/* Zone d'actions */}
           <div className="p-5 bg-gray-50 space-y-4">
-            {/* Options de division */}
             {canSplit && (
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -716,7 +721,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            {/* Remise */}
             {canAct && bill.status !== 'BROUILLON' && (
               <div>
                 <button
@@ -780,7 +784,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            {/* Récapitulatif des montants */}
             <div className="bg-white rounded-xl border border-gray-100 p-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
@@ -812,9 +815,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             </div>
 
-            {/* ===== BOUTONS D'ACTION PRINCIPAUX ===== */}
-
-            {/* ÉTAPE 1: Valider le brouillon */}
             {bill.status === 'BROUILLON' && (
               <button
                 onClick={() => validateMutation.mutate()}
@@ -826,7 +826,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </button>
             )}
 
-            {/* ÉTAPE 2: Payer */}
             {(bill.status === 'OUVERTE' || bill.status === 'PAYEE_PARTIEL') && (
               <button
                 onClick={() => setShowPaymentModal(true)}
@@ -837,7 +836,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </button>
             )}
 
-            {/* ÉTAPE 3: Clôturer — s'affiche quand entièrement payé */}
             {(bill.status === 'PAYEE' || isFullyPaid) && bill.status !== 'CLOTUREE' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-2 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
@@ -855,7 +853,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            {/* Statut final : Clôturée */}
             {bill.status === 'CLOTUREE' && (
               <div className="flex items-center justify-center gap-2 py-4 bg-green-50 border border-green-200 rounded-xl">
                 <Lock size={18} className="text-green-700" />
@@ -863,7 +860,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            {/* Statut final : Annulée */}
             {bill.status === 'ANNULEE' && (
               <div className="flex items-center justify-center gap-2 py-4 bg-red-50 border border-red-200 rounded-xl">
                 <XCircle size={18} className="text-red-600" />
@@ -871,7 +867,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            {/* Annuler */}
             {canAct && bill.status !== 'BROUILLON' && bill.status !== 'PAYEE' && (
               <button
                 onClick={() => {
@@ -886,7 +881,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
           </div>
         </div>
 
-        {/* Historique des paiements */}
         {bill.payments && bill.payments.length > 0 && (
           <div className="mt-4 bg-white rounded-2xl p-5 shadow-sm">
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Historique des paiements</h4>
@@ -913,7 +907,6 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
         )}
       </div>
 
-      {/* Modaux */}
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -974,31 +967,31 @@ export default function Bills() {
     enabled: !!orderIdFromUrl,
   });
 
+  // ✅ CORRECTION: Utiliser 'bills' au lieu de 'items'
+  const bills = (billsData?.data as { bills?: Bill[] })?.bills ?? [];
   const bill = billData?.data || orderBillData?.data;
-  const bills = (billsData?.data as { items?: Bill[] })?.items ?? [];
 
   if (billsLoading || billLoading || orderBillLoading) {
     return <SmartLoader isLoading={true}><div /></SmartLoader>;
   }
 
-  // Vue détaillée
   if (bill) {
     return (
       <BillDetail
         bill={bill}
         onBack={() => {
           setSelectedBillId(null);
+          queryClient.invalidateQueries({ queryKey: ['restaurant-bills'] });
+          queryClient.refetchQueries({ queryKey: ['restaurant-bills'] });
           navigate('/restaurant/bills');
         }}
       />
     );
   }
 
-  // Vue liste
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Facturation</h1>
@@ -1012,12 +1005,11 @@ export default function Bills() {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <StatCard label="Total" value={bills.length} icon={Receipt} color="bg-orange-500" />
           <StatCard
             label="Montant total"
-            value={bills.reduce((s, b) => s + b.totalAmount, 0)}
+          value={bills.reduce((s, b) => s + Number(b.totalAmount), 0)}
             icon={DollarSign}
             color="bg-emerald-500"
             isCurrency
@@ -1027,7 +1019,6 @@ export default function Bills() {
           <StatCard label="Clôturées" value={bills.filter(b => b.status === 'CLOTUREE').length} icon={CheckCircle} color="bg-blue-600" />
         </div>
 
-        {/* Filtres */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
           <div className="relative flex-1 min-w-48">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1060,7 +1051,6 @@ export default function Bills() {
           </button>
         </div>
 
-        {/* Liste */}
         {bills.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
             <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
@@ -1107,7 +1097,6 @@ export default function Bills() {
                       </span>
                     </div>
                   </div>
-                  {/* Barre de progression paiement */}
                   {(b.status === 'PAYEE_PARTIEL' || b.status === 'PAYEE') && b.totalAmount > 0 && (
                     <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div

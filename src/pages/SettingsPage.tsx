@@ -104,8 +104,57 @@ export default function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // ✅ Fonction pour nettoyer les données avant envoi
+  const cleanCompanyData = (data: CompanySettings): Partial<CompanySettings> => {
+    const result: Partial<CompanySettings> = {};
+    
+    // Champs obligatoires (toujours envoyés)
+    const requiredFields: (keyof CompanySettings)[] = [
+      'companyName', 'phone', 'address', 'city', 'country', 'currency', 'dateFormat', 'invoicePrefix'
+    ];
+    
+    for (const field of requiredFields) {
+      const value = data[field];
+      if (value && typeof value === 'string') {
+        result[field] = value.trim();
+      } else if (value) {
+        result[field] = value;
+      }
+    }
+    
+    // Champs optionnels - UNIQUEMENT s'ils ont une valeur non vide
+    const optionalFields: (keyof CompanySettings)[] = [
+      'email', 'postalCode', 'website', 'slogan', 'rccm', 'idNat', 'taxId', 'impotNumber', 'invoiceFooter'
+    ];
+    
+    for (const field of optionalFields) {
+      const value = data[field];
+      if (value && typeof value === 'string' && value.trim() !== '') {
+        result[field] = value.trim();
+      }
+      // Ne pas inclure le champ si vide, null ou undefined
+    }
+    
+    // Devise en majuscules
+    if (result.currency) {
+      result.currency = String(result.currency).toUpperCase();
+    }
+    
+    // Préfixe facture en majuscules
+    if (result.invoicePrefix) {
+      result.invoicePrefix = String(result.invoicePrefix).toUpperCase();
+    }
+    
+    return result;
+  };
+
   const companyMutation = useMutation({
-    mutationFn: (payload: Partial<CompanySettings>) => companySettingsApi.updateSettings(payload),
+    mutationFn: (payload: Partial<CompanySettings>) => {
+      // ✅ Nettoyer les données avant envoi
+      const cleanPayload = cleanCompanyData(payload as CompanySettings);
+      console.log('📤 Envoi au backend (nettoyé):', cleanPayload);
+      return companySettingsApi.updateSettings(cleanPayload);
+    },
     onSuccess: () => toast.success('Paramètres de l\'entreprise sauvegardés'),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -162,6 +211,13 @@ export default function SettingsPage() {
 
   const setField = (field: keyof CompanySettings, value: string) =>
     setCompanyForm((prev) => ({ ...prev, [field]: value }));
+
+  // ✅ Nouvelle fonction de soumission avec nettoyage
+  const handleCompanySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanData = cleanCompanyData(companyForm);
+    companyMutation.mutate(cleanData);
+  };
 
   return (
     <div className={`space-y-6 ${activeTab === 'barcodes' ? 'max-w-none' : 'max-w-3xl'}`}>
@@ -270,7 +326,7 @@ export default function SettingsPage() {
 
       {activeTab === 'company' && isAdmin && (
         <form
-          onSubmit={(e) => { e.preventDefault(); companyMutation.mutate(companyForm); }}
+          onSubmit={handleCompanySubmit}
           className="space-y-5"
         >
           {/* Logo upload */}
@@ -324,7 +380,7 @@ export default function SettingsPage() {
                   </p>
                   <p className="text-xs text-secondary-500 leading-relaxed">
                     Le logo apparaît sur tous vos documents PDF (devis, Proformas, factures).<br />
-                    Formats acceptés : PNG, JPEG, GIF, WebP — Taille max : 5 MB
+                    Formats acceptés : PNG, JPEG, GIF, WebP — Taille max : 1 MB
                   </p>
                 </div>
 
