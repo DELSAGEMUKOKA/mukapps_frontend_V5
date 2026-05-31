@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Trash2, CircleCheck as CheckCircle, ArrowRight, FileText, ChevronLeft, ChevronRight, RefreshCw, CreditCard, Pencil, Building2, Receipt, Download } from 'lucide-react';
+import { Plus, Search, Eye, Trash2, CircleCheck as CheckCircle, ArrowRight, FileText, ChevronLeft, ChevronRight, RefreshCw, CreditCard, Pencil, Building2, Receipt, Download, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 // ✅ CORRECTION: Import en minuscules
 import { proformaApi, type ProformaInvoice, type ProformaStatus, type InvoicingLineItem } from '../api/invoicingApi';
@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ProformaDetailModal from '../components/ProformaDetailModal';
 import DesignPickerModal from '../components/DesignPickerModal';
+import ShareModal from '../components/ShareModal';
 
 // ✅ CORRECTION: Type correct pour les items
 interface ExtendedProformaInvoice extends Omit<ProformaInvoice, 'lineItems'> {
@@ -77,6 +78,7 @@ export default function ProformaInvoices() {
   const dSearch = useDebounce(search, 400);
   const [detailProforma, setDetailProforma] = useState<ProformaInvoice | null>(null);
   const [designPickerProforma, setDesignPickerProforma] = useState<ProformaInvoice | null>(null);
+  const [shareProforma, setShareProforma] = useState<ProformaInvoice | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
 
   // ✅ CORRECTION: Utilisation de proformaApi (minuscules)
@@ -314,6 +316,7 @@ export default function ProformaInvoices() {
                           <div className="flex items-center justify-end gap-1.5">
                             <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-xs font-medium transition-colors" title="Voir"><Eye size={12} /><span className="hidden xl:inline">Voir</span></button>
                             <button onClick={() => handleDownloadPdf(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#2563EB]/10 hover:bg-[#2563EB]/20 text-[#2563EB] text-xs font-medium transition-colors" title="Télécharger PDF"><Download size={12} /><span className="hidden xl:inline">PDF</span></button>
+                            <button onClick={() => setShareProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium transition-colors" title="Partager"><Share2 size={12} /><span className="hidden xl:inline">Partager</span></button>
                             {(p.status === 'CONFIRMED' || p.status === 'PARTIALLY_PAID') && amountDue > 0 && (
                               <button onClick={() => setDetailProforma(p)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-xs font-medium transition-colors" title="Enregistrer paiement"><CreditCard size={12} /><span className="hidden xl:inline">Paiement</span></button>
                             )}
@@ -374,6 +377,16 @@ export default function ProformaInvoices() {
           loading={pdfLoading}
           onSelect={handleDesignSelected}
           onClose={() => setDesignPickerProforma(null)}
+        />
+      )}
+      {shareProforma && (
+        <ShareModal
+          docNumber={shareProforma.proformaNumber}
+          docType="proforma"
+          clientName={shareProforma.client ? `${shareProforma.client.firstName || ''} ${shareProforma.client.lastName || ''}`.trim() : undefined}
+          clientEmail={shareProforma.client?.email}
+          clientPhone={shareProforma.client?.phone}
+          onClose={() => setShareProforma(null)}
         />
       )}
     </div>

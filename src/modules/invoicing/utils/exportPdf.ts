@@ -1,3 +1,5 @@
+import { sanitizeHtml } from '@/shared/helpers/securityHelper';
+
 /** Renders an HTML string to a multi-page A4 PDF and triggers download. */
 export async function exportHtmlToPdf(html: string, filename: string): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
@@ -7,7 +9,7 @@ export async function exportHtmlToPdf(html: string, filename: string): Promise<v
   wrapper.style.cssText = 'position:absolute;top:-9999px;left:-9999px;z-index:-9999;width:794px;overflow:visible;background:#fff;';
   const container = document.createElement('div');
   container.style.cssText = 'width:794px;background:#fff;';
-  container.innerHTML = html;
+  container.innerHTML = sanitizeHtml(html);
   wrapper.appendChild(container);
   document.body.appendChild(wrapper);
 

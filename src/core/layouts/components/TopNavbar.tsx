@@ -40,12 +40,10 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
   const allSuggestions = useMemo<SearchSuggestion[]>(() => {
     const items: SearchSuggestion[] = [];
 
-    // Top-level modules
     for (const mod of moduleItems) {
       items.push({ label: mod.label, icon: mod.icon, to: mod.to, moduleKey: mod.key });
     }
 
-    // Sub-pages per module (only what the role can access + module is active)
     if (hasModule('product') && canPage('products')) {
       items.push({ label: 'Produits', sublabel: 'Liste des produits', icon: Package, to: ROUTES.PRODUCTS, moduleKey: 'product' });
       items.push({ label: 'Ajouter un produit', sublabel: 'Produits', icon: Package, to: ROUTES.PRODUCT_ADD, moduleKey: 'product' });
@@ -101,7 +99,6 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
       items.push({ label: 'Abonnement', sublabel: 'Modules et abonnement', icon: CreditCard, to: ROUTES.SUBSCRIPTION, moduleKey: 'settings' });
     }
 
-    // Deduplicate by `to` path — keep first occurrence
     const seen = new Set<string>();
     return items.filter((s) => {
       if (seen.has(s.to)) return false;
@@ -121,8 +118,8 @@ function ModuleSearch({ moduleItems }: { moduleItems: ModuleItem[] }) {
   }, [query, allSuggestions]);
 
   const handleSelect = (s: SearchSuggestion) => {
-    setActiveModule(s.moduleKey);
     navigate(s.to);
+    setActiveModule(s.moduleKey);
     setQuery('');
     setOpen(false);
     setSelected(-1);
@@ -219,15 +216,14 @@ export default function TopNavbar() {
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  // Construction du tableau sans undefined en filtrant
-  const moduleItems: ModuleItem[] = isSuperAdmin
+  const moduleItems: ModuleItem[] = useMemo(() => isSuperAdmin
     ? [
         { key: 'superadmin', label: 'Super Admin', icon: Shield, to: ROUTES.SUPERADMIN_DASHBOARD, paths: ['/superadmin'] },
       ]
     : [
         { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard, to: ROUTES.DASHBOARD, paths: ['/dashboard'] },
-        ...(hasModule('product') && canPage('products') 
-          ? [{ key: 'product' as ActiveModule, label: 'Produits', icon: Package, to: ROUTES.PRODUCTS, paths: ['/products', '/categories', '/expiry', '/barcode-labels'] }] 
+        ...(hasModule('product') && canPage('products')
+          ? [{ key: 'product' as ActiveModule, label: 'Produits', icon: Package, to: ROUTES.PRODUCTS, paths: ['/products', '/categories', '/expiry', '/barcode-labels'] }]
           : []),
         ...(hasModule('sales') && (canPage('pos') || canPage('invoices'))
           ? [{ key: 'sales' as ActiveModule, label: 'Ventes', icon: ShoppingCart, to: canPage('pos') ? ROUTES.POS : ROUTES.INVOICES, paths: ['/pos', '/sales', '/invoices'] }]
@@ -256,9 +252,10 @@ export default function TopNavbar() {
         ...(canPage('settings')
           ? [{ key: 'settings' as ActiveModule, label: 'Paramètres', icon: Settings, to: ROUTES.SETTINGS, paths: ['/settings', '/subscription'] }]
           : []),
-      ];
+      ],
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [isSuperAdmin, hasModule, canPage]);
 
-  // Limiter le nombre de modules visibles (ajustez selon vos besoins)
   const MAX_VISIBLE_MODULES = 5;
   const visibleModules = moduleItems.slice(0, MAX_VISIBLE_MODULES);
   const hiddenModules = moduleItems.slice(MAX_VISIBLE_MODULES);
@@ -273,7 +270,9 @@ export default function TopNavbar() {
     } else if (path === '/dashboard') {
       setActiveModule('dashboard');
     }
-  }, [location.pathname, moduleItems, setActiveModule]);
+  // setActiveModule est stable (Zustand), moduleItems est mémoïsé
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const initials = `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`.toUpperCase();
 
@@ -297,7 +296,7 @@ export default function TopNavbar() {
           <span className="text-sm font-bold text-[#0F172A] tracking-tight hidden sm:block">MukApps</span>
         </Link>
 
-        {/* Navigation avec menu "Plus" pour les modules supplémentaires et barre de scroll visible */}
+        {/* Navigation scrollable - UNIQUEMENT les modules visibles */}
         <nav className="flex items-center h-full overflow-x-auto scrollbar-visible flex-1 pb-0.5">
           {visibleModules.map((mod) => {
             const isActive = activeModule === mod.key;
@@ -317,53 +316,55 @@ export default function TopNavbar() {
               </Link>
             );
           })}
-
-          {hiddenModules.length > 0 && (
-            <div className="relative h-full flex-shrink-0" ref={moreMenuRef}>
-              <button
-                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-                className={cn(
-                  'flex items-center gap-2 px-4 h-full text-xs font-medium transition-all whitespace-nowrap border-b-2 -mb-px',
-                  moreMenuOpen
-                    ? 'text-[#2563EB] border-[#2563EB]'
-                    : 'text-[#64748B] border-transparent hover:text-[#0F172A] hover:border-[#CBD5E1]'
-                )}
-              >
-                <MoreVertical size={14} />
-                <span className="hidden sm:inline">Plus</span>
-              </button>
-
-              {moreMenuOpen && (
-                <div className="absolute right-0 top-full mt-0 w-56 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
-                  <div className="py-1">
-                    {hiddenModules.map((mod) => {
-                      const isActive = activeModule === mod.key;
-                      return (
-                        <Link
-                          key={mod.key}
-                          to={mod.to}
-                          onClick={() => setMoreMenuOpen(false)}
-                          className={cn(
-                            'flex items-center gap-2 px-3 py-2.5 text-xs transition-colors w-full text-left',
-                            isActive
-                              ? 'bg-[#DBEAFE] text-[#2563EB]'
-                              : 'text-[#1E293B] hover:bg-[#F8FAFC]'
-                          )}
-                        >
-                          <mod.icon size={14} />
-                          <span className="flex-1">{mod.label}</span>
-                          {isActive && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </nav>
+
+        {/* Menu "Plus" - EXTERNE au nav, PAS de scroll, PAS de coupure */}
+        {hiddenModules.length > 0 && (
+          <div className="relative h-full flex-shrink-0 ml-1" ref={moreMenuRef}>
+            <button
+              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              className={cn(
+                'flex items-center gap-2 px-4 h-full text-xs font-medium transition-all whitespace-nowrap border-b-2 -mb-px',
+                moreMenuOpen
+                  ? 'text-[#2563EB] border-[#2563EB]'
+                  : 'text-[#64748B] border-transparent hover:text-[#0F172A] hover:border-[#CBD5E1]'
+              )}
+            >
+              <MoreVertical size={14} />
+              <span className="hidden sm:inline">Plus</span>
+              {moreMenuOpen && <ChevronDown size={11} className="ml-1" />}
+            </button>
+
+            {moreMenuOpen && (
+              <div className="absolute right-0 top-full mt-0 w-56 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="py-1">
+                  {hiddenModules.map((mod) => {
+                    const isActive = activeModule === mod.key;
+                    return (
+                      <Link
+                        key={mod.key}
+                        to={mod.to}
+                        onClick={() => setMoreMenuOpen(false)}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2.5 text-xs transition-colors w-full text-left',
+                          isActive
+                            ? 'bg-[#DBEAFE] text-[#2563EB]'
+                            : 'text-[#1E293B] hover:bg-[#F8FAFC]'
+                        )}
+                      >
+                        <mod.icon size={14} className={isActive ? 'text-[#2563EB]' : 'text-[#64748B]'} />
+                        <span className="flex-1">{mod.label}</span>
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-0.5 px-2 flex-shrink-0">

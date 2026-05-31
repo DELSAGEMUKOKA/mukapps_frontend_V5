@@ -1,27 +1,20 @@
 import { useAppStore } from '@/core/store';
-import { ROLES } from '@/shared/constants/roles';
+import { ROLES, ROLE_HIERARCHY } from '@/shared/constants/roles';
 import { canAccessPage, getRolePermissions, type PageKey } from '@/shared/constants/rolePermissions';
-import type { UserRole } from '@/shared/types';
+import type { Role } from '@/shared/types';
 
 export function usePermissions() {
   const user = useAppStore((s) => s.user);
 
-  const hasRole = (role: UserRole | UserRole[]): boolean => {
+  const hasRole = (role: Role | Role[]): boolean => {
     if (!user) return false;
-    if (Array.isArray(role)) return role.includes(user.role);
+    if (Array.isArray(role)) return role.includes(user.role as Role);
     return user.role === role;
   };
 
-  const hasMinRole = (minRole: UserRole): boolean => {
+  const hasMinRole = (minRole: Role): boolean => {
     if (!user) return false;
-    const hierarchy: Record<string, number> = {
-      CASHIER: 1,
-      OPERATOR: 2,
-      SUPERVISOR: 3,
-      ADMIN: 4,
-      SUPER_ADMIN: 5,
-    };
-    return (hierarchy[user.role] || 0) >= (hierarchy[minRole] || 0);
+    return (ROLE_HIERARCHY[user.role] || 0) >= (ROLE_HIERARCHY[minRole] || 0);
   };
 
   const canPage = (page: PageKey): boolean => {
@@ -31,15 +24,28 @@ export function usePermissions() {
 
   const canAccessModule = (module: 'magasin' | 'client' | 'users' | 'settings' | 'subscription'): boolean => {
     if (!user) return false;
-    if (user.role === ROLES.SUPER_ADMIN) return false;
+    // SUPER_ADMIN has full access to all modules
+    if (user.role === ROLES.SUPER_ADMIN) return true;
     const perms = getRolePermissions(user.role);
     return perms[module] ?? false;
   };
 
-  const isAdmin = () => hasRole([ROLES.ADMIN as UserRole, ROLES.SUPER_ADMIN as UserRole]);
-  const isSuperAdmin = () => hasRole(ROLES.SUPER_ADMIN as UserRole);
-  const isAtLeastSupervisor = () => hasMinRole(ROLES.SUPERVISOR as UserRole);
-  const isAtLeastOperator = () => hasMinRole(ROLES.OPERATOR as UserRole);
+  const isAdmin = () => hasRole([ROLES.ADMIN as Role, ROLES.SUPER_ADMIN as Role]);
+  const isSuperAdmin = () => hasRole(ROLES.SUPER_ADMIN as Role);
+  const isAtLeastSupervisor = () => hasMinRole(ROLES.SUPERVISOR as Role);
+  const isAtLeastOperator = () => hasMinRole(ROLES.OPERATOR as Role);
+
+  // Restaurant staff role helpers
+  const isRestaurantStaff = () => hasRole([
+    ROLES.SERVEUR as Role,
+    ROLES.BARMAN as Role,
+    ROLES.CUISINIER as Role,
+    ROLES.CAISSIER_RESTO as Role,
+  ]);
+  const isServeur = () => hasRole(ROLES.SERVEUR as Role);
+  const isBarman = () => hasRole(ROLES.BARMAN as Role);
+  const isCuisinier = () => hasRole(ROLES.CUISINIER as Role);
+  const isCaissierResto = () => hasRole(ROLES.CAISSIER_RESTO as Role);
 
   return {
     user,
@@ -51,6 +57,11 @@ export function usePermissions() {
     isSuperAdmin,
     isAtLeastSupervisor,
     isAtLeastOperator,
+    isRestaurantStaff,
+    isServeur,
+    isBarman,
+    isCuisinier,
+    isCaissierResto,
     role: user?.role,
   };
 }

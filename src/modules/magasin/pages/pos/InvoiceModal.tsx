@@ -1,6 +1,6 @@
-import { useRef, useMemo, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useEffect, useCallback, useState } from 'react';
 import { Printer, X, CircleCheck as CheckCircle } from 'lucide-react';
-import type { Sale } from '@/shared/types';
+import type { Sale, SaleItem } from '@/shared/types';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { companySettingsApi } from '@/modules/users/api/companySettingsApi';
 
@@ -8,6 +8,30 @@ interface InvoiceModalProps {
   sale: Sale;
   change?: number;
   onClose: () => void;
+}
+
+// Interface pour les paiements (si non définie dans Sale)
+interface Payment {
+  method: string;
+  amount: number;
+}
+
+// Interface pour les données de l'entreprise
+interface CompanySettings {
+  companyName?: string;
+  slogan?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  phone?: string;
+  email?: string;
+  rccm?: string;
+  idNat?: string;
+  taxId?: string;
+  website?: string;
+  invoicePrefix?: string;
+  invoiceFooter?: string;
+  logo?: string;
 }
 
 function fmt(n: number) {
@@ -65,6 +89,17 @@ const PRINT_STYLES = `
     margin-bottom: 8px;
     padding-bottom: 5px;
     border-bottom: 1px dashed #000;
+  }
+
+  .logo-container {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .logo-img {
+    max-width: 80px;
+    max-height: 60px;
+    object-fit: contain;
   }
 
   .company-name {
@@ -146,6 +181,15 @@ const PRINT_STYLES = `
     padding-top: 5px;
   }
 
+  .payment-detail {
+    margin: 2px 0;
+  }
+
+  .tip-line {
+    color: #059669;
+    font-weight: 500;
+  }
+
   .notes {
     margin: 8px 0;
     padding: 5px;
@@ -164,6 +208,13 @@ const PRINT_STYLES = `
 
   .footer div {
     margin: 2px 0;
+  }
+
+  .barcode {
+    text-align: center;
+    margin: 8px 0;
+    font-family: monospace;
+    letter-spacing: 2px;
   }
 
   tr, .total-line, .payment-info, .notes {
@@ -191,16 +242,59 @@ const PRINT_STYLES = `
 export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProps) {
   const currency = useCurrency();
   const printRef = useRef<HTMLDivElement>(null);
-  const company = useMemo(() => companySettingsApi.getLocalSettings(), []);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [company, setCompany] = useState<CompanySettings>({});
+  
+  // Vérifier que sale existe
+  if (!sale) {
+    return null;
+  }
+  
+  // Charger les paramètres de l'entreprise et le logo
+  useEffect(() => {
+    const loadCompanyData = async () => {
+      try {
+        // Charger les paramètres de l'entreprise
+        const settings = await companySettingsApi.getSettings();
+        setCompany(settings || {});
+        
+        // Charger le logo séparément
+        const logoData = await companySettingsApi.getLogo();
+        if (logoData && logoData.url) {
+          setLogoUrl(logoData.url);
+        } else {
+          setLogoUrl(null);
+        }
+      } catch (error) {
+        console.error('Erreur chargement données entreprise:', error);
+        // Fallback vers les paramètres locaux
+        const localSettings = companySettingsApi.getLocalSettings();
+        setCompany(localSettings || {});
+        setLogoUrl(null);
+      }
+    };
+    
+    loadCompanyData();
+  }, []);
 
-  const invoiceNo = sale.invoiceNumber || sale.id.slice(0, 8).toUpperCase();
+  // ✅ CORRECTION : Vérifier que sale.id existe avant d'utiliser slice()
+  const safeId = sale?.id || `INV-${Date.now()}`;
+  const invoiceNo = sale.invoiceNumber || safeId.slice(0, 8).toUpperCase();
   const prefix = company.invoicePrefix ? `${company.invoicePrefix}-` : '';
-  const displayInvoiceNo = sale.invoiceNumber || `${prefix}${sale.id.slice(0, 8).toUpperCase()}`;
+  const displayInvoiceNo = sale.invoiceNumber || `${prefix}${safeId.slice(0, 8).toUpperCase()}`;
 
-  const dateStr = new Date(sale.createdAt).toLocaleString('fr-FR', {
+  const dateStr = sale.createdAt ? new Date(sale.createdAt).toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }) : new Date().toLocaleString('fr-FR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+
+  // Générer le code barres simple (format texte)
+  const generateBarcodeText = (code: string) => {
+    return code.replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  };
 
   const handlePrint = useCallback(() => {
     const content = printRef.current?.innerHTML;
@@ -228,6 +322,14 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handlePrint]);
 
+  // Calculer le total des paiements si multi-paiements
+  const payments = (sale as any).payments as Payment[] | undefined;
+  const tip = (sale as any).tip as number | undefined;
+  
+  // ✅ CORRECTION : Utiliser totalAmount ou subtotal (pas total qui n'existe pas)
+  const finalTotal = (sale as any).totalAmount ?? sale.subtotal ?? 0;
+  const finalTotalWithTip = finalTotal + (tip || 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden" style={{ maxHeight: '92vh' }}>
@@ -246,15 +348,31 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
           <div ref={printRef} className="receipt bg-white">
 
             <div className="header">
+              {logoUrl && (
+                <div className="logo-container">
+                  <img 
+                    src={logoUrl} 
+                    alt="Logo entreprise" 
+                    className="logo-img"
+                    style={{ maxWidth: '80px', maxHeight: '60px', objectFit: 'contain' }}
+                  />
+                </div>
+              )}
+              
               {company.companyName && (
                 <div className="company-name">{company.companyName}</div>
               )}
               <div className="company-info">
                 {company.slogan && <div><em>{company.slogan}</em></div>}
                 {company.address && <div>{company.address}</div>}
+                {company.city && company.postalCode && (
+                  <div>{company.postalCode} {company.city}</div>
+                )}
                 {company.phone && <div>Tél : {company.phone}</div>}
+                {company.email && <div>Email : {company.email}</div>}
                 {company.rccm && <div>RCCM : {company.rccm}</div>}
                 {company.idNat && <div>ID Nat : {company.idNat}</div>}
+                {company.taxId && <div>NIF : {company.taxId}</div>}
               </div>
             </div>
 
@@ -264,6 +382,13 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
               {sale.customer && (
                 <div><strong>Client :</strong> {sale.customer.firstName} {sale.customer.lastName}{sale.customer.phone ? ` — ${sale.customer.phone}` : ''}</div>
               )}
+            </div>
+
+            {/* Code barres simple */}
+            <div className="barcode">
+              <div style={{ fontSize: '18px', letterSpacing: '2px', fontFamily: 'monospace' }}>
+                {generateBarcodeText(displayInvoiceNo)}
+              </div>
             </div>
 
             <table className="items">
@@ -276,12 +401,13 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
                 </tr>
               </thead>
               <tbody>
-                {sale.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.product?.name || item.productId}</td>
+                {/* ✅ CORRECTION : Utiliser product?.name ou productName via any */}
+                {(sale.items || []).map((item: any) => (
+                  <tr key={item.id || Math.random()}>
+                    <td>{item.product?.name || item.productName || item.productId}</td>
                     <td style={{ textAlign: 'center' }}>{item.quantity}</td>
                     <td className="price">{fmt(item.unitPrice)}</td>
-                    <td className="price">{fmt(item.unitPrice * item.quantity)}</td>
+                    <td className="price">{fmt((item.unitPrice || 0) * (item.quantity || 0))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -290,7 +416,7 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
             <div className="totals">
               <div className="total-line">
                 <span>Sous-total</span>
-                <span>{fmt(sale.subtotal)} {currency}</span>
+                <span>{fmt(sale.subtotal || 0)} {currency}</span>
               </div>
               {(sale.discount ?? 0) > 0 && (
                 <div className="total-line">
@@ -298,17 +424,38 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
                   <span>- {fmt(sale.discount!)} {currency}</span>
                 </div>
               )}
+              {tip && tip > 0 && (
+                <div className="total-line tip-line">
+                  <span>Pourboire</span>
+                  <span>+ {fmt(tip)} {currency}</span>
+                </div>
+              )}
               <div className="total-line grand-total">
                 <span>TOTAL</span>
-                <span>{fmt(sale.totalAmount ?? sale.subtotal)} {currency}</span>
+                <span>{fmt(finalTotalWithTip)} {currency}</span>
               </div>
             </div>
 
             <div className="payment-info">
-              <div className="total-line">
-                <span>Mode de paiement</span>
-                <span><strong>{METHOD_LABELS[sale.paymentMethod] || sale.paymentMethod}</strong></span>
-              </div>
+              {payments && payments.length > 0 ? (
+                <>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Paiements :</div>
+                  {payments.map((payment: Payment, idx: number) => (
+                    <div key={idx} className="payment-detail">
+                      <div className="total-line">
+                        <span>{METHOD_LABELS[payment.method] || payment.method}</span>
+                        <span><strong>{fmt(payment.amount)} {currency}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="total-line">
+                  <span>Mode de paiement</span>
+                  <span><strong>{METHOD_LABELS[sale.paymentMethod] || sale.paymentMethod || 'CASH'}</strong></span>
+                </div>
+              )}
+              
               {change !== undefined && change > 0 && (
                 <div className="total-line">
                   <span>Monnaie rendue</span>
@@ -317,9 +464,21 @@ export default function InvoiceModal({ sale, change, onClose }: InvoiceModalProp
               )}
             </div>
 
+            {(sale as any).notes && (
+              <div className="notes">
+                <div><strong>Notes :</strong></div>
+                <div>{(sale as any).notes}</div>
+              </div>
+            )}
+
             <div className="footer">
-              <div>{company.invoiceFooter || 'Merci pour votre confiance !'}</div>
-            </div>
+  <div>
+    {company.invoiceFooter || 'Merci pour votre confiance !'}
+  </div>
+  <div style={{ fontSize: '10px', marginTop: '4px' }}>
+    {company.website || 'www.votreentreprise.com'}
+  </div>
+</div>
 
           </div>
 

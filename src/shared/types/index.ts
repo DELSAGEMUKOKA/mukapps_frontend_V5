@@ -2,7 +2,8 @@
 // TYPES EXISTANTS
 // ============================================
 
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'OPERATOR' | 'CASHIER';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'OPERATOR' | 'CASHIER'
+  | 'SERVEUR' | 'BARMAN' | 'CUISINIER' | 'CAISSIER_RESTO';
 
 export interface User {
   id: string;
@@ -87,6 +88,7 @@ export interface Product {
   unit?: string;
   expiryDate?: string;
   isActive: boolean;
+  isLinkedToRestaurant?: boolean;
   companyId: string;
   createdAt: string;
   updatedAt: string;
@@ -242,11 +244,13 @@ export type AlertType = 'WARNING' | 'CRITICAL';
 
 /**
  * Interface représentant un lot (batch)
+ * ✅ Ajout de quantityUsed pour suivre la quantité consommée
  */
 export interface Batch {
   id: string;
   batchNumber: string;
   quantity: number;
+  quantityUsed: number; // ✅ AJOUTÉ : quantité déjà consommée
   initialQuantity: number;
   costPrice: number;
   expiryDate: string;

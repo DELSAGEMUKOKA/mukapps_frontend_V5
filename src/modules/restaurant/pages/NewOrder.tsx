@@ -1,23 +1,59 @@
 // src/modules/restaurant/pages/NewOrder.tsx
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+
 import {
-  ArrowLeft, Plus, Minus, Trash2, Search, X, ChefHat, Wine,
-  Users, Package, Coffee, UtensilsCrossed, ShoppingCart,
-  Send, Printer, CreditCard, AlertCircle, CheckCircle2,
-  ChevronDown, Grid3x3, List, Tag, Clock, Flame, Leaf, Cake, Beer
+  ArrowLeft,
+  Plus,
+  Minus,
+  Trash2,
+  Search,
+  X,
+  ChefHat,
+  Wine,
+  Users,
+  Package,
+  UtensilsCrossed,
+  ShoppingCart,
+  Send,
+  Grid3x3,
+  List,
+  Tag,
+  Clock,
+  Cake,
+  Coffee,
+  MapPin,
+  CircleOff,
+  CheckCircle2,
+  Calendar,
+  RefreshCw,
+  Flame,
+  Image as ImageIcon,
 } from 'lucide-react';
+
 import toast from 'react-hot-toast';
-import { ordersApi, tablesApi, menuApi, type Order, type OrderType, type MenuItem, type Station } from '../api/restaurantApi';
+
+import {
+  ordersApi,
+  tablesApi,
+  menuApi,
+  type OrderType,
+  type MenuItem,
+  type Station,
+  type TableStatus,
+  type Zone,
+  type RestaurantTable,
+} from '../api/restaurantApi';
+
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 
-// ======
+// ======================================================
 // TYPES
-// ======
+// ======================================================
 
 interface CartItem {
   id: string;
@@ -26,26 +62,24 @@ interface CartItem {
   price: number;
   quantity: number;
   station: Station;
+  preparationTime?: number;
   notes?: string;
-  modifiers?: { groupId: string; optionId: string; name: string; extraPrice: number }[];
+  imageUrl?: string;
+  modifiers?: {
+    groupId: string;
+    optionId: string;
+    name: string;
+    extraPrice: number;
+  }[];
 }
 
-interface Table {
-  id: string;
-  number: string;
-  name: string | null;
-  capacity: number;
-  zone: string;
-  status: string;
-}
-
-// ======
+// ======================================================
 // CONSTANTS
-// ======
+// ======================================================
 
 const STATION_ICONS: Record<Station, React.ElementType> = {
   BAR: Wine,
-  CUISINE: ChefHat,
+  CUISINE: Flame,
   DESSERTS: Cake,
 };
 
@@ -55,11 +89,282 @@ const STATION_LABELS: Record<Station, string> = {
   DESSERTS: 'Desserts',
 };
 
-// ======
-// COMPOSANTS
-// ======
+const STATION_COLORS: Record<Station, { bg: string; text: string; border: string; lightBg: string }> = {
+  BAR: { bg: 'bg-sky-600', text: 'text-sky-600', border: 'border-sky-200', lightBg: 'bg-sky-50' },
+  CUISINE: { bg: 'bg-blue-600', text: 'text-blue-600', border: 'border-blue-200', lightBg: 'bg-blue-50' },
+  DESSERTS: { bg: 'bg-pink-600', text: 'text-pink-600', border: 'border-pink-200', lightBg: 'bg-pink-50' },
+};
 
-// Modal de sélection de table
+const ZONE_LABELS: Record<Zone, string> = {
+  SALLE: 'Salle principale',
+  BAR: 'Bar',
+  TERRASSE: 'Terrasse',
+};
+
+const ZONE_ICONS: Record<Zone, React.ElementType> = {
+  SALLE: UtensilsCrossed,
+  BAR: Coffee,
+  TERRASSE: MapPin,
+};
+
+const STATUS_CONFIG: Record<TableStatus, { label: string; color: string; bg: string }> = {
+  LIBRE: { label: 'LIBRE', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  OCCUPEE: { label: 'OCCUPÉE', color: 'text-amber-600', bg: 'bg-amber-50' },
+  RESERVEE: { label: 'RÉSERVÉE', color: 'text-blue-600', bg: 'bg-blue-50' },
+  HORS_SERVICE: { label: 'HORS SERVICE', color: 'text-gray-400', bg: 'bg-gray-100' },
+};
+
+const ORDER_STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  BROUILLON: { label: 'Brouillon', color: 'text-gray-600', bg: 'bg-gray-100' },
+  EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50' },
+  EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50' },
+  SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  ANNULE: { label: 'Annulé', color: 'text-red-600', bg: 'bg-red-50' },
+};
+
+// ======================================================
+// LEFT SIDEBAR TABLES COMPONENT
+// ======================================================
+
+function LeftSidebarTables({
+  selectedTableId,
+  onSelectTable,
+  onOpenTableModal,
+  zoneFilter,
+}: {
+  selectedTableId?: string;
+  onSelectTable: (tableId: string) => void;
+  onOpenTableModal: () => void;
+  zoneFilter: string;
+}) {
+  const { data: tablesData, isLoading } = useQuery({
+    queryKey: ['restaurant-tables'],
+    queryFn: () => tablesApi.getAll(),
+    refetchInterval: 30000,
+  });
+
+  const tables: RestaurantTable[] = useMemo(() => {
+    const data = tablesData?.data;
+    if (Array.isArray(data)) return data;
+    if (data?.tables && Array.isArray(data.tables)) return data.tables;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [tablesData]);
+
+  const filteredTables = useMemo(() => {
+    if (zoneFilter === 'all') return tables;
+    return tables.filter(table => table.zone === zoneFilter);
+  }, [tables, zoneFilter]);
+
+  const tablesByZone = useMemo(() => {
+    const groups: Record<string, RestaurantTable[]> = {};
+    filteredTables.forEach(table => {
+      if (!groups[table.zone]) groups[table.zone] = [];
+      groups[table.zone].push(table);
+    });
+    return groups;
+  }, [filteredTables]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full py-10">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-3 space-y-6">
+      {Object.entries(tablesByZone).map(([zone, zoneTables]) => {
+        const ZoneIcon = ZONE_ICONS[zone as Zone] || UtensilsCrossed;
+        const zoneLabel = ZONE_LABELS[zone as Zone] || zone;
+        
+        return (
+          <div key={zone}>
+            <div className="flex items-center gap-2 px-2 mb-3">
+              <ZoneIcon size={12} className="text-gray-400" />
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">
+                {zoneLabel}
+              </p>
+              <span className="text-[10px] text-gray-300 ml-auto">{zoneTables.length}</span>
+            </div>
+
+            <div className="space-y-2">
+              {zoneTables.map((table) => {
+                const isSelected = selectedTableId === table.id;
+                const statusConfig = STATUS_CONFIG[table.status] || STATUS_CONFIG.LIBRE;
+                
+                const isSelectable = table.status === 'LIBRE' || table.status === 'RESERVEE';
+                const isDisabled = !isSelectable;
+                
+                return (
+                  <button
+                    key={table.id}
+                    onClick={() => {
+                      if (isSelectable) {
+                        onSelectTable(table.id);
+                      } else {
+                        toast.error(`La table ${table.number} est ${statusConfig.label.toLowerCase()}, elle ne peut pas être sélectionnée`);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={cn(
+                      'w-full rounded-xl border p-3 flex items-center justify-between transition-all',
+                      isSelected
+                        ? 'border-[var(--primary)] bg-[var(--primary-light)]'
+                        : isDisabled
+                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                        : 'border-gray-200 bg-white hover:border-[var(--primary-light)]'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center',
+                          isSelected ? 'bg-[var(--primary-light)] text-[var(--primary)]' : statusConfig.bg
+                        )}
+                      >
+                        <Users size={16} className={statusConfig.color} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {table.name ? table.name : `Table ${table.number}`}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {table.capacity} couverts
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        'text-[10px] font-semibold px-2 py-1 rounded-full',
+                        statusConfig.bg,
+                        statusConfig.color
+                      )}
+                    >
+                      {statusConfig.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      
+      {filteredTables.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-400">Aucune table dans cette zone</p>
+        </div>
+      )}
+    </div>
+  );
+}
+  
+// ======================================================
+// COMMANDES LIST COMPONENT
+// ======================================================
+
+function CommandesList() {
+  const navigate = useNavigate();
+  
+  const { data: ordersData, isLoading, refetch } = useQuery({
+    queryKey: ['restaurant-orders-active'],
+    queryFn: () => ordersApi.getAll({ status: 'EN_COURS', limit: 50 }),
+    refetchInterval: 30000,
+  });
+
+  const orders = useMemo(() => {
+    const data = ordersData?.data;
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [ordersData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full py-10">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full px-4 py-10 text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-3">
+          <Package size={24} className="text-gray-300" />
+        </div>
+        <p className="text-sm font-semibold text-gray-500">Aucune commande active</p>
+        <p className="text-xs text-gray-400 mt-1">Les commandes en cours apparaîtront ici</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {orders.map((order: any) => {
+        const statusConfig = ORDER_STATUS_LABELS[order.status] || ORDER_STATUS_LABELS.EN_ATTENTE;
+        const itemCount = order.items?.length || 0;
+        
+        return (
+          <button
+            key={order.id}
+            onClick={() => navigate(`/restaurant/orders/${order.id}`)}
+            className="w-full rounded-xl border border-gray-200 bg-white p-4 text-left hover:border-[var(--primary-light)] hover:shadow-md transition-all"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900">
+                  {order.orderNumber || `#${order.id.slice(-6)}`}
+                </span>
+                <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', statusConfig.bg, statusConfig.color)}>
+                  {statusConfig.label}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">
+                {new Date(order.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              {order.table && (
+                <span className="flex items-center gap-1">
+                  <Users size={10} /> Table {order.table.number}
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <UtensilsCrossed size={10} /> {itemCount} article{itemCount > 1 ? 's' : ''}
+              </span>
+            </div>
+            
+            {order.notes && (
+              <p className="text-[11px] text-amber-600 mt-2 truncate">📝 {order.notes}</p>
+            )}
+          </button>
+        );
+      })}
+      
+      <button
+        onClick={() => refetch()}
+        className="w-full py-2 text-center text-xs text-gray-400 border border-dashed border-gray-300 rounded-xl hover:border-[var(--primary-light)] hover:text-[var(--primary)] transition-all flex items-center justify-center gap-1"
+      >
+        <RefreshCw size={12} /> Rafraîchir
+      </button>
+    </div>
+  );
+}
+
+// ======================================================
+// TABLE MODAL
+// ======================================================
+
 function TableSelectionModal({
   isOpen,
   onClose,
@@ -77,51 +382,70 @@ function TableSelectionModal({
     enabled: isOpen,
   });
 
-  const tables = tablesData?.data?.tables ?? [];
+  const tables: RestaurantTable[] = useMemo(() => {
+    const data = tablesData?.data;
+    if (Array.isArray(data)) return data;
+    if (data?.tables && Array.isArray(data.tables)) return data.tables;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }, [tablesData]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Sélectionner une table</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
-            <X size={16} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Sélectionner une table</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Choisissez une table pour la commande</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-5">
           {isLoading ? (
-            <div className="text-center py-8">Chargement...</div>
-          ) : tables.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Aucune table disponible</div>
+            <div className="text-center py-10">Chargement...</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {tables.map((table) => (
-                <button
-                  key={table.id}
-                  onClick={() => {
-                    onSelect(table.id);
-                    onClose();
-                  }}
-                  className={cn(
-                    'p-4 rounded-xl border-2 text-left transition-all',
-                    selectedTableId === table.id
-                      ? 'border-orange-500 bg-orange-50'
-                      : 'border-gray-200 hover:border-orange-300'
-                  )}
-                >
-                  <p className="font-bold text-gray-800">{table.number}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {table.name || `Table ${table.number}`}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Users size={12} className="text-gray-400" />
-                    <span className="text-xs text-gray-500">{table.capacity} pers.</span>
-                  </div>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {tables.map((table) => {
+                const statusConfig = STATUS_CONFIG[table.status] || STATUS_CONFIG.LIBRE;
+                
+                return (
+                  <button
+                    key={table.id}
+                    onClick={() => {
+                      onSelect(table.id);
+                      onClose();
+                    }}
+                    className={cn(
+                      'rounded-xl border p-3 text-left transition-all',
+                      selectedTableId === table.id
+                        ? 'border-[var(--primary)] bg-[var(--primary-light)]'
+                        : 'border-gray-200 bg-white hover:border-[var(--primary-light)]'
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-bold text-gray-900">
+                        {table.name ? table.name : `Table ${table.number}`}
+                      </p>
+                      <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', statusConfig.bg, statusConfig.color)}>
+                        {statusConfig.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Users size={11} /> {table.capacity} couverts
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin size={11} /> {ZONE_LABELS[table.zone] || table.zone}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -130,7 +454,10 @@ function TableSelectionModal({
   );
 }
 
-// Modal de modificateurs
+// ======================================================
+// MODIFIERS MODAL
+// ======================================================
+
 function ModifiersModal({
   isOpen,
   onClose,
@@ -139,126 +466,64 @@ function ModifiersModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  item: MenuItem & { quantity?: number };
-  onConfirm: (modifiers: { groupId: string; optionId: string; name: string; extraPrice: number }[], notes: string) => void;
+  item: MenuItem;
+  onConfirm: (
+    modifiers: { groupId: string; optionId: string; name: string; extraPrice: number }[],
+    notes: string
+  ) => void;
 }) {
-  const [selectedModifiers, setSelectedModifiers] = useState<Map<string, string>>(new Map());
   const [notes, setNotes] = useState('');
-  const [quantity, setQuantity] = useState(item.quantity || 1);
-
-  // Simuler des modificateurs (à remplacer par l'appel API réel)
-  const modifierGroups = [
-    {
-      id: 'cuisson',
-      name: 'Cuisson',
-      isRequired: false,
-      minChoices: 1,
-      maxChoices: 1,
-      options: [
-        { id: 'saignant', name: 'Saignant', extraPrice: 0 },
-        { id: 'a_point', name: 'À point', extraPrice: 0 },
-        { id: 'bien_cuit', name: 'Bien cuit', extraPrice: 0 },
-      ],
-    },
-    {
-      id: 'sauce',
-      name: 'Sauce',
-      isRequired: false,
-      minChoices: 0,
-      maxChoices: 2,
-      options: [
-        { id: 'béarnaise', name: 'Sauce Béarnaise', extraPrice: 2 },
-        { id: 'poivre', name: 'Sauce Poivre', extraPrice: 2 },
-        { id: 'roquefort', name: 'Sauce Roquefort', extraPrice: 2.5 },
-      ],
-    },
-  ];
+  const [quantity, setQuantity] = useState(1);
 
   if (!isOpen) return null;
 
-  const totalExtraPrice = Array.from(selectedModifiers.values()).reduce((total, optionId) => {
-    for (const group of modifierGroups) {
-      const option = group.options.find(o => o.id === optionId);
-      if (option) return total + option.extraPrice;
-    }
-    return total;
-  }, 0);
-
   const handleConfirm = () => {
-    // Vérifier les modificateurs requis
-    const requiredGroups = modifierGroups.filter(g => g.isRequired);
-    const missingRequired = requiredGroups.some(g => !selectedModifiers.has(g.id));
-    
-    if (missingRequired) {
-      toast.error('Veuillez sélectionner les options requises');
-      return;
-    }
-
-    const modifiers = Array.from(selectedModifiers.entries()).flatMap(([groupId, optionId]) => {
-      const group = modifierGroups.find(g => g.id === groupId);
-      const option = group?.options.find(o => o.id === optionId);
-      if (option) {
-        return [{ groupId, optionId, name: option.name, extraPrice: option.extraPrice }];
-      }
-      return [];
-    });
-
-    onConfirm(modifiers, notes);
+    onConfirm([], notes);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-gray-900">{item.name}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Prix: {item.price.toLocaleString()} FCFA
-            </p>
+           
+              {item.price.toLocaleString()} 
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
-            <X size={16} />
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+        <div className="p-5">
+          <div className="mb-4">
        
+          </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 block mb-2">
-              Notes spéciales
-            </label>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">Notes spéciales</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Sans oignons, bien cuit, etc..."
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              rows={3}
+              placeholder="Sans sel, bien cuit, sans glace..."
+              className="w-full rounded-xl border border-gray-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             />
           </div>
-        </div>
 
-        <div className="px-6 py-4 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-600">Quantité</span>
-            <div className="flex items-center gap-2">
-             
-              <span className="w-8 text-center font-semibold">{quantity}</span>
-             
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
             <span className="font-bold text-gray-800">Total</span>
-            <span className="text-lg font-bold text-orange-600">
-              {((item.price + totalExtraPrice) * quantity).toLocaleString()} FCFA
+            <span className="text-xl font-bold text-[var(--primary)]">
+              {(item.price * quantity).toLocaleString()} 
             </span>
           </div>
+
           <button
             onClick={handleConfirm}
-            className="w-full mt-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
+            className="btn btn-primary w-full mt-4"
           >
-            Ajouter au panier
+            Ajouter au panier ({quantity})
           </button>
         </div>
       </div>
@@ -266,8 +531,178 @@ function ModifiersModal({
   );
 }
 
-// Panier
-function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
+// ======================================================
+// CARD COMPONENTS WITH IMAGES
+// ======================================================
+function MenuGridCard({
+  item,
+  currency,
+  onAdd,
+}: {
+  item: MenuItem;
+  currency: string;
+  onAdd: (item: MenuItem) => void;
+}) {
+  const stationColor =
+    STATION_COLORS[item.station] || STATION_COLORS.CUISINE;
+
+  return (
+    <button
+      onClick={() => onAdd(item)}
+      className="
+        group
+        w-full
+        bg-white
+        border border-gray-200
+        rounded-2xl
+        overflow-hidden
+        text-left
+        transition-all duration-200
+        hover:shadow-md
+        hover:border-red-200
+      "
+    >
+      {/* IMAGE */}
+      <div className="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="
+              absolute inset-0
+              w-full h-full
+              object-cover
+              group-hover:scale-105
+              transition-transform duration-300
+            "
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <div className="flex flex-col items-center gap-1">
+              {item.station === "BAR" && (
+                <Wine size={34} className="text-gray-300" />
+              )}
+
+              {item.station === "CUISINE" && (
+                <Flame size={34} className="text-gray-300" />
+              )}
+
+              {item.station === "DESSERTS" && (
+                <Cake size={34} className="text-gray-300" />
+              )}
+
+              <ImageIcon size={16} className="text-gray-300" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-3">
+        {/* TOP */}
+        <div className="flex items-start justify-between gap-2">
+        
+
+          <span className="text-sm font-bold text-[var(--primary)] shrink-0">
+            {currency}
+            {item.price.toLocaleString()}
+          </span>
+        </div>
+
+        {/* NAME */}
+        <h3
+          className="
+            mt-1
+            text-sm
+            font-semibold
+            text-gray-800
+            leading-5
+            line-clamp-2
+            min-h-[40px]
+            break-words
+          "
+        >
+          {item.name}
+        </h3>
+
+        {/* FOOTER */}
+        
+
+        {/* STATION */}
+        <div className="mt-0.5 pt-3 border-t border-gray-100">
+          <span
+            className={cn(
+              "text-[10px] font-medium px-2 py-1 rounded-full inline-flex items-center",
+              stationColor.lightBg,
+              stationColor.text
+            )}
+          >
+            {STATION_LABELS[item.station]}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function MenuListRow({ item, currency, onAdd }: { item: MenuItem; currency: string; onAdd: (item: MenuItem) => void }) {
+  const stationColor = STATION_COLORS[item.station] || STATION_COLORS.CUISINE;
+  
+  return (
+    <button
+      onClick={() => onAdd(item)}
+      className="w-full bg-white rounded-xl border border-gray-200 p-3 text-left hover:shadow-md transition-all flex items-center gap-3"
+    >
+      {/* ✅ Miniature image */}
+      <div className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className={cn('w-full h-full flex items-center justify-center', stationColor.lightBg)}>
+            {item.station === 'BAR' && <Wine size={18} className={stationColor.text} />}
+            {item.station === 'CUISINE' && <Flame size={18} className={stationColor.text} />}
+            {item.station === 'DESSERTS' && <Cake size={18} className={stationColor.text} />}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-gray-800 truncate">{item.name}</p>
+          <p className="text-sm font-bold text-[var(--primary)] ml-2 shrink-0">
+            {currency}{item.price.toLocaleString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 mt-0.5">
+          {item.preparationTime && (
+            <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+              <Clock size={10} /> {item.preparationTime} min
+            </span>
+          )}
+          <span className={cn('text-[11px] font-medium', stationColor.text)}>
+            {STATION_LABELS[item.station]}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ======================================================
+// CART COMPONENT
+// ======================================================
+
+function Cart({
+  items,
+  onUpdateQuantity,
+  onRemove,
+  onClear,
+  currency,
+}: {
   items: CartItem[];
   onUpdateQuantity: (id: string, quantity: number) => void;
   onRemove: (id: string) => void;
@@ -275,26 +710,22 @@ function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
   currency: string;
 }) {
   const subtotal = items.reduce((sum, item) => {
-    const itemTotal = item.price * item.quantity;
     const modifiersTotal = (item.modifiers || []).reduce((mSum, m) => mSum + m.extraPrice, 0) * item.quantity;
-    return sum + itemTotal + modifiersTotal;
+    return sum + item.price * item.quantity + modifiersTotal;
   }, 0);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+    <div className="card flex flex-col h-full">
+      <div className="o-panel-header">
         <div className="flex items-center gap-2">
           <ShoppingCart size={16} className="text-gray-400" />
-          <h3 className="font-semibold text-gray-800">Panier</h3>
-          <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+          <h3 className="o-panel-title">Panier</h3>
+          <span className="badge badge-secondary">
             {items.length} article{items.length !== 1 ? 's' : ''}
           </span>
         </div>
         {items.length > 0 && (
-          <button
-            onClick={onClear}
-            className="text-xs text-red-500 hover:text-red-600 transition-colors"
-          >
+          <button onClick={onClear} className="text-xs text-red-500 hover:text-red-600 transition-colors">
             Tout supprimer
           </button>
         )}
@@ -311,14 +742,15 @@ function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
           items.map((item) => {
             const modifiersTotal = (item.modifiers || []).reduce((sum, m) => sum + m.extraPrice, 0);
             const itemTotal = (item.price + modifiersTotal) * item.quantity;
+            const stationColor = STATION_COLORS[item.station] || STATION_COLORS.CUISINE;
             
             return (
-              <div key={item.id} className="bg-gray-50 rounded-lg p-2.5">
+              <div key={item.id} className={cn('rounded-lg p-3', stationColor.lightBg)}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-800">{item.name}</p>
                     {item.modifiers && item.modifiers.length > 0 && (
-                      <p className="text-[10px] text-gray-400 mt-0.5">
+                      <p className="text-[10px] text-gray-500 mt-0.5">
                         {item.modifiers.map(m => m.name).join(', ')}
                       </p>
                     )}
@@ -368,7 +800,7 @@ function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
         </div>
         <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-200">
           <span className="text-base font-bold text-gray-900">Total</span>
-          <span className="text-xl font-bold text-orange-600">
+          <span className="text-xl font-bold text-[var(--primary)]">
             {currency}{subtotal.toLocaleString()}
           </span>
         </div>
@@ -377,97 +809,121 @@ function Cart({ items, onUpdateQuantity, onRemove, onClear, currency }: {
   );
 }
 
-// ======
-// COMPOSANT PRINCIPAL
-// ======
+// ======================================================
+// MAIN COMPONENT
+// ======================================================
 
 export default function NewOrder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currency = useCurrency();
 
-  // State
   const [orderType, setOrderType] = useState<OrderType>('SUR_PLACE');
-  const [selectedTableId, setSelectedTableId] = useState<string | undefined>(undefined);
+  const [selectedTableId, setSelectedTableId] = useState<string>();
   const [guestCount, setGuestCount] = useState(2);
   const [notes, setNotes] = useState('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStation, setSelectedStation] = useState<Station | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
-  // Modal states
   const [showTableModal, setShowTableModal] = useState(false);
   const [showModifiersModal, setShowModifiersModal] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'TABLES' | 'COMMANDES'>('TABLES');
+  const [zoneFilter, setZoneFilter] = useState<string>('all');
 
-  // Queries
+  // ======================================================
+  // QUERIES
+  // ======================================================
+
   const { data: menuData, isLoading: menuLoading } = useQuery({
     queryKey: ['restaurant-menu-full'],
     queryFn: () => menuApi.getFull(),
-    staleTime: 30000,
   });
 
-  // Data extraction
-  const categories = useMemo(() => {
-    return menuData?.data ?? [];
-  }, [menuData]);
+  const categories = useMemo(() => menuData?.data ?? [], [menuData]);
 
   const allItems = useMemo(() => {
-    return categories.flatMap(c => 
-      (c.items ?? []).map(i => ({
+    return categories.flatMap((c: any) =>
+      (c.items ?? []).map((i: any) => ({
         ...i,
         categoryName: c.name,
         price: typeof i.price === 'string' ? parseFloat(i.price) : i.price,
+        preparationTime: i.preparationTime || undefined,
+        imageUrl: i.imageUrl,
       }))
     );
   }, [categories]);
 
-  // Filtered items
   const filteredItems = useMemo(() => {
-    return allItems.filter(item => {
+    return allItems.filter((item: any) => {
       if (selectedStation !== 'all' && item.station !== selectedStation) return false;
       if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return item.isAvailable;
     });
   }, [allItems, selectedStation, searchTerm]);
 
-  // Mutations
+  // ======================================================
+  // MUTATIONS
+  // ======================================================
+
+  const sendOrderMutation = useMutation({
+    mutationFn: (orderId: string) => ordersApi.send(orderId),
+    onSuccess: () => {
+      toast.success('Commande envoyée en cuisine !');
+      queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
+      navigate('/restaurant/orders');
+    },
+    onError: (e: Error) => {
+      toast.error('Erreur lors de l\'envoi en cuisine');
+      console.error(e);
+    },
+  });
+
+  const addItemsMutation = useMutation({
+    mutationFn: ({ orderId, items }: { orderId: string; items: any[] }) =>
+      ordersApi.addItems(orderId, items),
+    onSuccess: (_, variables) => {
+      toast.success(`${variables.items.length} article(s) ajouté(s)`);
+      sendOrderMutation.mutate(variables.orderId);
+    },
+    onError: (e: Error) => {
+      toast.error('Erreur lors de l\'ajout des articles');
+      console.error(e);
+    },
+  });
+
   const createOrderMutation = useMutation({
     mutationFn: ordersApi.create,
     onSuccess: (response) => {
       const orderId = response.data?.id;
-      if (orderId && cartItems.length > 0) {
-        // Ajouter les articles après création
-        const items = cartItems.map(item => ({
+      if (orderId) {
+        toast.success('Commande créée');
+        const itemsToAdd = cartItems.map(item => ({
           menuItemId: item.menuItemId,
           quantity: item.quantity,
           notes: item.notes,
         }));
-        ordersApi.addItems(orderId, items).then(() => {
-          ordersApi.send(orderId);
-          toast.success('Commande créée et envoyée en cuisine');
-          queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] });
-          navigate('/restaurant/orders');
-        });
+        addItemsMutation.mutate({ orderId, items: itemsToAdd });
       } else {
-        toast.success('Commande créée');
-        navigate('/restaurant/orders');
+        toast.error('Erreur lors de la création de la commande');
       }
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Handlers
+  const isSubmitting = createOrderMutation.isPending || addItemsMutation.isPending || sendOrderMutation.isPending;
+
+  // ======================================================
+  // HANDLERS
+  // ======================================================
+
   const handleAddToCart = (item: MenuItem) => {
     setSelectedMenuItem(item);
     setShowModifiersModal(true);
   };
 
-  const handleConfirmModifiers = (
-    modifiers: { groupId: string; optionId: string; name: string; extraPrice: number }[],
-    notes: string
-  ) => {
+  const handleConfirmModifiers = (modifiers: any[], itemNotes: string) => {
     if (!selectedMenuItem) return;
 
     const newItem: CartItem = {
@@ -477,31 +933,37 @@ export default function NewOrder() {
       price: selectedMenuItem.price,
       quantity: 1,
       station: selectedMenuItem.station,
-      notes: notes || undefined,
+      preparationTime: selectedMenuItem.preparationTime,
+      imageUrl: selectedMenuItem.imageUrl,
       modifiers,
+      notes: itemNotes || undefined,
     };
 
-    setCartItems(prev => [...prev, newItem]);
-    toast.success(`${selectedMenuItem.name} ajouté au panier`);
+    setCartItems((prev) => [...prev, newItem]);
+    toast.success(`${selectedMenuItem.name} ajouté`);
     setSelectedMenuItem(null);
   };
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
     if (quantity <= 0) {
-      setCartItems(prev => prev.filter(item => item.id !== id));
+      setCartItems((prev) => prev.filter((item) => item.id !== id));
     } else {
-      setCartItems(prev => prev.map(item =>
-        item.id === id ? { ...item, quantity } : item
-      ));
+      setCartItems((prev) => prev.map((item) => (item.id === id ? { ...item, quantity } : item)));
     }
   };
 
   const handleRemoveItem = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const handleClearCart = () => {
     setCartItems([]);
+  };
+
+  const handleSelectTable = (tableId: string) => {
+    setSelectedTableId(tableId);
+    toast.success('Table sélectionnée');
+    setShowTableModal(false);
   };
 
   const handleSubmitOrder = () => {
@@ -516,99 +978,100 @@ export default function NewOrder() {
       return;
     }
 
+    if (isSubmitting) return;
+
     createOrderMutation.mutate({
       type: orderType,
       tableId: orderType === 'SUR_PLACE' ? selectedTableId : undefined,
       guestCount,
-      notes: notes || undefined,
+      notes,
     });
   };
 
   if (menuLoading) return <SmartLoader isLoading={true}><div /></SmartLoader>;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
-      {/* LEFT: Menu */}
-      <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-200">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-5 py-3 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => navigate('/restaurant/orders')}
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <ArrowLeft size={18} />
-              <span className="text-sm font-medium">Retour</span>
-            </button>
-            <h1 className="text-base font-bold text-gray-800">Nouvelle commande</h1>
-            <div className="w-20" />
-          </div>
-
-          {/* Order type selector */}
-          <div className="flex items-center gap-3">
-            <div className="flex bg-gray-100 rounded-xl p-0.5">
-              {(['SUR_PLACE', 'A_EMPORTER'] as OrderType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setOrderType(type)}
-                  className={cn(
-                    'px-4 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    orderType === type
-                      ? 'bg-white shadow-sm text-orange-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  )}
-                >
-                  {type === 'SUR_PLACE' ? 'Sur place' : 'À emporter'}
-                </button>
-              ))}
-            </div>
-
-            {orderType === 'SUR_PLACE' && (
-              <button
-                onClick={() => setShowTableModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:border-orange-300 hover:text-orange-600 transition-colors"
-              >
-                <Users size={12} />
-                {selectedTableId ? 'Table sélectionnée' : 'Choisir une table'}
-              </button>
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[var(--bg-secondary)]">
+      {/* LEFT SIDEBAR */}
+      <div className="w-[190px] shrink-0 sidebar flex flex-col">
+        {/* Tabs */}
+        <div className="flex border-b border-[var(--border-light)]">
+          <button
+            onClick={() => setActiveTab('TABLES')}
+            className={cn(
+              'flex-1 h-11 text-sm font-semibold transition-all',
+              activeTab === 'TABLES'
+                ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                : 'text-gray-400 hover:text-gray-600'
             )}
+          >
+            TABLES
+          </button>
+          
+        </div>
 
-            <div className="flex items-center gap-2 ml-auto">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Rechercher..."
-                  className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-48 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                />
-              </div>
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn('p-1.5 rounded', viewMode === 'grid' ? 'bg-white shadow-sm' : '')}
-                >
-                  <Grid3x3 size={14} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn('p-1.5 rounded', viewMode === 'list' ? 'bg-white shadow-sm' : '')}
-                >
-                  <List size={14} />
-                </button>
-              </div>
+        {activeTab === 'TABLES' ? (
+          <>
+            <div className="p-3 border-b border-[var(--border-light)]">
+              <select
+                value={zoneFilter}
+                onChange={(e) => setZoneFilter(e.target.value)}
+                className="input w-full h-9"
+              >
+                <option value="all">Toutes les zones</option>
+                <option value="SALLE">Salle principale</option>
+                <option value="TERRASSE">Terrasse</option>
+                <option value="BAR">Bar</option>
+              </select>
+            </div>
+
+            <LeftSidebarTables
+              selectedTableId={selectedTableId}
+              onSelectTable={handleSelectTable}
+              onOpenTableModal={() => setShowTableModal(true)}
+              zoneFilter={zoneFilter}
+            />
+          </>
+        ) : (
+          <CommandesList />
+        )}
+      </div>
+
+      {/* CENTER - MENU */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-white border-b border-[var(--border-light)] px-5 py-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <button onClick={() => navigate('/restaurant/orders')} className="btn btn-ghost">
+              <ArrowLeft size={18} />
+              <span className="text-sm">Voir commandes</span>
+            </button>
+            <h1 className="page-title">Nouvelle commande</h1>
+            <div className="w-16" />
+          </div>
+
+          {/* Search */}
+          <div className="mt-3">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher un article..."
+                className="input pl-9 pr-3"
+              />
             </div>
           </div>
 
-          {/* Station filter */}
-          <div className="flex gap-1.5 mt-3">
+          {/* Stations filter */}
+          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedStation('all')}
               className={cn(
-                'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
                 selectedStation === 'all'
-                  ? 'bg-gray-800 text-white'
+                  ? 'btn-primary'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               )}
             >
@@ -621,9 +1084,9 @@ export default function NewOrder() {
                   key={station}
                   onClick={() => setSelectedStation(station)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5',
                     selectedStation === station
-                      ? 'bg-gray-800 text-white'
+                      ? 'btn-primary'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   )}
                 >
@@ -633,124 +1096,115 @@ export default function NewOrder() {
               );
             })}
           </div>
+
+          {/* View mode toggle */}
+          <div className="flex justify-end mt-2">
+            <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn('p-1.5 rounded transition-all', viewMode === 'grid' ? 'bg-white shadow-sm text-[var(--primary)]' : 'text-gray-500')}
+              >
+                <Grid3x3 size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn('p-1.5 rounded transition-all', viewMode === 'list' ? 'bg-white shadow-sm text-[var(--primary)]' : 'text-gray-500')}
+              >
+                <List size={14} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Menu items */}
+        {/* Products with images */}
         <div className="flex-1 overflow-y-auto p-4">
           {filteredItems.length === 0 ? (
-            <div className="text-center py-12">
-              <UtensilsCrossed size={40} className="mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500 font-medium">Aucun article trouvé</p>
-              <p className="text-xs text-gray-400 mt-1">Essayez une autre recherche</p>
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-3">
+                <Package size={28} className="text-gray-300" />
+              </div>
+              <p className="text-sm font-semibold text-gray-500">Aucun article trouvé</p>
+              <p className="text-xs text-gray-400 mt-1">Essayez de modifier votre recherche</p>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {filteredItems.map((item) => {
-                const Icon = STATION_ICONS[item.station];
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleAddToCart(item)}
-                    className="bg-white rounded-xl border border-gray-200 p-3 text-left hover:shadow-md transition-all group"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center',
-                        item.station === 'BAR' ? 'bg-sky-100' : 
-                        item.station === 'CUISINE' ? 'bg-amber-100' : 'bg-pink-100'
-                      )}>
-                        <Icon size={14} className={cn(
-                          item.station === 'BAR' ? 'text-sky-600' : 
-                          item.station === 'CUISINE' ? 'text-amber-600' : 'text-pink-600'
-                        )} />
-                      </div>
-                      <span className="text-xs font-bold text-orange-600">
-                        {currency}{item.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="font-semibold text-gray-800 text-sm mt-2 line-clamp-1">{item.name}</p>
-                    {item.preparationTime && (
-                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-0.5">
-                        <Clock size={9} /> {item.preparationTime} min
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredItems.map((item: any) => (
+                <MenuGridCard
+                  key={item.id}
+                  item={item}
+                  currency={currency}
+                  onAdd={handleAddToCart}
+                />
+              ))}
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {filteredItems.map((item) => {
-                const Icon = STATION_ICONS[item.station];
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleAddToCart(item)}
-                    className="w-full bg-white rounded-xl border border-gray-200 p-3 text-left hover:shadow-md transition-all flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        'w-9 h-9 rounded-xl flex items-center justify-center',
-                        item.station === 'BAR' ? 'bg-sky-100' : 
-                        item.station === 'CUISINE' ? 'bg-amber-100' : 'bg-pink-100'
-                      )}>
-                        <Icon size={16} className={cn(
-                          item.station === 'BAR' ? 'text-sky-600' : 
-                          item.station === 'CUISINE' ? 'text-amber-600' : 'text-pink-600'
-                        )} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">{item.name}</p>
-                        <p className="text-xs text-gray-400">{item.categoryName}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-orange-600">
-                        {currency}{item.price.toLocaleString()}
-                      </p>
-                      {item.preparationTime && (
-                        <p className="text-[10px] text-gray-400">{item.preparationTime} min</p>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              {filteredItems.map((item: any) => (
+                <MenuListRow
+                  key={item.id}
+                  item={item}
+                  currency={currency}
+                  onAdd={handleAddToCart}
+                />
+              ))}
             </div>
           )}
         </div>
 
         {/* Order notes */}
-        <div className="bg-white border-t border-gray-200 p-3 shrink-0">
+        <div className="bg-white border-t border-[var(--border-light)] px-4 py-2.5 shrink-0">
           <div className="flex items-center gap-2">
-            <Tag size={14} className="text-gray-400" />
+            <Tag size={14} className="text-gray-400 shrink-0" />
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes pour la cuisine (ex: sans sel, bien cuit...)"
-              className="flex-1 text-sm border-none focus:outline-none placeholder:text-gray-400"
+              placeholder="Notes générales pour la cuisine..."
+              className="flex-1 bg-transparent focus:outline-none text-sm py-1.5"
             />
           </div>
         </div>
       </div>
 
-      {/* RIGHT: Cart */}
-      <div className="w-96 shrink-0 flex flex-col bg-gray-50">
-        {/* Guest count for on-place orders */}
+      {/* RIGHT CART */}
+      <div className="w-[360px] shrink-0 flex flex-col bg-white border-l border-[var(--border-light)]">
+        {/* Order type selector */}
+        <div className="p-3 border-b border-[var(--border-light)] flex gap-2">
+          <button
+            onClick={() => setOrderType('SUR_PLACE')}
+            className={cn(
+              'flex-1 py-2 rounded-lg text-sm font-semibold transition-all',
+              orderType === 'SUR_PLACE' ? 'btn-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            )}
+          >
+            🍽️ Sur place
+          </button>
+          <button
+            onClick={() => setOrderType('A_EMPORTER')}
+            className={cn(
+              'flex-1 py-2 rounded-lg text-sm font-semibold transition-all',
+              orderType === 'A_EMPORTER' ? 'btn-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            )}
+          >
+            📦 À emporter
+          </button>
+        </div>
+
+        {/* Guest count */}
         {orderType === 'SUR_PLACE' && (
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-600">Nombre de couverts</span>
-            <div className="flex items-center gap-2">
+          <div className="border-b border-[var(--border-light)] px-3 py-2.5 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-600">👥 Couverts</span>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setGuestCount(Math.max(1, guestCount - 1))}
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center bg-white"
+                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"
               >
                 <Minus size={12} />
               </button>
-              <span className="text-sm font-semibold w-8 text-center">{guestCount}</span>
+              <span className="font-semibold text-base min-w-[28px] text-center">{guestCount}</span>
               <button
                 onClick={() => setGuestCount(guestCount + 1)}
-                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center bg-white"
+                className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"
               >
                 <Plus size={12} />
               </button>
@@ -758,7 +1212,16 @@ export default function NewOrder() {
           </div>
         )}
 
-        {/* Cart component */}
+        {/* Selected table info */}
+        {orderType === 'SUR_PLACE' && selectedTableId && (
+          <div className="mx-3 mt-2 px-2 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
+            <p className="text-xs text-emerald-600 flex items-center gap-1">
+              <CheckCircle2 size={12} /> Table sélectionnée
+            </p>
+          </div>
+        )}
+
+        {/* Cart */}
         <div className="flex-1 overflow-hidden p-3">
           <Cart
             items={cartItems}
@@ -769,33 +1232,35 @@ export default function NewOrder() {
           />
         </div>
 
-        {/* Submit button */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        {/* Submit */}
+        <div className="p-3 border-t border-[var(--border-light)]">
           <button
             onClick={handleSubmitOrder}
-            disabled={createOrderMutation.isPending || cartItems.length === 0}
-            className="w-full py-3 bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-orange-600 disabled:opacity-50 transition-all"
+            disabled={isSubmitting || cartItems.length === 0}
+            className="btn btn-primary w-full h-11"
           >
-            {createOrderMutation.isPending ? (
-              <>Création en cours...</>
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {createOrderMutation.isPending ? 'Création...' : 
+                 addItemsMutation.isPending ? 'Ajout...' : 
+                 'Envoi...'}
+              </>
             ) : (
               <>
                 <Send size={16} />
-                Valider la commande
-                <span className="text-xs opacity-80">
-                  ({cartItems.reduce((sum, i) => sum + i.quantity, 0)} articles)
-                </span>
+                Valider ({cartItems.reduce((sum, i) => sum + i.quantity, 0)})
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* MODALS */}
       <TableSelectionModal
         isOpen={showTableModal}
         onClose={() => setShowTableModal(false)}
-        onSelect={setSelectedTableId}
+        onSelect={handleSelectTable}
         selectedTableId={selectedTableId}
       />
 

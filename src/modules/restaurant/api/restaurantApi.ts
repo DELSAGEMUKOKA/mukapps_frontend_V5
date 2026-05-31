@@ -1,3 +1,5 @@
+// src/modules/restaurant/api/restaurantApi.ts
+
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '@/core/api/axiosConfig';
 import { API } from '@/shared/constants/apiEndpoints';
 
@@ -5,7 +7,7 @@ import { API } from '@/shared/constants/apiEndpoints';
 
 export type TableStatus = 'LIBRE' | 'OCCUPEE' | 'RESERVEE' | 'HORS_SERVICE';
 export type OrderType = 'SUR_PLACE' | 'A_EMPORTER';
-export type OrderStatus = 'EN_ATTENTE' | 'EN_COURS' | 'SERVIE' | 'SERVI' | 'ANNULEE' | 'ANNULE';
+export type OrderStatus = 'EN_ATTENTE' | 'EN_COURS' | 'SERVIE' | 'SERVI' | 'ANNULEE' | 'ANNULE'| 'BROUILLON';
 export type KitchenStatus = 'EN_ATTENTE' | 'EN_PREPARATION' | 'PRET' | 'SERVI';
 export type BillStatus = 'BROUILLON' | 'OUVERTE' | 'PAYEE_PARTIEL' | 'PAYEE' | 'CLOTUREE' | 'ANNULEE';
 export type ReservationStatus = 'EN_ATTENTE' | 'CONFIRMEE' | 'ARRIVEE' | 'COMPLETEE' | 'ANNULEE' | 'NO_SHOW';
@@ -13,6 +15,7 @@ export type PaymentMethod = 'CASH' | 'CARD' | 'MOBILE_MONEY';
 export type Station = 'BAR' | 'CUISINE' | 'DESSERTS';
 export type Zone = 'SALLE' | 'BAR' | 'TERRASSE';
 export type ReturnAction = 'REMOVE' | 'REPLACE' | 'DISCOUNT';
+export type TableHistoryAction = 'OCCUPEE' | 'LIBEREE' | 'TRANSFERT' | 'FUSION' | 'SPLIT';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -23,9 +26,11 @@ export interface ApiResponse<T> {
 }
 
 export interface PaginatedData<T> {
+  data?: T[];
   tables?: T[];
   items?: T[];
-   bills?: T[];
+  bills?: T[];
+  reservations?: T[];
   total: number;
   page: number;
   limit: number;
@@ -94,6 +99,73 @@ export interface TableStats {
   byZone: Record<Zone, number>;
 }
 
+// ─── NOUVEAU: Historique des mouvements de table ──────────────────────────────
+
+export interface TableHistory {
+  id: string;
+  tableId: string;
+  tableNumber: string;
+  action: TableHistoryAction;
+  orderId?: string;
+  fromTableId?: string;
+  toTableId?: string;
+  details?: string;
+  userId: string;
+  userName?: string;
+  timestamp: string;
+}
+
+export interface TableOccupationHistory {
+  tableId: string;
+  tableNumber: string;
+  date: string;
+  totalOccupancyMinutes: number;
+  averageOccupancyMinutes: number;
+  occupancyCount: number;
+}
+
+// ─── NOUVEAU: Fusion et Split de tables ───────────────────────────────────────
+
+export interface TableMergeRequest {
+  sourceTableIds: string[];
+  targetTableId: string;
+  mergeItems?: boolean;
+}
+
+export interface TableMergeResult {
+  merged: boolean;
+  sourceTables: string[];
+  targetTable: string;
+  newOrderId?: string;
+}
+
+export interface TableSplitRequest {
+  sourceTableId: string;
+  splits: {
+    tableId: string;
+    items: string[];
+    guestCount?: number;
+  }[];
+}
+
+export interface TableSplitResult {
+  split: boolean;
+  sourceTableId: string;
+  targetTables: string[];
+}
+
+// ─── NOUVEAU: Planning des réservations par table ─────────────────────────────
+
+export interface ReservationSlot {
+  id: string;
+  tableId: string;
+  guestName: string;
+  guestCount: number;
+  startTime: string;
+  endTime: string;
+  status: ReservationStatus;
+}
+
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 
 export interface MenuCategory {
@@ -120,6 +192,7 @@ export interface MenuItem {
   station: Station;
   preparationTime?: number;
   isAvailable: boolean;
+  imageUrl?: string;  // ✅ AJOUTÉ - URL de l'image
   tags?: string;
   companyId: string;
   linkedProductId?: string;
@@ -208,6 +281,14 @@ export interface OrderItem {
   createdAt: string;
 }
 
+export interface OrderUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role?: string;
+  email?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber?: string;
@@ -222,24 +303,37 @@ export interface Order {
   openedAt?: string;
   createdAt: string;
   updatedAt: string;
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
+  user?: OrderUser;
 }
 
 // ─── Kitchen ─────────────────────────────────────────────────────────────────
 
+export interface KitchenOrderUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role?: string;
+  email?: string;
+}
+
+export interface KitchenTable {
+  number: string;
+  zone: Zone;
+}
+
+export interface KitchenOrderInfo {
+  id: string;
+  orderNumber?: string;
+  tableId?: string;
+  table?: KitchenTable;
+  user?: KitchenOrderUser;
+  waiter?: KitchenOrderUser;
+}
+
 export interface KitchenItem {
   id: string;
   orderId: string;
-  order?: {
-    id: string;
-    orderNumber?: string;
-    tableId?: string;
-    table?: { number: string; zone: Zone };
-  };
+  order?: KitchenOrderInfo;
   menuItemId: string;
   menuItem?: MenuItem;
   quantity: number;
@@ -251,6 +345,7 @@ export interface KitchenItem {
   preparedAt?: string;
   readyAt?: string;
   servedAt?: string;
+  createdBy?: KitchenOrderUser;
 }
 
 // ─── Returns (Retours cuisine) ────────────────────────────────────────────────
@@ -312,11 +407,11 @@ export interface Bill {
   orderId: string;
   order?: Order;
   status: BillStatus;
-  totalAmount: number ;
-  discount?: number ;
+  totalAmount: number;
+  discount?: number;
   discountReason?: string;
-  paidAmount: number ;
-  remainingAmount: number ;
+  paidAmount: number;
+  remainingAmount: number;
   draftItems: BillItem[];
   payments: BillPayment[];
   splits?: BillSplit[];
@@ -328,23 +423,32 @@ export interface Bill {
 
 // ─── Reservations ─────────────────────────────────────────────────────────────
 
+export interface ReservationTableInfo {
+  id: string;
+  number: string;
+  zone: string;
+  capacity: number;
+}
+
 export interface Reservation {
   id: string;
+  companyId: string;
   tableId?: string;
-  table?: RestaurantTable;
+  customerId?: string | null;
   guestName: string;
   guestPhone?: string;
   guestCount: number;
   reservationDate: string;
-  duration?: number;
+  duration: number;
   status: ReservationStatus;
-  notes?: string;
-  companyId: string;
+  notes: string;
+  confirmedBy?: string | null;
+  table?: ReservationTableInfo;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface PaginatedReservations {
+export interface PaginatedReservationsResponse {
   reservations: Reservation[];
   total: number;
   page: number;
@@ -416,8 +520,6 @@ export interface TipsReport {
 
 // ─── Stock Bar Report ─────────────────────────────────────────────────────────
 
-// src/modules/restaurant/api/restaurantApi.ts
-
 export interface BarStockReportItem {
   menuItemId: string;
   menuItemName: string;
@@ -428,7 +530,7 @@ export interface BarStockReportItem {
     unit: string;
   };
   linkedProductId?: string;
-  productId?: string;  // ✅ Ajouter cette ligne pour l'ID direct
+  productId?: string;
   productName: string;
   currentStock: number;
   stockUnit: string;
@@ -436,7 +538,6 @@ export interface BarStockReportItem {
   estimatedRemainingShots: number;
 }
 
-// ✅ CORRECTION: L'API retourne directement un tableau d'items
 export type BarStockReport = BarStockReportItem[];
 
 // ─── Transfer ─────────────────────────────────────────────────────────────────
@@ -503,6 +604,30 @@ export const tablesApi = {
 
   delete: (id: string) =>
     apiDelete<ApiResponse<void>>(API.RESTAURANT.TABLE_BY_ID(id)),
+
+  merge: (data: TableMergeRequest) =>
+    apiPost<ApiResponse<TableMergeResult>>('/restaurant/tables/merge', data),
+
+  split: (data: TableSplitRequest) =>
+    apiPost<ApiResponse<TableSplitResult>>('/restaurant/tables/split', data),
+
+  getHistory: (tableId: string, params?: { startDate?: string; endDate?: string; limit?: number }) =>
+    apiGet<ApiResponse<TableHistory[]>>(
+      `/restaurant/tables/${tableId}/history`,
+      params as Record<string, unknown>,
+    ),
+
+  getOccupationHistory: (params: { startDate: string; endDate: string; tableId?: string }) =>
+    apiGet<ApiResponse<TableOccupationHistory[]>>(
+      '/restaurant/tables/occupation-history',
+      params as Record<string, unknown>,
+    ),
+
+  getReservationSchedule: (tableId: string, date: string) =>
+    apiGet<ApiResponse<ReservationSlot[]>>(
+      `/restaurant/tables/${tableId}/schedule`,
+      { date },
+    ),
 };
 
 // ─── Menu API ─────────────────────────────────────────────────────────────────
@@ -546,6 +671,7 @@ export const menuApi = {
     tags?: string;
     linkedProductId?: string;
     stockDeductionQty?: number;
+    imageUrl?: string;  // ✅ AJOUTÉ
   }) => apiPost<ApiResponse<MenuItem>>(API.RESTAURANT.MENU_ITEMS, data),
 
   updateItem: (id: string, data: Partial<{
@@ -557,6 +683,7 @@ export const menuApi = {
     categoryId: string;
     isAvailable: boolean;
     tags: string;
+    imageUrl: string;  // ✅ AJOUTÉ
   }>) => apiPut<ApiResponse<MenuItem>>(API.RESTAURANT.MENU_ITEM_BY_ID(id), data),
 
   setAvailability: (id: string, isAvailable: boolean) =>
@@ -573,6 +700,41 @@ export const menuApi = {
 
   getBarStockReport: () =>
     apiGet<ApiResponse<BarStockReport>>(API.RESTAURANT.BAR_STOCK_REPORT),
+
+  // ============================================
+  // ✅ NOUVELLES MÉTHODES POUR LA GESTION DES IMAGES
+  // ============================================
+
+  /**
+   * Upload d'image pour un article
+ // ============================================
+// ✅ MÉTHODES CORRIGÉES POUR LA GESTION DES IMAGES
+// ============================================
+
+/**
+ * Upload d'image pour un article
+ * @param itemId - ID de l'article
+ * @param file - Fichier image (JPEG, PNG, WEBP, GIF)
+ * @returns Promise avec l'URL de l'image
+ */
+uploadItemImage: async (itemId: string, file: File): Promise<{ imageUrl: string }> => {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  const response = await apiPost<ApiResponse<{ imageUrl: string }>>(
+    `/restaurant/menu/items/${itemId}/image`,
+    formData
+  );
+  return response.data;
+},
+
+/**
+ * Supprimer l'image d'un article
+ * @param itemId - ID de l'article
+ */
+deleteItemImage: async (itemId: string): Promise<void> => {
+  await apiDelete<ApiResponse<void>>(`/restaurant/menu/items/${itemId}/image`);
+},
 };
 
 // ─── Modifiers API ────────────────────────────────────────────────────────────
@@ -684,6 +846,12 @@ export const ordersApi = {
   transfer: (orderId: string, toTableId: string, reason?: string) =>
     apiPost<ApiResponse<TableTransfer>>(API.RESTAURANT.ORDER_TRANSFER(orderId), { toTableId, reason }),
 
+  transferItems: (orderId: string, items: { itemId: string; quantity: number }[], toTableId: string, reason?: string) =>
+    apiPost<ApiResponse<{ transferred: boolean; transferredItems: string[] }>>(
+      `/restaurant/orders/${orderId}/transfer-items`,
+      { items, toTableId, reason },
+    ),
+
   getBill: (orderId: string) =>
     apiGet<ApiResponse<Bill>>(API.RESTAURANT.ORDER_BILL(orderId)),
 
@@ -691,7 +859,7 @@ export const ordersApi = {
     apiPost<ApiResponse<Bill>>(API.RESTAURANT.ORDER_BILL_DRAFT(orderId), { notes }),
     
   markAsServed: (orderId: string) =>
-    apiPost<ApiResponse<Order>>(`/restaurant/orders/${orderId}/serve`),
+    apiPost<ApiResponse<Order>>(API.RESTAURANT.ORDER_SERVE(orderId)),
 };
 
 // ─── Transfers API ────────────────────────────────────────────────────────────
@@ -739,8 +907,6 @@ export const returnsApi = {
   process: (returnId: string) =>
     apiPatch<ApiResponse<KitchenReturn>>(API.RESTAURANT.RETURN_PROCESS(returnId)),
 };
-
-// ─── Bills API ────────────────────────────────────────────────────────────────
 
 // ─── Bills API ────────────────────────────────────────────────────────────────
 
@@ -811,9 +977,17 @@ export const billsApi = {
 
 // ─── Reservations API ─────────────────────────────────────────────────────────
 
+export interface ReservationsListResponse {
+  reservations: Reservation[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
 export const reservationsApi = {
-  getAll: (params?: { page?: number; limit?: number; date?: string; status?: ReservationStatus }) =>
-    apiGet<ApiResponse<PaginatedData<Reservation>>>(
+  getAll: (params?: { page?: number; limit?: number; date?: string; status?: ReservationStatus; startDate?: string; endDate?: string }) =>
+    apiGet<ApiResponse<ReservationsListResponse>>(
       API.RESTAURANT.RESERVATIONS,
       params as Record<string, unknown>,
     ),
@@ -832,19 +1006,19 @@ export const reservationsApi = {
   }) => apiPost<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATIONS, data),
 
   confirm: (id: string) =>
-    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_CONFIRM(id)),
+    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_CONFIRM(id), {}),
 
   arrive: (id: string) =>
-    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_ARRIVE(id)),
+    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_ARRIVE(id), {}),
 
   complete: (id: string) =>
-    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_COMPLETE(id)),
+    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_COMPLETE(id), {}),
 
   noShow: (id: string) =>
-    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_NO_SHOW(id)),
+    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_NO_SHOW(id), {}),
 
   cancel: (id: string) =>
-    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_CANCEL(id)),
+    apiPatch<ApiResponse<Reservation>>(API.RESTAURANT.RESERVATION_CANCEL(id), {}),
 };
 
 // ─── Dashboard & Reports API ──────────────────────────────────────────────────

@@ -378,11 +378,7 @@ export default function ProformaFormPage() {
               {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
               Aperçu
             </button>
-            <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60">
-              {exportingPdf ? <span className="w-3.5 h-3.5 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" /> : <Download size={14} />}
-              PDF
-            </button>
+        
             <button type="button" onClick={() => navigate('/invoicing/proforma')}
               className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 font-medium transition-colors">
               Annuler
@@ -591,11 +587,7 @@ export default function ProformaFormPage() {
                   </div>
                 )}
               </div>
-              <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
-                {exportingPdf ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download size={12} />}
-                Télécharger PDF
-              </button>
+            
             </div>
             <div className="flex-1 overflow-auto p-6 flex justify-center">
               <div className="relative shadow-2xl rounded-sm overflow-hidden" style={{ width: '794px', minHeight: '1123px', flexShrink: 0 }}>

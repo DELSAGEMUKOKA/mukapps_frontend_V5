@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'mukapps-v4';
+const CACHE_NAME = 'mukapps-v6';
 const OFFLINE_URL = '/offline.html';
 
 // ✅ Liste des assets statiques à mettre en cache immédiatement

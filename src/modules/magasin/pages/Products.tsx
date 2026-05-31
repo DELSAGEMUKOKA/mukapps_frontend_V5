@@ -79,7 +79,6 @@ export default function Products() {
   });
   const [importTab, setImportTab] = useState<'preview' | 'errors'>('preview');
 
-  // ============ REQUÊTE OPTIMISÉE AVEC keepPreviousData ============
   const { 
     data, 
     isLoading, 
@@ -99,7 +98,6 @@ export default function Products() {
     refetchOnWindowFocus: false,
   });
 
-  // ============ CATÉGORIES - Cache long (5 minutes) ============
   const { data: categoriesData } = useQuery({
     queryKey: ['categories-list'],
     queryFn: () => categoryApi.getAll({ limit: 100 }),
@@ -127,7 +125,6 @@ export default function Products() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // ============ EXTRACTION DES DONNÉES AVEC useMemo ============
   const products: Product[] = useMemo(() => {
     if (!data) return [];
     return data?.data?.data || data?.data?.products || data?.data || [];
@@ -147,7 +144,6 @@ export default function Products() {
   const totalPages = pagination.totalPages;
   const categories = categoriesData?.data || [];
 
-  // ============ CALCULS STATISTIQUES OPTIMISÉS ============
   const stats = useMemo(() => {
     return {
       totalWithStock: products.filter((p) => p?.stock > 0).length,
@@ -350,7 +346,6 @@ export default function Products() {
         <StatCard label="En rupture" value={outOfStock} icon={<AlertTriangle size={20} className="text-red-500" />} iconBg="bg-red-50" valueColor={outOfStock > 0 ? 'text-red-600' : undefined} />
       </div>
 
-      {/* ============ SMART LOADER ============ */}
       <SmartLoader
         isLoading={isLoading}
         isFetching={isFetching}
@@ -551,22 +546,25 @@ export default function Products() {
         </div>
       </SmartLoader>
 
-      {/* Modal de gestion des lots */}
+      {/* Modal de gestion des lots - responsive avec scroll */}
       <Modal
         isOpen={showBatchModal}
         onClose={closeBatchModal}
         title={`Gestion des lots - ${batchProduct?.name || ''}`}
         size="lg"
+        className="max-w-4xl"
       >
-        {batchProduct && (
-          <BatchManager
-            productId={batchProduct.id}
-            productName={batchProduct.name}
-            productUnit={batchProduct.unit}
-            onBatchAdded={closeBatchModal}
-            onBatchUpdated={closeBatchModal}
-          />
-        )}
+        <div className="max-h-[80vh] overflow-y-auto px-1">
+          {batchProduct && (
+            <BatchManager
+              productId={batchProduct.id}
+              productName={batchProduct.name}
+              productUnit={batchProduct.unit}
+              onBatchAdded={closeBatchModal}
+              onBatchUpdated={closeBatchModal}
+            />
+          )}
+        </div>
       </Modal>
 
       <ConfirmationModal

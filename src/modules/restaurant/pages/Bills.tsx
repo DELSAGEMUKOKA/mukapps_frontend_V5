@@ -1,26 +1,53 @@
- // src/modules/restaurant/pages/Bills.tsx
+// src/modules/restaurant/pages/Bills.tsx
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Printer, CreditCard, Wallet, Smartphone, CircleCheck as CheckCircle, Circle as XCircle, Search, Clock, DollarSign, Receipt, Split, Percent, RefreshCw, X, Plus, Minus, Trash2, Equal, TextAlignJustify as AlignJustify, Lock } from 'lucide-react';
+import { 
+  ArrowLeft, Printer, CreditCard, Wallet, Smartphone, 
+  CircleCheck as CheckCircle, Circle as XCircle, Search, 
+  Clock, DollarSign, Receipt, Split, Percent, RefreshCw, 
+  X, Plus, Minus, Trash2, Equal, TextAlignJustify as AlignJustify, 
+  Lock, AlertCircle 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { billsApi, ordersApi, type Bill, type BillStatus, type PaymentMethod } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { cn } from '@/lib/utils';
+import { InvoiceModal } from '../components/modals/InvoiceModal';
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const BILL_STATUS_CONFIG: Record<BillStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
+// ✅ Configuration complète avec fallback pour tous les statuts possibles
+const BILL_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   BROUILLON: { label: 'Brouillon', color: 'text-gray-500', bg: 'bg-gray-100', icon: Receipt },
-  OUVERTE: { label: 'Ouverte', color: 'text-blue-600', bg: 'bg-blue-50', icon: CreditCard },
+  OUVERTE: { label: 'Ouverte', color: 'text-primary', bg: 'bg-primary-light', icon: CreditCard },
   PAYEE_PARTIEL: { label: 'Paiement partiel', color: 'text-amber-600', bg: 'bg-amber-50', icon: DollarSign },
   PAYEE: { label: 'Payée', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
   CLOTUREE: { label: 'Clôturée', color: 'text-green-700', bg: 'bg-green-100', icon: Lock },
   ANNULEE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
+  // ✅ Fallback pour les statuts inconnus
+  EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
+  EN_COURS: { label: 'En cours', color: 'text-primary', bg: 'bg-primary-light', icon: CreditCard },
+  SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
+};
+
+// ✅ Fonction utilitaire pour obtenir la configuration d'un statut (avec fallback)
+const getStatusConfig = (status: string) => {
+  const config = BILL_STATUS_CONFIG[status];
+  if (!config) {
+    console.warn(`Statut inconnu: ${status}`);
+    return {
+      label: status || 'Inconnu',
+      color: 'text-gray-500',
+      bg: 'bg-gray-100',
+      icon: AlertCircle,
+    };
+  }
+  return config;
 };
 
 // ============================================================================
@@ -74,14 +101,14 @@ function PaymentModal({
   if (!isOpen) return null;
 
   const paymentMethods: { value: PaymentMethod; label: string; icon: React.ElementType; activeBg: string }[] = [
-    { value: 'CASH', label: 'Espèces', icon: Wallet, activeBg: 'bg-emerald-600' },
-    { value: 'CARD', label: 'Carte', icon: CreditCard, activeBg: 'bg-blue-600' },
-    { value: 'MOBILE_MONEY', label: 'Mobile Money', icon: Smartphone, activeBg: 'bg-orange-500' },
+    { value: 'CASH', label: 'Espèces', icon: Wallet, activeBg: 'btn-primary' },
+    { value: 'CARD', label: 'Carte', icon: CreditCard, activeBg: 'btn-primary' },
+    { value: 'MOBILE_MONEY', label: 'Mobile Money', icon: Smartphone, activeBg: 'btn-primary' },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="bg-gray-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard size={18} className="text-emerald-400" />
@@ -131,7 +158,7 @@ function PaymentModal({
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Montant reçu</p>
                 <button
                   onClick={() => setUseFullAmount(!useFullAmount)}
-                  className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                  className="text-xs text-primary hover:text-primary-dark font-medium"
                 >
                   {useFullAmount ? 'Montant personnalisé' : 'Montant exact'}
                 </button>
@@ -143,8 +170,8 @@ function PaymentModal({
                   onChange={(e) => { setUseFullAmount(false); setAmountGiven(e.target.value); }}
                   disabled={useFullAmount}
                   className={cn(
-                    'w-full px-4 py-3 text-xl font-bold border-2 rounded-xl text-right pr-16 transition-all',
-                    useFullAmount ? 'bg-gray-50 border-gray-200 cursor-default' : 'border-gray-200 focus:border-emerald-400 focus:outline-none'
+                    'input text-xl font-bold text-right pr-16',
+                    useFullAmount ? 'bg-gray-50 cursor-default' : ''
                   )}
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">{currency}</span>
@@ -169,7 +196,7 @@ function PaymentModal({
             </div>
           )}
           {method === 'CARD' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+            <div className="bg-primary-light border border-primary/20 rounded-xl px-4 py-3 text-sm text-primary">
               Insérez ou présentez la carte du client, puis confirmez après validation du terminal.
             </div>
           )}
@@ -183,7 +210,7 @@ function PaymentModal({
                   onClick={() => setTip(v)}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                    tip === v ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    tip === v ? 'btn-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   )}
                 >
                   {v === 0 ? 'Aucun' : `+${v.toLocaleString()}`}
@@ -195,83 +222,9 @@ function PaymentModal({
           <button
             onClick={handleSubmit}
             disabled={isLoading || (method === 'CASH' && given < remainingAmount)}
-            className="w-full py-4 rounded-xl text-white font-black text-base bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-primary w-full py-4 text-base font-black"
           >
             {isLoading ? 'Traitement en cours...' : `CONFIRMER — ${remainingAmount.toLocaleString()} ${currency}`}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// MODAL TICKET
-// ============================================================================
-
-function TicketModal({ isOpen, onClose, bill }: { isOpen: boolean; onClose: () => void; bill: Bill | null }) {
-  const currency = useCurrency();
-
-  if (!isOpen || !bill) return null;
-
-  const handlePrint = () => {
-    const content = document.getElementById('ticket-print')?.innerHTML;
-    if (!content) return;
-    const w = window.open('', '_blank');
-    if (!w) return;
-    w.document.write(`<html><head><title>Ticket</title><style>body{font-family:monospace;margin:0;padding:8px;width:80mm}</style></head><body>${content}</body></html>`);
-    w.document.close();
-    w.print();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-        <div className="bg-gray-900 px-5 py-3 flex justify-between items-center">
-          <span className="text-white font-bold">Ticket de caisse</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        <div id="ticket-print" className="p-4 max-h-80 overflow-auto bg-gray-50 font-mono text-sm">
-          <div className="text-center mb-3">
-            <div className="font-bold text-base">MUKAPPS</div>
-            <div className="text-xs text-gray-500">N° {bill.id.slice(-8)}</div>
-            <div className="text-xs text-gray-500">{new Date().toLocaleString('fr-FR')}</div>
-            {bill.order?.table && <div className="text-xs mt-1">Table {bill.order.table.number}</div>}
-            <div className="border-t border-dashed border-gray-300 my-2" />
-          </div>
-          {bill.draftItems?.map((item, i) => (
-            <div key={i} className="flex justify-between text-xs mb-1">
-              <span>{item.menuItem?.name} x{item.quantity}</span>
-              <span>{(item.unitPrice * item.quantity).toLocaleString()} {currency}</span>
-            </div>
-          ))}
-          <div className="border-t border-dashed border-gray-300 my-2" />
-          {bill.discount && bill.discount > 0 && (
-            <div className="flex justify-between text-xs text-green-700 mb-1">
-              <span>Remise</span>
-              <span>-{bill.discount.toLocaleString()} {currency}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-bold text-sm">
-            <span>TOTAL</span>
-            <span>{(bill.totalAmount - (bill.discount || 0)).toLocaleString()} {currency}</span>
-          </div>
-          {bill.payments?.map((p, i) => (
-            <div key={i} className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>{p.paymentMethod}</span>
-              <span>{p.amount.toLocaleString()} {currency}</span>
-            </div>
-          ))}
-          <div className="text-center text-xs mt-3 text-gray-500">Merci pour votre visite !</div>
-        </div>
-        <div className="p-4">
-          <button
-            onClick={handlePrint}
-            className="w-full py-2.5 bg-gray-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-          >
-            <Printer size={16} /> Imprimer
           </button>
         </div>
       </div>
@@ -297,7 +250,7 @@ function SplitEqualModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="bg-gray-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Equal size={18} className="text-white" />
@@ -328,16 +281,16 @@ function SplitEqualModal({
               <Plus size={20} />
             </button>
           </div>
-          <div className="bg-blue-50 rounded-xl p-4 text-center">
-            <p className="text-xs text-blue-600 mb-1">Par personne</p>
-            <p className="text-2xl font-black text-blue-700">
+          <div className="bg-primary-light rounded-xl p-4 text-center">
+            <p className="text-xs text-primary mb-1">Par personne</p>
+            <p className="text-2xl font-black text-primary">
               {(totalAmount / splitCount).toLocaleString()} {currency}
             </p>
           </div>
           <button
             onClick={() => onSplit(splitCount)}
             disabled={isLoading}
-            className="w-full py-3.5 rounded-xl text-white font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="btn-primary w-full py-3.5 text-base font-bold"
           >
             {isLoading ? 'Division...' : `DIVISER EN ${splitCount} PARTS`}
           </button>
@@ -393,7 +346,7 @@ function SplitByItemsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="bg-gray-900 px-6 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <AlignJustify size={18} className="text-white" />
@@ -410,7 +363,7 @@ function SplitByItemsModal({
 
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-gray-800">Invités</h3>
-            <button onClick={addGuest} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <button onClick={addGuest} className="flex items-center gap-1 text-sm text-primary hover:text-primary-dark font-medium">
               <Plus size={14} /> Ajouter un invité
             </button>
           </div>
@@ -426,10 +379,10 @@ function SplitByItemsModal({
                     type="text"
                     value={guest.label}
                     onChange={(e) => setGuests(guests.map(g => g.id === guest.id ? { ...g, label: e.target.value } : g))}
-                    className="font-semibold text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-400 outline-none px-1"
+                    className="font-semibold text-gray-800 bg-transparent border-b border-gray-300 focus:border-primary outline-none px-1"
                   />
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-blue-600">{guestTotal.toLocaleString()} {currency}</span>
+                    <span className="text-sm font-bold text-primary">{guestTotal.toLocaleString()} {currency}</span>
                     {guests.length > 1 && (
                       <button onClick={() => removeGuest(guest.id)} className="text-red-400 hover:text-red-600">
                         <Trash2 size={14} />
@@ -446,7 +399,7 @@ function SplitByItemsModal({
                         onClick={() => toggleItem(guest.id, item.id)}
                         className={cn(
                           'px-2.5 py-1 rounded-lg text-xs font-medium transition-all',
-                          selected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          selected ? 'btn-primary' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         )}
                       >
                         {item.menuItem?.name} x{item.quantity}
@@ -463,7 +416,7 @@ function SplitByItemsModal({
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full py-3.5 rounded-xl text-white font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="btn-primary w-full py-3.5 text-base font-bold"
           >
             {isLoading ? 'Division...' : 'VALIDER LA DIVISION'}
           </button>
@@ -477,15 +430,15 @@ function SplitByItemsModal({
 // INDICATEUR D'ÉTAPE
 // ============================================================================
 
-function StepIndicator({ currentStatus }: { currentStatus: BillStatus }) {
-  const steps: { key: BillStatus | 'PAYMENT'; label: string }[] = [
+function StepIndicator({ currentStatus }: { currentStatus: string }) {
+  const steps: { key: string; label: string }[] = [
     { key: 'OUVERTE', label: 'Ouverte' },
     { key: 'PAYMENT', label: 'Paiement' },
     { key: 'PAYEE', label: 'Payée' },
     { key: 'CLOTUREE', label: 'Clôturée' },
   ];
 
-  const getStepIndex = (status: BillStatus) => {
+  const getStepIndex = (status: string) => {
     if (status === 'BROUILLON' || status === 'OUVERTE') return 0;
     if (status === 'PAYEE_PARTIEL') return 1;
     if (status === 'PAYEE') return 2;
@@ -620,7 +573,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
   const totalNet = bill.totalAmount - (bill.discount || 0);
   const remaining = bill.remainingAmount ?? (totalNet - (bill.paidAmount || 0));
   const effectiveRemaining = remaining > 0 ? remaining : totalNet > (bill.paidAmount || 0) ? totalNet - (bill.paidAmount || 0) : 0;
-  const statusConfig = BILL_STATUS_CONFIG[bill.status];
+  const statusConfig = getStatusConfig(bill.status);
   const StatusIcon = statusConfig.icon;
   const canAct = bill.status !== 'CLOTUREE' && bill.status !== 'ANNULEE';
   const canSplit = canAct && bill.status !== 'BROUILLON' && (bill.draftItems?.length || 0) > 1;
@@ -635,18 +588,18 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen p-4 md:p-6" style={{ backgroundColor: 'var(--bg-secondary)' }}>
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm font-medium"
+            className="btn-secondary flex items-center gap-2"
           >
             <ArrowLeft size={18} /> Retour
           </button>
           <button
             onClick={() => setShowTicketModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="btn-secondary flex items-center gap-2"
           >
             <Printer size={14} /> Ticket
           </button>
@@ -654,7 +607,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
 
         {bill.status !== 'ANNULEE' && <StepIndicator currentStatus={bill.status} />}
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="card rounded-2xl shadow-sm overflow-hidden">
           <div className="p-5 border-b border-gray-100">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
@@ -667,7 +620,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={cn('px-3 py-1 rounded-full text-xs font-bold', statusConfig.bg, statusConfig.color)}>
+                <span className={cn('badge', statusConfig.bg, statusConfig.color)}>
                   {statusConfig.label}
                 </span>
                 {bill.order?.orderNumber && (
@@ -708,13 +661,13 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowSplitEqualModal(true)}
-                  className="flex items-center justify-center gap-1.5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="btn-secondary flex items-center justify-center gap-1.5"
                 >
                   <Equal size={14} /> Division égale
                 </button>
                 <button
                   onClick={() => setShowSplitByItemsModal(true)}
-                  className="flex items-center justify-center gap-1.5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="btn-secondary flex items-center justify-center gap-1.5"
                 >
                   <AlignJustify size={14} /> Par article
                 </button>
@@ -729,7 +682,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                     'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors',
                     bill.discount && bill.discount > 0
                       ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      : 'btn-secondary'
                   )}
                 >
                   <Percent size={14} />
@@ -737,7 +690,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                 </button>
 
                 {showDiscountPanel && (
-                  <div className="mt-2 p-4 bg-white rounded-xl border border-gray-200">
+                  <div className="mt-2 p-4 card rounded-xl">
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="font-semibold text-sm text-gray-800">Appliquer une remise</h4>
                       <button onClick={() => setShowDiscountPanel(false)} className="text-gray-400 hover:text-gray-600">
@@ -747,13 +700,13 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <button
                         onClick={() => setDiscountType('fixed')}
-                        className={cn('py-2 rounded-lg text-sm font-medium transition-all', discountType === 'fixed' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600')}
+                        className={cn('py-2 rounded-lg text-sm font-medium transition-all', discountType === 'fixed' ? 'btn-primary' : 'bg-gray-100 text-gray-600')}
                       >
                         Montant fixe
                       </button>
                       <button
                         onClick={() => setDiscountType('percentage')}
-                        className={cn('py-2 rounded-lg text-sm font-medium transition-all', discountType === 'percentage' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600')}
+                        className={cn('py-2 rounded-lg text-sm font-medium transition-all', discountType === 'percentage' ? 'btn-primary' : 'bg-gray-100 text-gray-600')}
                       >
                         Pourcentage %
                       </button>
@@ -763,19 +716,19 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                       value={discountValue || ''}
                       onChange={(e) => setDiscountValue(Number(e.target.value))}
                       placeholder={discountType === 'fixed' ? `Montant en ${currency}` : 'Pourcentage (ex: 10)'}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                      className="input mb-2"
                     />
                     <input
                       type="text"
                       value={discountReason}
                       onChange={(e) => setDiscountReason(e.target.value)}
                       placeholder="Motif (optionnel)"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                      className="input mb-3"
                     />
                     <button
                       onClick={handleApplyDiscount}
                       disabled={discountValue <= 0 || discountMutation.isPending}
-                      className="w-full py-2 bg-orange-500 text-white rounded-lg text-sm font-bold disabled:opacity-50 hover:bg-orange-600 transition-colors"
+                      className="btn-primary w-full"
                     >
                       {discountMutation.isPending ? 'Application...' : 'Appliquer'}
                     </button>
@@ -784,7 +737,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="card rounded-xl p-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Sous-total</span>
@@ -819,7 +772,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
               <button
                 onClick={() => validateMutation.mutate()}
                 disabled={validateMutation.isPending}
-                className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-base hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                className="btn-primary w-full py-4 text-base font-black flex items-center justify-center gap-2"
               >
                 <Receipt size={18} />
                 {validateMutation.isPending ? 'Validation...' : 'VALIDER LA FACTURE'}
@@ -829,7 +782,8 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
             {(bill.status === 'OUVERTE' || bill.status === 'PAYEE_PARTIEL') && (
               <button
                 onClick={() => setShowPaymentModal(true)}
-                className="w-full py-4 bg-emerald-600 text-white rounded-xl font-black text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-3 shadow-lg shadow-emerald-100"
+                className="btn-primary w-full py-4 text-lg font-black flex items-center justify-center gap-3 shadow-lg"
+                style={{ backgroundColor: 'var(--success)', '--tw-shadow-color': 'rgba(16, 185, 129, 0.2)' } as React.CSSProperties}
               >
                 <CreditCard size={22} />
                 PAYER — {effectiveRemaining.toLocaleString()} {currency}
@@ -845,7 +799,8 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                 <button
                   onClick={() => closeMutation.mutate()}
                   disabled={closeMutation.isPending}
-                  className="w-full py-4 bg-gray-900 text-white rounded-xl font-black text-base hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-3 shadow-lg"
+                  className="btn-primary w-full py-4 text-base font-black flex items-center justify-center gap-3 shadow-lg"
+                  style={{ backgroundColor: 'var(--gray-900)', '--tw-shadow-color': 'rgba(0, 0, 0, 0.1)' } as React.CSSProperties}
                 >
                   <Lock size={18} />
                   {closeMutation.isPending ? 'Clôture en cours...' : 'CLÔTURER LA FACTURE'}
@@ -873,7 +828,7 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
                   if (window.confirm('Annuler cette facture ?')) cancelMutation.mutate();
                 }}
                 disabled={cancelMutation.isPending}
-                className="w-full py-2.5 bg-white border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 disabled:opacity-50 transition-colors"
+                className="btn-secondary w-full border-red-200 text-red-500 hover:bg-red-50"
               >
                 {cancelMutation.isPending ? 'Annulation...' : 'Annuler la facture'}
               </button>
@@ -882,14 +837,14 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
         </div>
 
         {bill.payments && bill.payments.length > 0 && (
-          <div className="mt-4 bg-white rounded-2xl p-5 shadow-sm">
+          <div className="mt-4 card rounded-2xl p-5 shadow-sm">
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Historique des paiements</h4>
             <div className="space-y-2">
               {bill.payments.map((payment) => (
                 <div key={payment.id} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0">
                   <div className="flex items-center gap-2">
                     {payment.paymentMethod === 'CASH' && <Wallet size={14} className="text-emerald-500" />}
-                    {payment.paymentMethod === 'CARD' && <CreditCard size={14} className="text-blue-500" />}
+                    {payment.paymentMethod === 'CARD' && <CreditCard size={14} className="text-primary" />}
                     {payment.paymentMethod === 'MOBILE_MONEY' && <Smartphone size={14} className="text-orange-500" />}
                     <span className="text-sm text-gray-600 capitalize">{payment.paymentMethod.toLowerCase().replace('_', ' ')}</span>
                     <span className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -914,7 +869,14 @@ function BillDetail({ bill, onBack }: { bill: Bill; onBack: () => void }) {
         remainingAmount={effectiveRemaining}
         isLoading={paymentMutation.isPending}
       />
-      <TicketModal isOpen={showTicketModal} onClose={() => setShowTicketModal(false)} bill={bill} />
+      
+      <InvoiceModal
+        isOpen={showTicketModal}
+        onClose={() => setShowTicketModal(false)}
+        bill={bill}
+        change={bill.payments?.[0]?.tip ? 0 : undefined}
+      />
+      
       <SplitEqualModal
         isOpen={showSplitEqualModal}
         onClose={() => setShowSplitEqualModal(false)}
@@ -952,7 +914,11 @@ export default function Bills() {
 
   const { data: billsData, isLoading: billsLoading } = useQuery({
     queryKey: ['restaurant-bills', statusFilter, search],
-    queryFn: () => billsApi.getAll({ status: statusFilter || undefined, page: 1, limit: 50 }),
+    queryFn: () => billsApi.getAll({ 
+      status: statusFilter || undefined, 
+      page: 1, 
+      limit: 50 
+    }),
   });
 
   const { data: billData, isLoading: billLoading } = useQuery({
@@ -967,7 +933,6 @@ export default function Bills() {
     enabled: !!orderIdFromUrl,
   });
 
-  // ✅ CORRECTION: Utiliser 'bills' au lieu de 'items'
   const bills = (billsData?.data as { bills?: Bill[] })?.bills ?? [];
   const bill = billData?.data || orderBillData?.data;
 
@@ -990,33 +955,33 @@ export default function Bills() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen p-4 md:p-6" style={{ backgroundColor: 'var(--bg-secondary)' }}>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Facturation</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Gérez les factures et les paiements</p>
+            <h1 className="page-title">Facturation</h1>
+            <p className="page-subtitle mt-0.5">Gérez les factures et les paiements</p>
           </div>
           <button
             onClick={() => navigate('/restaurant/orders')}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="btn-secondary flex items-center gap-2"
           >
             <ArrowLeft size={16} /> Commandes
           </button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total" value={bills.length} icon={Receipt} color="bg-orange-500" />
+          <StatCard label="Total" value={bills.length} icon={Receipt} color="btn-primary" />
           <StatCard
             label="Montant total"
-          value={bills.reduce((s, b) => s + Number(b.totalAmount), 0)}
+            value={bills.reduce((s, b) => s + Number(b.totalAmount), 0)}
             icon={DollarSign}
             color="bg-emerald-500"
             isCurrency
             currency={currency}
           />
           <StatCard label="En attente" value={bills.filter(b => b.status === 'OUVERTE' || b.status === 'PAYEE_PARTIEL').length} icon={Clock} color="bg-amber-500" />
-          <StatCard label="Clôturées" value={bills.filter(b => b.status === 'CLOTUREE').length} icon={CheckCircle} color="bg-blue-600" />
+          <StatCard label="Clôturées" value={bills.filter(b => b.status === 'CLOTUREE').length} icon={CheckCircle} color="btn-primary" />
         </div>
 
         <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -1027,13 +992,13 @@ export default function Bills() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher..."
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+              className="input pl-9"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as BillStatus | '')}
-            className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+            className="input w-auto"
           >
             <option value="">Tous les statuts</option>
             <option value="BROUILLON">Brouillon</option>
@@ -1052,7 +1017,7 @@ export default function Bills() {
         </div>
 
         {bills.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+          <div className="text-center py-16 card">
             <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
               <Receipt size={28} className="text-gray-400" />
             </div>
@@ -1064,13 +1029,13 @@ export default function Bills() {
         ) : (
           <div className="space-y-2.5">
             {bills.map((b) => {
-              const cfg = BILL_STATUS_CONFIG[b.status];
+              const cfg = getStatusConfig(b.status);
               const Icon = cfg.icon;
               return (
                 <div
                   key={b.id}
                   onClick={() => setSelectedBillId(b.id)}
-                  className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-gray-200 transition-all cursor-pointer"
+                  className="card rounded-xl p-4 hover:shadow-md hover:border-gray-200 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -1092,7 +1057,7 @@ export default function Bills() {
                           <p className="text-xs text-emerald-600">Payé: {b.paidAmount.toLocaleString()}</p>
                         )}
                       </div>
-                      <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap', cfg.bg, cfg.color)}>
+                      <span className={cn('badge', cfg.bg, cfg.color)}>
                         {cfg.label}
                       </span>
                     </div>
@@ -1126,7 +1091,7 @@ function StatCard({
   isCurrency?: boolean; currency?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-wide leading-tight">{label}</p>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', color)}>

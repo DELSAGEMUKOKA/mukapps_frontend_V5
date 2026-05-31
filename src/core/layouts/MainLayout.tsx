@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, Suspense } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import TopNavbar from './components/TopNavbar';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 export default function MainLayout() {
   const { sidebarCollapsed } = useUi();
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
   const { setActiveModules } = useModules();
 
   useEffect(() => {
@@ -32,10 +33,21 @@ export default function MainLayout() {
       <div className="flex flex-1 min-h-0">
         <Sidebar />
 
-        <main className="flex-1 overflow-y-auto min-w-0">
-          <div className="p-3 sm:p-4 md:p-5 lg:p-6 max-w-[1600px] mx-auto w-full">
-            <Outlet />
-          </div>
+        <main className="flex-1 overflow-hidden min-w-0 relative">
+          <Suspense
+            key={location.pathname}
+            fallback={
+              <div className="flex items-center justify-center h-full w-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]" />
+              </div>
+            }
+          >
+            <div className="h-full overflow-y-auto">
+              <div className="p-3 sm:p-4 md:p-5 lg:p-6 max-w-[1600px] mx-auto w-full">
+                <Outlet />
+              </div>
+            </div>
+          </Suspense>
         </main>
       </div>
 

@@ -16,6 +16,10 @@ const USER_ROLES = [
   { value: 'SUPERVISOR', label: 'Superviseur', color: 'bg-blue-100 text-blue-700' },
   { value: 'OPERATOR', label: 'Opérateur', color: 'bg-green-100 text-green-700' },
   { value: 'CASHIER', label: 'Caissier', color: 'bg-amber-100 text-amber-700' },
+    { value: 'SERVEUR', label: 'SERVEUR', color: 'bg-amber-100 text-amber-700' },
+       { value: 'BARMAN', label: 'BARMAN', color: 'bg-amber-100 text-amber-700' },
+           { value: 'CUISINIER', label: 'CUISINIER', color: 'bg-amber-100 text-amber-700' },
+            { value: 'CAISSIER_RESTO', label: 'CAISSIER_RESTO', color: 'bg-amber-100 text-amber-700' }
 ];
 
 const getRoleLabel = (role: string) => {

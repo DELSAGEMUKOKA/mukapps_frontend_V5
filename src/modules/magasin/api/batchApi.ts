@@ -65,7 +65,7 @@ export interface ConsumeFefoResult {
 }
 
 // ============================================
-// API BATCH - URLs CORRIGÉES (sans double /api)
+// API BATCH - URLs CORRIGÉES (sans /magasin/)
 // ============================================
 
 export const batchApi = {

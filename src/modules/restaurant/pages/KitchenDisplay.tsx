@@ -5,11 +5,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ChefHat, Wine, Cake, Clock, CheckCircle, PlayCircle, 
   Package, Search, RefreshCw, BellRing,
-  Users, AlertCircle
+  Users, AlertCircle, User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { kitchenApi, type KitchenItem, type Station } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
+import { usePermissions } from '@/core/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -30,7 +31,7 @@ const STATION_CONFIG: Record<Station, { label: string; Icon: React.ElementType; 
 
 const STATUS_CONFIG = {
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock, nextStatus: 'EN_PREPARATION' as const, order: 0 },
-  EN_PREPARATION: { label: 'En préparation', color: 'text-blue-600', bg: 'bg-blue-50', icon: PlayCircle, nextStatus: 'PRET' as const, order: 1 },
+  EN_PREPARATION: { label: 'En préparation', color: 'text-primary', bg: 'bg-primary-light', icon: PlayCircle, nextStatus: 'PRET' as const, order: 1 },
   PRET: { label: 'Prêt', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle, nextStatus: 'SERVI' as const, order: 2 },
   SERVI: { label: 'Servi', color: 'text-gray-400', bg: 'bg-gray-100', icon: CheckCircle, nextStatus: null, order: 3 },
 };
@@ -137,6 +138,13 @@ function KitchenItemCard({
   const orderInfo = item.order;
   const tableNumber = orderInfo?.table?.number;
   const orderNumber = orderInfo?.orderNumber;
+  
+  // ✅ Récupération des informations du serveur
+  const serverUser = orderInfo?.user;
+  const serverName = serverUser 
+    ? `${serverUser.firstName} ${serverUser.lastName}`
+    : null;
+  const serverRole = serverUser?.role;
 
   const handleNextAction = () => {
     if (nextStatus) {
@@ -146,9 +154,9 @@ function KitchenItemCard({
 
   return (
     <div className={cn(
-      'relative bg-white rounded-xl border p-4 transition-all hover:shadow-md',
+      'relative card p-4 transition-all hover:shadow-md',
       item.status === 'EN_ATTENTE' && 'border-l-4 border-l-amber-500',
-      item.status === 'EN_PREPARATION' && 'border-l-4 border-l-blue-500',
+      item.status === 'EN_PREPARATION' && 'border-l-4 border-l-primary',
       item.status === 'PRET' && 'border-l-4 border-l-emerald-500',
       item.status === 'SERVI' && 'opacity-60',
       isUrgent && 'ring-2 ring-red-400 ring-offset-1'
@@ -166,6 +174,15 @@ function KitchenItemCard({
                 <Users size={10} /> Table {tableNumber}
               </span>
             )}
+            {/* ✅ Affichage du serveur */}
+            {serverName && (
+              <span className="text-[11px] text-primary flex items-center gap-0.5 bg-primary-light px-2 py-0.5 rounded-full">
+                <User size={10} /> {serverName}
+                {serverRole === 'SERVER' && (
+                  <span className="text-[9px] text-primary/60 ml-0.5">(Serveur)</span>
+                )}
+              </span>
+            )}
           </div>
           
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -174,7 +191,7 @@ function KitchenItemCard({
           </div>
         </div>
         
-        <div className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', statusConfig.bg, statusConfig.color)}>
+        <div className={cn('badge', statusConfig.bg, statusConfig.color)}>
           {statusConfig.label}
         </div>
       </div>
@@ -194,9 +211,9 @@ function KitchenItemCard({
             disabled={isUpdating}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-              nextStatus === 'EN_PREPARATION' && 'bg-blue-500 text-white hover:bg-blue-600',
+              nextStatus === 'EN_PREPARATION' && 'btn-primary',
               nextStatus === 'PRET' && 'bg-emerald-500 text-white hover:bg-emerald-600',
-              nextStatus === 'SERVI' && 'bg-gray-500 text-white hover:bg-gray-600',
+              nextStatus === 'SERVI' && 'btn-secondary',
               isUpdating && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -330,15 +347,58 @@ function StationColumn({
 
 export default function KitchenDisplay() {
   const queryClient = useQueryClient();
+  const { userRole, isCuisinier, isBarman } = usePermissions();
+  
   const [selectedStation, setSelectedStation] = useState<Station | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  // Déterminer la station par défaut en fonction du rôle
+  const getDefaultStation = useCallback((): Station | 'all' => {
+    if (isCuisinier()) return 'CUISINE';
+    if (isBarman()) return 'BAR';
+    return 'all';
+  }, [isCuisinier, isBarman]);
+
+  // Initialiser selectedStation en fonction du rôle
+  useEffect(() => {
+    const defaultStation = getDefaultStation();
+    setSelectedStation(defaultStation);
+  }, [getDefaultStation]);
+
+  // Filtrer les stations visibles selon le rôle
+  const visibleStations = useMemo(() => {
+    const allStations: Station[] = ['CUISINE', 'BAR', 'DESSERTS'];
+    
+    if (isCuisinier()) {
+      return allStations.filter(station => station === 'CUISINE');
+    }
+    
+    if (isBarman()) {
+      return allStations.filter(station => station === 'BAR');
+    }
+    
+    return allStations;
+  }, [isCuisinier, isBarman]);
+
+  // Déterminer si l'utilisateur peut voir plusieurs stations
+  const canViewMultipleStations = useMemo(() => {
+    return !isCuisinier() && !isBarman();
+  }, [isCuisinier, isBarman]);
+
+  // Construction de la requête avec filtre automatique
+  const queryStation = useMemo(() => {
+    if (selectedStation !== 'all') return selectedStation;
+    if (isCuisinier()) return 'CUISINE';
+    if (isBarman()) return 'BAR';
+    return undefined;
+  }, [selectedStation, isCuisinier, isBarman]);
+
   const { data: kitchenData, isLoading, error, refetch } = useQuery({
-    queryKey: ['restaurant-kitchen', selectedStation],
-    queryFn: () => kitchenApi.getActive({ station: selectedStation !== 'all' ? selectedStation : undefined }),
+    queryKey: ['restaurant-kitchen', queryStation],
+    queryFn: () => kitchenApi.getActive({ station: queryStation }),
     staleTime: 5000,
     refetchInterval: autoRefresh ? REFRESH_INTERVAL : false,
   });
@@ -401,7 +461,9 @@ export default function KitchenDisplay() {
       filtered = items.filter(item => 
         item.menuItem?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.order?.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.order?.table?.number?.toLowerCase().includes(searchTerm.toLowerCase())
+        item.order?.table?.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.order?.user?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.order?.user?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -425,6 +487,18 @@ export default function KitchenDisplay() {
     };
   }, [kitchenData]);
 
+  // Déterminer le titre de la page selon le rôle
+  const pageTitle = useMemo(() => {
+    if (isCuisinier()) return 'Station Cuisine';
+    if (isBarman()) return 'Station Bar';
+    return 'Cuisine & Bar';
+  }, [isCuisinier, isBarman]);
+
+  // Déterminer si l'utilisateur peut voir les filtres de station
+  const showStationFilters = useMemo(() => {
+    return !isCuisinier() && !isBarman();
+  }, [isCuisinier, isBarman]);
+
   if (isLoading) return <SmartLoader isLoading={true}><div /></SmartLoader>;
 
   if (error) {
@@ -437,7 +511,7 @@ export default function KitchenDisplay() {
         <p className="text-xs text-gray-400 mt-1">{(error as Error).message}</p>
         <button
           onClick={() => refetch()}
-          className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold"
+          className="btn-primary mt-4"
         >
           Réessayer
         </button>
@@ -445,15 +519,19 @@ export default function KitchenDisplay() {
     );
   }
 
-  const stationOrder: Station[] = ['CUISINE', 'BAR', 'DESSERTS'];
+  const stationOrder: Station[] = visibleStations;
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-100">
+    <div className="h-[calc(100vh-64px)] flex flex-col" style={{ backgroundColor: 'var(--bg-secondary)' }}>
       <div className="bg-white border-b border-gray-200 px-5 py-3 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Cuisine & Bar</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Gestion des commandes en temps réel</p>
+            <h1 className="page-title">{pageTitle}</h1>
+            <p className="page-subtitle mt-0.5">
+              {isCuisinier() && 'Préparation des plats chauds et froids'}
+              {isBarman() && 'Préparation des boissons et cocktails'}
+              {!isCuisinier() && !isBarman() && 'Gestion des commandes en temps réel'}
+            </p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -462,9 +540,9 @@ export default function KitchenDisplay() {
                 <p className="text-[10px] text-amber-600 font-semibold">En attente</p>
                 <p className="text-lg font-bold text-amber-700">{stats.enAttente}</p>
               </div>
-              <div className="bg-blue-50 px-3 py-1.5 rounded-xl text-center">
-                <p className="text-[10px] text-blue-600 font-semibold">Préparation</p>
-                <p className="text-lg font-bold text-blue-700">{stats.enPreparation}</p>
+              <div className="bg-primary-light px-3 py-1.5 rounded-xl text-center">
+                <p className="text-[10px] text-primary font-semibold">Préparation</p>
+                <p className="text-lg font-bold text-primary">{stats.enPreparation}</p>
               </div>
               <div className="bg-emerald-50 px-3 py-1.5 rounded-xl text-center">
                 <p className="text-[10px] text-emerald-600 font-semibold">Prêts</p>
@@ -491,41 +569,70 @@ export default function KitchenDisplay() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1 bg-gray-100 rounded-xl p-0.5">
-              <button onClick={() => setSelectedStation('all')} className={cn(
-                'px-3 py-1 rounded-lg text-xs font-medium',
-                selectedStation === 'all' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
-              )}>Toutes</button>
-              {stationOrder.map((station) => {
-                const config = STATION_CONFIG[station];
-                return (
-                  <button key={station} onClick={() => setSelectedStation(station)} className={cn(
-                    'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium',
-                    selectedStation === station ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'
-                  )}>
-                    <config.Icon size={12} /> {config.label}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Section des filtres - masquée pour les rôles spécifiques */}
+        {showStationFilters && (
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-gray-100 rounded-xl p-0.5">
+                <button onClick={() => setSelectedStation('all')} className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-medium',
+                  selectedStation === 'all' ? 'card shadow-sm text-gray-800' : 'text-gray-500'
+                )}>Toutes</button>
+                {stationOrder.map((station) => {
+                  const config = STATION_CONFIG[station];
+                  return (
+                    <button key={station} onClick={() => setSelectedStation(station)} className={cn(
+                      'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium',
+                      selectedStation === station ? 'card shadow-sm text-gray-800' : 'text-gray-500'
+                    )}>
+                      <config.Icon size={12} /> {config.label}
+                    </button>
+                  );
+                })}
+              </div>
 
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Rechercher par article, commande, table ou serveur..." 
+                  className="input pl-8 w-80 text-xs py-1.5" 
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              Dernier refresh: {lastRefresh.toLocaleTimeString()}
+              {autoRefresh && ` • Auto refresh tous les ${REFRESH_INTERVAL / 1000}s`}
+            </p>
+          </div>
+        )}
+
+        {/* Version simplifiée pour cuisinier/barman sans filtres */}
+        {!showStationFilters && (
+          <div className="flex items-center justify-between mt-3">
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher..." className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-64" />
+              <input 
+                type="text" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher un article, table ou serveur..." 
+                className="input pl-8 w-80 text-xs py-1.5" 
+              />
             </div>
+            <p className="text-[10px] text-gray-400">
+              Dernier refresh: {lastRefresh.toLocaleTimeString()}
+              {autoRefresh && ` • Auto refresh tous les ${REFRESH_INTERVAL / 1000}s`}
+            </p>
           </div>
-          <p className="text-[10px] text-gray-400">
-            Dernier refresh: {lastRefresh.toLocaleTimeString()}
-            {autoRefresh && ` • Auto refresh tous les ${REFRESH_INTERVAL / 1000}s`}
-          </p>
-        </div>
+        )}
       </div>
 
+      {/* Affichage adapté selon le rôle */}
       <div className="flex-1 overflow-x-auto p-4">
-        {selectedStation === 'all' ? (
+        {canViewMultipleStations && selectedStation === 'all' ? (
           <div className="flex gap-4 h-full min-w-[960px]">
             {stationOrder.map((station) => (
               <StationColumn key={station} station={station} items={groupedItems[station] || []}
@@ -534,8 +641,12 @@ export default function KitchenDisplay() {
           </div>
         ) : (
           <div className="max-w-md mx-auto h-full">
-            <StationColumn station={selectedStation} items={groupedItems[selectedStation] || []}
-              onStatusChange={handleStatusChange} updatingId={updatingId} />
+            <StationColumn 
+              station={isCuisinier() ? 'CUISINE' : isBarman() ? 'BAR' : selectedStation as Station} 
+              items={groupedItems[isCuisinier() ? 'CUISINE' : isBarman() ? 'BAR' : selectedStation as Station] || []}
+              onStatusChange={handleStatusChange} 
+              updatingId={updatingId} 
+            />
           </div>
         )}
       </div>
@@ -544,7 +655,7 @@ export default function KitchenDisplay() {
         <div className="flex items-center justify-between text-[10px] text-gray-400">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> En attente</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> En préparation</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> En préparation</span>
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Prêt</span>
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-gray-400" /> Servi</span>
           </div>

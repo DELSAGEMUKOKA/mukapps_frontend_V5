@@ -81,6 +81,7 @@ const fromBackend = (p: Record<string, unknown>): Product => ({
   unit: p.unit as string | undefined,
   expiryDate: (p.expirationDate as string) ?? (p.expiryDate as string) ?? undefined,
   isActive: (p.isActive as boolean) ?? true,
+  isLinkedToRestaurant: (p.isLinkedToRestaurant as boolean) ?? false,
   companyId: p.companyId as string,
   createdAt: p.createdAt as string,
   updatedAt: p.updatedAt as string,

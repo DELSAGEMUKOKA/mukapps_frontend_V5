@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import {
   Search, Package, ShoppingCart, Trash2, Plus, Minus,
   X, ChevronDown, Tag, Barcode, Phone, Mail, User,
@@ -10,12 +10,14 @@ import { productApi } from '../api/productApi';
 import { categoryApi } from '../api/categoryApi';
 import { clientApi } from '../../client/api/clientApi';
 import { saleApi } from '../api/saleApi';
+import { batchApi } from '../api/batchApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import type { Product, Customer, Sale } from '@/shared/types';
 import PaymentModal from './pos/PaymentModal';
 import InvoiceModal from './pos/InvoiceModal';
 import QuantityModal from './pos/QuantityModal';
 import CustomerModal from './pos/CustomerModal';
+import BatchSelectionModal from './pos/BatchSelectionModal';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
 interface CartItem {
@@ -23,6 +25,7 @@ interface CartItem {
   quantity: number;
   unitPrice: number;
   discount: number;
+  batchId?: string; // ✅ Ajout pour stocker le lot sélectionné
 }
 
 function fmt(n: number) {
@@ -31,6 +34,7 @@ function fmt(n: number) {
 
 export default function PointDeVente() {
   const currency = useCurrency();
+  const queryClient = useQueryClient();
   
   // États principaux
   const [search, setSearch] = useState('');
@@ -47,6 +51,11 @@ export default function PointDeVente() {
   const [quantityProduct, setQuantityProduct] = useState<Product | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   
+  // ✅ États pour la sélection de lot
+  const [batchSelectionProduct, setBatchSelectionProduct] = useState<Product | null>(null);
+  const [productBatches, setProductBatches] = useState<any[]>([]);
+  const [isBatchSelectionOpen, setIsBatchSelectionOpen] = useState(false);
+  
   // États pour les suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
@@ -60,7 +69,6 @@ export default function PointDeVente() {
   
   // ============ REQUÊTES OPTIMISÉES ============
   
-  // Produits - avec keepPreviousData pour éviter les écrans blancs
   const { 
     data: productsData, 
     isLoading: loadingProducts, 
@@ -69,35 +77,32 @@ export default function PointDeVente() {
   } = useQuery({
     queryKey: ['pos-products', debouncedSearch, categoryId],
     queryFn: () => productApi.getAll({ limit: 100, search: debouncedSearch || undefined, categoryId: categoryId || undefined }),
-    placeholderData: keepPreviousData, // ← GARDE LES PRODUITS PENDANT LE CHARGEMENT
-    staleTime: 60 * 1000, // ← CACHE 1 MINUTE
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  // Catégories - cache long (5 minutes)
   const { data: categoriesData } = useQuery({
     queryKey: ['categories-pos'],
     queryFn: () => categoryApi.getAll({ limit: 100 }),
-    staleTime: 5 * 60 * 1000, // ← CACHE 5 MINUTES
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  // Clients - avec keepPreviousData et chargement conditionnel
   const { data: clientsData } = useQuery({
     queryKey: ['clients-pos', clientSearch],
     queryFn: () => clientApi.getAll({ limit: 20, search: clientSearch || undefined }),
     enabled: clientDropdownOpen,
     staleTime: 2 * 60 * 1000,
-    placeholderData: keepPreviousData, // ← GARDE LES CLIENTS PENDANT LA RECHERCHE
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
 
-  // Extraction des données
   const products: Product[] = (
     Array.isArray(productsData?.data?.data) ? productsData.data.data :
     Array.isArray(productsData?.data?.products) ? productsData.data.products :
     Array.isArray(productsData?.data) ? productsData.data : []
-  );
+  ).filter((p: Product) => !p.isLinkedToRestaurant);
   
   const categoriesRaw = categoriesData?.data;
   const categories: { id: string; name: string; color?: string }[] =
@@ -116,7 +121,6 @@ export default function PointDeVente() {
       })
     : allClients;
 
-  // Calculs
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const total = Math.max(0, subtotal - globalDiscount);
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
@@ -124,14 +128,14 @@ export default function PointDeVente() {
   const getCategoryColor = (cat: { color?: string }) => cat.color || '#3b82f6';
 
   // Gestion du panier
-  const addToCartWithQty = useCallback((product: Product, qty: number) => {
+  const addToCartWithQty = useCallback((product: Product, qty: number, batchId?: string) => {
     if (product.stock <= 0) {
       toast.error('Stock insuffisant');
       return;
     }
     
     setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
+      const existing = prev.find((i) => i.product.id === product.id && i.batchId === batchId);
       if (existing) {
         const newQty = existing.quantity + qty;
         if (newQty > product.stock) {
@@ -139,7 +143,7 @@ export default function PointDeVente() {
           return prev;
         }
         return prev.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: newQty } : i
+          i.product.id === product.id && i.batchId === batchId ? { ...i, quantity: newQty } : i
         );
       }
       return [
@@ -149,29 +153,60 @@ export default function PointDeVente() {
           quantity: qty,
           unitPrice: product.unitPrice,
           discount: 0,
+          batchId,
         },
       ];
     });
   }, []);
 
-  // Fonction pour sélectionner un produit (via suggestion ou clic)
-  const handleSelectProduct = useCallback((product: Product) => {
+  // ✅ Fonction modifiée pour gérer la sélection de lot
+  const handleSelectProduct = useCallback(async (product: Product) => {
     if (product.stock <= 0) {
       toast.error(`Produit "${product.name}" en rupture de stock`);
       return;
     }
     
-    // Ouvre le modal de quantité
+    // Vérifier si le produit a plusieurs lots actifs
+    try {
+      const batchesResponse = await batchApi.getProductBatches(product.id);
+      const batches = batchesResponse.data.data || [];
+      const activeBatches = batches.filter(
+        (b: any) => b.status === 'ACTIVE' && (b.quantity - (b.quantityUsed || 0)) > 0
+      );
+      
+      if (activeBatches.length > 1) {
+        // Plusieurs lots -> ouvrir le modal de sélection
+        setProductBatches(activeBatches);
+        setBatchSelectionProduct(product);
+        setIsBatchSelectionOpen(true);
+        return;
+      }
+    } catch (error) {
+      console.error('Erreur chargement lots:', error);
+    }
+    
+    // Un seul lot ou aucun lot -> comportement normal
     setQuantityProduct(product);
     setSearch('');
     setShowSuggestions(false);
     setTimeout(() => searchRef.current?.focus(), 50);
   }, []);
 
-  const updateQty = (productId: string, delta: number) => {
+  // ✅ Fonction pour confirmer la sélection de lot
+  const handleBatchConfirm = useCallback((batchId: string, quantity: number) => {
+    if (!batchSelectionProduct) return;
+    addToCartWithQty(batchSelectionProduct, quantity, batchId);
+    setIsBatchSelectionOpen(false);
+    setBatchSelectionProduct(null);
+    setProductBatches([]);
+    setSearch('');
+    setTimeout(() => searchRef.current?.focus(), 50);
+  }, [batchSelectionProduct, addToCartWithQty]);
+
+  const updateQty = (productId: string, delta: number, batchId?: string) => {
     setCart((prev) =>
       prev.map((i) => {
-        if (i.product.id !== productId) return i;
+        if (i.product.id !== productId || i.batchId !== batchId) return i;
         const newQty = i.quantity + delta;
         if (newQty > i.product.stock) {
           toast.error(`Stock max: ${i.product.stock}`);
@@ -182,11 +217,11 @@ export default function PointDeVente() {
     );
   };
 
-  const setQty = (productId: string, qty: number) => {
+  const setQty = (productId: string, qty: number, batchId?: string) => {
     if (isNaN(qty) || qty < 0) return;
     setCart((prev) =>
       prev.map((i) => {
-        if (i.product.id !== productId) return i;
+        if (i.product.id !== productId || i.batchId !== batchId) return i;
         if (qty > i.product.stock) {
           toast.error(`Stock max: ${i.product.stock}`);
           return i;
@@ -196,8 +231,8 @@ export default function PointDeVente() {
     );
   };
 
-  const removeFromCart = (productId: string) =>
-    setCart((prev) => prev.filter((i) => i.product.id !== productId));
+  const removeFromCart = (productId: string, batchId?: string) =>
+    setCart((prev) => prev.filter((i) => i.product.id !== productId || i.batchId !== batchId));
 
   const clearCart = () => {
     setCart([]);
@@ -220,17 +255,31 @@ export default function PointDeVente() {
     saleMutation.mutate({ method: 'CASH', suspend: true });
   };
 
-  // Mutation pour la vente
   const saleMutation = useMutation({
     mutationFn: (payload: { method: string; amountGiven?: number; suspend?: boolean }) =>
       saleApi.create({
         customerId: selectedCustomer?.id,
-        items: cart.map((i) => ({ productId: i.product.id, quantity: i.quantity, unitPrice: i.unitPrice, discount: i.discount })),
+        items: cart.map((i) => ({ 
+          productId: i.product.id, 
+          quantity: i.quantity, 
+          unitPrice: i.unitPrice, 
+          discount: i.discount,
+          batchId: i.batchId
+        })),
         paymentMethod: payload.method,
         discount: globalDiscount || undefined,
         notes: payload.suspend ? 'SUSPENDUE' : undefined,
       }),
-    onSuccess: (sale, payload) => {
+    onSuccess: (result, payload) => {
+      const saleData = result.sale;
+      const totalAmount = saleData.totalAmount ?? saleData.subtotal ?? 0;
+      
+      cart.forEach(item => {
+        queryClient.invalidateQueries({ queryKey: ['batches', item.product.id] });
+      });
+      queryClient.invalidateQueries({ queryKey: ['batches'] });
+      queryClient.invalidateQueries({ queryKey: ['pos-products'] });
+      
       if (payload.suspend) {
         toast.success('Vente suspendue avec succès');
         setCart([]);
@@ -238,9 +287,9 @@ export default function PointDeVente() {
         setGlobalDiscount(0);
       } else {
         const given = payload.amountGiven;
-        const change = given && given > sale.totalAmount ? given - sale.totalAmount : undefined;
+        const change = given && given > totalAmount ? given - totalAmount : undefined;
         setChangeGiven(change);
-        setCompletedSale(sale);
+        setCompletedSale(saleData);
         setShowPayment(false);
         setCart([]);
         setSelectedCustomer(null);
@@ -248,7 +297,10 @@ export default function PointDeVente() {
         toast.success('Vente enregistrée !');
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      toast.error(e.message);
+      console.error('Erreur vente:', e);
+    },
   });
 
   // Effets pour les suggestions
@@ -262,7 +314,6 @@ export default function PointDeVente() {
     }
   }, [debouncedSearch, products]);
 
-  // Fermer les suggestions quand on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
@@ -273,7 +324,6 @@ export default function PointDeVente() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Autres effets
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (clientRef.current && !clientRef.current.contains(e.target as Node)) {
@@ -288,7 +338,6 @@ export default function PointDeVente() {
     searchRef.current?.focus();
   }, []);
 
-  // Auto-ajout quand un seul produit correspond à la recherche (scan)
   useEffect(() => {
     if (!debouncedSearch || products.length !== 1) return;
     const matched = products[0];
@@ -298,10 +347,9 @@ export default function PointDeVente() {
     }
   }, [debouncedSearch, products, handleSelectProduct]);
 
-  // Gestion du scanner code-barres
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (quantityProduct || showPayment || completedSale) return;
+      if (quantityProduct || showPayment || completedSale || isBatchSelectionOpen) return;
 
       if (e.key === 'Enter') {
         if (search && products.length === 1) {
@@ -328,7 +376,7 @@ export default function PointDeVente() {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (quantityProduct || showPayment || completedSale) return;
+      if (quantityProduct || showPayment || completedSale || isBatchSelectionOpen) return;
       if (e.key === 'Enter' && barcodeBuffer.current.length > 0) {
         const code = barcodeBuffer.current.trim();
         barcodeBuffer.current = '';
@@ -345,13 +393,13 @@ export default function PointDeVente() {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [search, products, handleSelectProduct, cart, showPayment, completedSale, quantityProduct]);
+  }, [search, products, handleSelectProduct, cart, showPayment, completedSale, quantityProduct, isBatchSelectionOpen]);
 
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-100 -m-4 sm:-m-6">
-      {/* Section gauche - Produits */}
+      {/* Section gauche - Produits - reste identique */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Barre de recherche avec suggestions */}
+        {/* Barre de recherche avec suggestions - reste identique */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <div className="relative flex-1" ref={suggestionsRef}>
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
@@ -380,7 +428,6 @@ export default function PointDeVente() {
               </button>
             )}
 
-            {/* Suggestions d'autocomplétion */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-80 overflow-y-auto">
                 {suggestions.map((product) => {
@@ -453,7 +500,7 @@ export default function PointDeVente() {
           </div>
         </div>
 
-        {/* Filtres par catégorie */}
+        {/* Filtres par catégorie - reste identique */}
         <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setCategoryId('')}
@@ -478,7 +525,7 @@ export default function PointDeVente() {
           ))}
         </div>
 
-        {/* Grille des produits - AVEC SMART LOADER */}
+        {/* Grille des produits */}
         <div className="flex-1 overflow-y-auto p-4">
           <SmartLoader
             isLoading={loadingProducts && !productsData}
@@ -539,7 +586,7 @@ export default function PointDeVente() {
         </div>
       </div>
 
-      {/* Section droite - Panier */}
+      {/* Section droite - Panier - modifiée pour afficher les lots */}
       <div className="w-80 xl:w-96 bg-white border-l border-gray-200 flex flex-col shadow-xl flex-shrink-0">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-900">
           <div className="flex items-center gap-2">
@@ -562,7 +609,7 @@ export default function PointDeVente() {
           )}
         </div>
 
-        {/* Sélection client */}
+        {/* Sélection client - reste identique */}
         <div className="px-4 py-2.5 border-b border-gray-100" ref={clientRef}>
           <div className="flex items-center gap-1.5">
             <div
@@ -701,7 +748,7 @@ export default function PointDeVente() {
           )}
         </div>
 
-        {/* Liste des articles du panier */}
+        {/* Liste des articles du panier - modifiée pour afficher le lot */}
         <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-300 py-16">
@@ -712,7 +759,7 @@ export default function PointDeVente() {
           ) : (
             <div className="divide-y divide-gray-50">
               {cart.map((item) => (
-                <div key={item.product.id} className="px-4 py-3 hover:bg-gray-50 transition-colors group">
+                <div key={`${item.product.id}-${item.batchId}`} className="px-4 py-3 hover:bg-gray-50 transition-colors group">
                   <div className="flex items-start gap-2.5">
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -724,17 +771,22 @@ export default function PointDeVente() {
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-2 flex-1">{item.product.name}</p>
                         <button
-                          onClick={() => removeFromCart(item.product.id)}
+                          onClick={() => removeFromCart(item.product.id, item.batchId)}
                           className="p-0.5 rounded text-gray-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                         >
                           <X size={11} />
                         </button>
                       </div>
+                      {item.batchId && (
+                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">
+                          Lot: {item.batchId.slice(0, 8)}...
+                        </p>
+                      )}
                       <p className="text-xs text-gray-400 mt-0.5">{fmt(item.unitPrice)} {currency} × {item.quantity}</p>
                       <div className="flex items-center justify-between mt-1.5">
                         <div className="flex items-center gap-1.5">
                           <button
-                            onClick={() => updateQty(item.product.id, -1)}
+                            onClick={() => updateQty(item.product.id, -1, item.batchId)}
                             className="w-6 h-6 rounded-lg flex items-center justify-center bg-gray-100 hover:bg-red-50 hover:text-red-600 transition-colors text-gray-600"
                           >
                             <Minus size={10} />
@@ -742,13 +794,13 @@ export default function PointDeVente() {
                           <input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) => setQty(item.product.id, parseInt(e.target.value))}
+                            onChange={(e) => setQty(item.product.id, parseInt(e.target.value), item.batchId)}
                             className="w-10 text-center text-xs font-black text-gray-900 border border-gray-200 rounded-lg py-0.5 focus:outline-none focus:border-blue-400"
                             min={1}
                             max={item.product.stock}
                           />
                           <button
-                            onClick={() => updateQty(item.product.id, 1)}
+                            onClick={() => updateQty(item.product.id, 1, item.batchId)}
                             className="w-6 h-6 rounded-lg flex items-center justify-center bg-gray-100 hover:bg-green-50 hover:text-green-600 transition-colors text-gray-600"
                           >
                             <Plus size={10} />
@@ -766,7 +818,7 @@ export default function PointDeVente() {
           )}
         </div>
 
-        {/* Résumé et paiement */}
+        {/* Résumé et paiement - reste identique */}
         <div className="border-t border-gray-100 bg-gray-50">
           {cart.length > 0 && (
             <div className="px-4 pt-3 pb-1">
@@ -826,7 +878,7 @@ export default function PointDeVente() {
       {quantityProduct && (
         <QuantityModal
           product={quantityProduct}
-          currentQty={cart.find((i) => i.product.id === quantityProduct.id)?.quantity ?? 0}
+          currentQty={cart.find((i) => i.product.id === quantityProduct.id && !i.batchId)?.quantity ?? 0}
           onConfirm={(qty) => {
             addToCartWithQty(quantityProduct, qty);
             setQuantityProduct(null);
@@ -863,6 +915,21 @@ export default function PointDeVente() {
           onCreated={(customer) => {
             setSelectedCustomer(customer);
             setShowCustomerModal(false);
+          }}
+        />
+      )}
+
+      {/* ✅ Modal de sélection de lot */}
+      {isBatchSelectionOpen && batchSelectionProduct && productBatches.length > 0 && (
+        <BatchSelectionModal
+          product={batchSelectionProduct}
+          batches={productBatches}
+          onConfirm={handleBatchConfirm}
+          onClose={() => {
+            setIsBatchSelectionOpen(false);
+            setBatchSelectionProduct(null);
+            setProductBatches([]);
+            setTimeout(() => searchRef.current?.focus(), 50);
           }}
         />
       )}

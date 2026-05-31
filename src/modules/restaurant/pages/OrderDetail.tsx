@@ -6,33 +6,33 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Printer, Send, CreditCard, X, Plus, Minus, Trash2,
   ChefHat, Wine, Cake, Clock, CheckCircle, XCircle, AlertCircle,
-  Package, Users, Phone, MapPin, Tag, Edit2, RefreshCw, Bell
+  Package, Users, Phone, MapPin, Tag, Edit2, RefreshCw, Bell, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ordersApi, menuApi, type Order, type OrderItem, type MenuItem, type OrderStatus } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { usePermissions } from '@/core/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
+// Configuration des statuts de commande avec BROUILLON
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType; nextStatus?: string }> = {
-  // Statuts actifs
+  BROUILLON: { label: 'Brouillon', color: 'text-gray-600', bg: 'bg-gray-100', icon: Package, nextStatus: 'EN_COURS' },
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock, nextStatus: 'EN_COURS' },
   EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw, nextStatus: 'SERVI' },
-  
-  // Servi (deux variantes pour compatibilité)
   SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
   SERVIE: { label: 'Servie', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
-  
-  // Annulé (deux variantes pour compatibilité)
   ANNULE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
   ANNULEE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
 };
 
+// Configuration des statuts d'article avec BROUILLON
 const ITEM_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  BROUILLON: { label: 'Brouillon', color: 'text-gray-500', bg: 'bg-gray-100' },
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50' },
   ENVOYE: { label: 'Envoyé', color: 'text-sky-600', bg: 'bg-sky-50' },
   EN_PREPARATION: { label: 'En préparation', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -40,7 +40,7 @@ const ITEM_STATUS_CONFIG: Record<string, { label: string; color: string; bg: str
   SERVI: { label: 'Servi', color: 'text-gray-400', bg: 'bg-gray-100' },
 };
 
-// ✅ UNE SEULE FOIS - Fonction utilitaire pour obtenir la config du statut de commande
+// Fonction utilitaire pour obtenir la config du statut de commande
 const getStatusConfig = (status: string | undefined) => {
   if (!status) return { 
     label: 'Statut inconnu', 
@@ -58,8 +58,8 @@ const getStatusConfig = (status: string | undefined) => {
 
 // Fonction utilitaire pour obtenir la config du statut d'article
 const getItemStatusConfig = (status: string | undefined) => {
-  if (!status) return ITEM_STATUS_CONFIG.EN_ATTENTE;
-  return ITEM_STATUS_CONFIG[status] || ITEM_STATUS_CONFIG.EN_ATTENTE;
+  if (!status) return ITEM_STATUS_CONFIG.BROUILLON;
+  return ITEM_STATUS_CONFIG[status] || ITEM_STATUS_CONFIG.BROUILLON;
 };
 
 // ============================================================================
@@ -72,11 +72,13 @@ function AddItemModal({
   onClose,
   onAdd,
   orderId,
+  canAddItems,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (items: { menuItemId: string; quantity: number; notes?: string }[]) => void;
   orderId: string;
+  canAddItems: boolean;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Map<string, { item: MenuItem; quantity: number; notes: string }>>(new Map());
@@ -108,6 +110,10 @@ function AddItemModal({
   }, [allItems, activeTab, searchTerm]);
 
   const handleAddItem = (item: MenuItem) => {
+    if (!canAddItems) {
+      toast.error('Cette commande ne peut plus être modifiée');
+      return;
+    }
     const existing = selectedItems.get(item.id);
     if (existing) {
       selectedItems.set(item.id, { ...existing, quantity: existing.quantity + 1 });
@@ -165,6 +171,16 @@ function AddItemModal({
             <X size={16} />
           </button>
         </div>
+
+        {/* Message d'avertissement si commande déjà envoyée */}
+        {!canAddItems && (
+          <div className="mx-6 mt-3 p-2 bg-red-50 rounded-lg border border-red-200">
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              <AlertCircle size={12} />
+              Cette commande a déjà été envoyée en cuisine. Les nouveaux articles seront envoyés immédiatement.
+            </p>
+          </div>
+        )}
 
         <div className="px-6 py-3 border-b border-gray-100">
           <div className="relative mb-3">
@@ -275,23 +291,33 @@ function AddItemModal({
 }
 
 // Ligne d'article dans la commande
-function OrderItemRow({ item, onUpdate, onRemove, isUpdating }: {
+function OrderItemRow({ 
+  item, 
+  onUpdate, 
+  onRemove, 
+  isUpdating, 
+  canModifyItems,
+  isServeur
+}: {
   item: OrderItem;
   onUpdate: (itemId: string, quantity: number, notes?: string) => void;
   onRemove: (itemId: string) => void;
   isUpdating: boolean;
+  canModifyItems: boolean;
+  isServeur: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [quantity, setQuantity] = useState(item.quantity);
   const [notes, setNotes] = useState(item.notes || '');
   const statusConfig = getItemStatusConfig(item.status);
 
+  const canModify = canModifyItems && !isServeur;
+
   const handleSave = () => {
     onUpdate(item.id, quantity, notes || undefined);
     setIsEditing(false);
   };
 
-  // Utiliser menuItem.name ou fallback
   const itemName = item.menuItem?.name || 'Article';
 
   return (
@@ -316,7 +342,7 @@ function OrderItemRow({ item, onUpdate, onRemove, isUpdating }: {
         </div>
       </div>
 
-      {isEditing ? (
+      {isEditing && canModify ? (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
@@ -344,34 +370,51 @@ function OrderItemRow({ item, onUpdate, onRemove, isUpdating }: {
             <button
               onClick={handleSave}
               disabled={isUpdating}
-              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-semibold"
+              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600 transition-colors"
             >
               Sauvegarder
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold"
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors"
             >
               Annuler
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-xs text-gray-500 hover:text-orange-600 transition-colors"
-          >
-            Modifier
-          </button>
-          <button
-            onClick={() => onRemove(item.id)}
-            disabled={isUpdating}
-            className="text-xs text-red-500 hover:text-red-600 transition-colors"
-          >
-            Retirer
-          </button>
-        </div>
+        !isServeur && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+            <button
+              onClick={() => setIsEditing(true)}
+              disabled={!canModify}
+              className={cn(
+                "text-xs transition-colors flex items-center gap-1",
+                canModify ? "text-gray-500 hover:text-orange-600" : "text-gray-300 cursor-not-allowed"
+              )}
+              title={!canModify ? "Article déjà envoyé, modification non autorisée" : "Modifier"}
+            >
+              <Edit2 size={10} />
+              Modifier
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Retirer cet article de la commande ?')) {
+                  onRemove(item.id);
+                }
+              }}
+              disabled={!canModify || isUpdating}
+              className={cn(
+                "text-xs transition-colors flex items-center gap-1",
+                canModify ? "text-red-500 hover:text-red-600" : "text-gray-300 cursor-not-allowed"
+              )}
+              title={!canModify ? "Article déjà envoyé, suppression non autorisée" : "Retirer"}
+            >
+              <Trash2 size={10} />
+              Retirer
+            </button>
+          </div>
+        )
       )}
     </div>
   );
@@ -386,6 +429,7 @@ export default function OrderDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currency = 'FCFA';
+  const { isServeur, role } = usePermissions();
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
@@ -399,7 +443,7 @@ export default function OrderDetail() {
 
   const order = orderData?.data;
 
-  // ✅ Mutation pour marquer comme servi
+  // Mutation pour marquer comme servi
   const markAsServedMutation = useMutation({
     mutationFn: () => ordersApi.markAsServed(id!),
     onSuccess: () => {
@@ -410,7 +454,7 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Mutations existantes
+  // Mutation pour modifier un article
   const updateItemMutation = useMutation({
     mutationFn: ({ itemId, quantity, notes }: { itemId: string; quantity: number; notes?: string }) =>
       ordersApi.updateItem(id!, itemId, { quantity, notes }),
@@ -422,6 +466,7 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Mutation pour supprimer un article
   const removeItemMutation = useMutation({
     mutationFn: ({ itemId }: { itemId: string }) => ordersApi.removeItem(id!, itemId),
     onSuccess: () => {
@@ -432,11 +477,32 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Mutation pour ajouter des articles
   const addItemsMutation = useMutation({
-    mutationFn: ({ items }: { items: { menuItemId: string; quantity: number; notes?: string }[] }) =>
-      ordersApi.addItems(id!, items),
+    mutationFn: async ({ items }: { items: { menuItemId: string; quantity: number; notes?: string }[] }) => {
+      const orderStatus = order?.status;
+      const shouldSendToKitchen = orderStatus === 'EN_COURS';
+      
+      const result = await ordersApi.addItems(id!, items);
+      
+      if (shouldSendToKitchen) {
+        const updatedOrder = await ordersApi.getById(id!);
+        const existingItemIds = new Set(order?.items?.map(i => i.id) || []);
+        const newItems = updatedOrder.data?.items?.filter(i => !existingItemIds.has(i.id)) || [];
+        
+        // Envoyer toute la commande mise à jour en cuisine
+        if (newItems.length > 0) {
+          await ordersApi.send(id!);
+        }
+        
+        toast.success(`${items.length} article(s) ajouté(s) et envoyé(s) en cuisine`, { icon: '🔔' });
+      } else {
+        toast.success(`${items.length} article(s) ajouté(s) (en attente d'envoi)`);
+      }
+      
+      return result;
+    },
     onSuccess: () => {
-      toast.success('Articles ajoutés');
       queryClient.invalidateQueries({ queryKey: ['restaurant-order', id] });
       queryClient.invalidateQueries({ queryKey: ['restaurant-kitchen'] });
       setShowAddItemModal(false);
@@ -444,6 +510,7 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Mutation pour envoyer en cuisine
   const sendOrderMutation = useMutation({
     mutationFn: () => ordersApi.send(id!),
     onSuccess: () => {
@@ -454,6 +521,7 @@ export default function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Mutation pour annuler la commande
   const cancelOrderMutation = useMutation({
     mutationFn: () => ordersApi.cancel(id!),
     onSuccess: () => {
@@ -498,10 +566,28 @@ export default function OrderDetail() {
   const statusConfig = getStatusConfig(order?.status);
   const StatusIcon = statusConfig.icon;
 
-  // Vérifier si la commande peut être modifiée
-  const isEditable = order?.status !== 'ANNULE' && order?.status !== 'ANNULEE' && order?.status !== 'SERVI' && order?.status !== 'SERVIE';
-  const canSendToKitchen = order?.status === 'EN_COURS' && (order?.items?.length ?? 0) > 0;
-  const canMarkAsServed = order?.status === 'EN_COURS' && (order?.items?.length ?? 0) > 0;
+  // Conditions
+  const currentStatus = order?.status as string;
+  
+  // Un serveur ne peut pas modifier les articles
+  const canModifyItems = !isServeur() && 
+                         currentStatus !== 'SERVI' && 
+                         currentStatus !== 'SERVIE' && 
+                         currentStatus !== 'ANNULE' && 
+                         currentStatus !== 'ANNULEE';
+  
+  const canAddItems = !isServeur() &&
+                      currentStatus !== 'SERVI' && 
+                      currentStatus !== 'SERVIE' && 
+                      currentStatus !== 'ANNULE' && 
+                      currentStatus !== 'ANNULEE';
+  
+  const canSendToKitchen = (currentStatus === 'BROUILLON' || currentStatus === 'EN_ATTENTE' || currentStatus === 'EN_COURS') && (order?.items?.length ?? 0) > 0;
+  
+  const canMarkAsServed = currentStatus === 'EN_COURS' && (order?.items?.length ?? 0) > 0;
+  
+  const nonCancellableStatuses = ['ANNULE', 'ANNULEE', 'SERVI', 'SERVIE'];
+  const canCancel = !nonCancellableStatuses.includes(currentStatus);
 
   if (isLoading) return <SmartLoader isLoading={true}><div /></SmartLoader>;
 
@@ -561,45 +647,102 @@ export default function OrderDetail() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', statusConfig.bg, statusConfig.color)}>
                   {statusConfig.label}
                 </span>
                 
+                {/* Bouton Envoyer en cuisine */}
                 {canSendToKitchen && (
                   <button
                     onClick={handleSendOrder}
                     disabled={sendOrderMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600 transition-colors"
                   >
                     <Send size={12} />
-                    Envoyer en cuisine
+                    {sendOrderMutation.isPending ? 'Envoi...' : 'Envoyer en cuisine'}
                   </button>
                 )}
 
+                {/* Bouton Marquer servi */}
                 {canMarkAsServed && (
                   <button
                     onClick={handleMarkAsServed}
                     disabled={markAsServedMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-colors"
                   >
                     <CheckCircle size={12} />
-                    Marquer servi
+                    {markAsServedMutation.isPending ? 'Traitement...' : 'Marquer servi'}
                   </button>
                 )}
 
-                {isEditable && (
+                {/* Bouton Annuler */}
+                {canCancel && (
                   <button
-                    onClick={() => cancelOrderMutation.mutate()}
+                    onClick={() => {
+                      if (confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
+                        cancelOrderMutation.mutate();
+                      }
+                    }}
                     disabled={cancelOrderMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition-colors"
                   >
                     <XCircle size={12} />
-                    Annuler
+                    {cancelOrderMutation.isPending ? 'Annulation...' : 'Annuler'}
                   </button>
                 )}
               </div>
             </div>
+
+            {/* Message si commande déjà envoyée */}
+            {currentStatus === 'EN_COURS' && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-xl flex items-center gap-2">
+                <Bell size={14} className="text-blue-500" />
+                <p className="text-xs text-blue-600">
+                  Cette commande est déjà en cuisine. Les nouveaux articles seront envoyés immédiatement.
+                </p>
+              </div>
+            )}
+
+            {/* Message spécifique pour les serveurs */}
+            {isServeur() && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-xl flex items-center gap-2 border border-gray-200">
+                <AlertCircle size={14} className="text-gray-500" />
+                <p className="text-xs text-gray-600">
+                  Mode consultation - Vous ne pouvez pas modifier les articles de cette commande.
+                </p>
+              </div>
+            )}
+
+            {/* Message informatif pour le brouillon */}
+            {currentStatus === 'BROUILLON' && order.items && order.items.length > 0 && !isServeur() && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-xl flex items-center gap-2">
+                <Bell size={14} className="text-blue-500" />
+                <p className="text-xs text-blue-600">
+                  Les articles sont en brouillon. Cliquez sur "Envoyer en cuisine" pour lancer la préparation.
+                </p>
+              </div>
+            )}
+
+            {/* Message informatif pour en attente */}
+            {currentStatus === 'EN_ATTENTE' && order.items && order.items.length > 0 && !isServeur() && (
+              <div className="mt-4 p-3 bg-amber-50 rounded-xl flex items-center gap-2">
+                <Bell size={14} className="text-amber-500" />
+                <p className="text-xs text-amber-600">
+                  Commande en attente. Cliquez sur "Envoyer en cuisine" pour lancer la préparation.
+                </p>
+              </div>
+            )}
+
+            {/* Message si commande vide */}
+            {(!order.items || order.items.length === 0) && !isServeur() && (
+              <div className="mt-4 p-3 bg-amber-50 rounded-xl flex items-center gap-2">
+                <AlertTriangle size={14} className="text-amber-500" />
+                <p className="text-xs text-amber-600">
+                  Cette commande est vide. Ajoutez des articles.
+                </p>
+              </div>
+            )}
 
             {/* Informations supplémentaires */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
@@ -622,7 +765,7 @@ export default function OrderDetail() {
                 </div>
               )}
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">Serveur</p>
+                <p className="text-[10px] text-gray-400 uppercase">Utilisateur</p>
                 <p className="text-sm font-medium text-gray-700">
                   {order.user?.firstName} {order.user?.lastName}
                 </p>
@@ -640,12 +783,13 @@ export default function OrderDetail() {
           <div className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-800">Articles commandés</h3>
-              {isEditable && (
+              {/* Bouton Ajouter visible si on peut ajouter ET si l'utilisateur n'est pas serveur */}
+              {canAddItems && !isServeur() && (
                 <button
                   onClick={() => setShowAddItemModal(true)}
-                  className="flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700"
+                  className="flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 transition-colors"
                 >
-                  <Plus size={14} /> Ajouter
+                  <Plus size={14} /> Ajouter un article
                 </button>
               )}
             </div>
@@ -659,6 +803,8 @@ export default function OrderDetail() {
                     onUpdate={handleUpdateItem}
                     onRemove={handleRemoveItem}
                     isUpdating={updatingItemId === item.id}
+                    canModifyItems={canModifyItems}
+                    isServeur={isServeur()}
                   />
                 ))}
               </div>
@@ -666,10 +812,10 @@ export default function OrderDetail() {
               <div className="text-center py-8 bg-gray-50 rounded-xl">
                 <Package size={32} className="mx-auto text-gray-300 mb-2" />
                 <p className="text-sm text-gray-400">Aucun article</p>
-                {isEditable && (
+                {canAddItems && !isServeur() && (
                   <button
                     onClick={() => setShowAddItemModal(true)}
-                    className="mt-3 text-sm text-orange-500 hover:text-orange-600"
+                    className="mt-3 text-sm text-orange-500 hover:text-orange-600 transition-colors"
                   >
                     + Ajouter des articles
                   </button>
@@ -693,14 +839,14 @@ export default function OrderDetail() {
         <div className="flex items-center justify-end gap-3">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             <Printer size={16} />
             Imprimer
           </button>
           <button
             onClick={() => navigate(`/restaurant/bills?orderId=${order.id}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-colors"
           >
             <CreditCard size={16} />
             Voir la facture
@@ -714,6 +860,7 @@ export default function OrderDetail() {
         onClose={() => setShowAddItemModal(false)}
         onAdd={(items) => addItemsMutation.mutate({ items })}
         orderId={order.id}
+        canAddItems={canAddItems}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import Register from '@/pages/auth/Register';
 import DashboardRouter from '@/pages/dashboard/DashboardRouter';
 import SettingsPage from '@/pages/SettingsPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import ModularConfig from '@/pages/ModularConfig';
 import LandingPage from '@/pages/LandingPage';
 
 import { productRoutes } from '@/modules/product/routes';
@@ -72,6 +73,14 @@ const router = createBrowserRouter([
             element: (
               <PageGuard page="subscription">
                 <SubscriptionPage />
+              </PageGuard>
+            ),
+          },
+          {
+            path: '/modules',
+            element: (
+              <PageGuard page="modules">
+                <ModularConfig />
               </PageGuard>
             ),
           },

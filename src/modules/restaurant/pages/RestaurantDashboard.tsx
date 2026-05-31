@@ -7,8 +7,10 @@ import { UtensilsCrossed, Grid3x3, ShoppingBag, ChefHat, TrendingUp, Clock, User
 import { restaurantDashboardApi, tablesApi, ordersApi, kitchenApi } from '../api/restaurantApi';
 import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { useCurrency } from '@/shared/hooks/useCurrency';
+import { usePermissions } from '@/core/hooks/usePermissions';
 import { ROUTES } from '@/shared/constants/routes';
 import { cn } from '@/lib/utils';
+import type { PageKey } from '@/shared/constants/rolePermissions';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,6 +75,7 @@ function SectionHeader({ title, icon: Icon, action }: {
 
 export default function RestaurantDashboard() {
   const currency = useCurrency();
+  const { canPage, isCuisinier } = usePermissions();
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const queryOptions = { refetchInterval: 30000 };
@@ -180,8 +183,8 @@ export default function RestaurantDashboard() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100">
-            <UtensilsCrossed size={22} className="text-white" />
+          <div className="w-12 h-12 bg-#2563EB rounded-2xl flex items-center justify-center shadow-lg shadow-#2563EB">
+            <UtensilsCrossed size={22} className="text-#2563EB" />
           </div>
           <div>
             <h1 className="text-xl font-black text-gray-900">Restaurant / Bar</h1>
@@ -198,13 +201,15 @@ export default function RestaurantDashboard() {
           >
             <RefreshCw size={16} />
           </button>
-          <Link
-            to={ROUTES.RESTAURANT_ORDERS}
-            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors shadow-md shadow-orange-100"
-          >
-            <ShoppingBag size={15} />
-            Nouvelle commande
-          </Link>
+          {canPage('restaurantOrders') && (
+            <Link
+              to={ROUTES.RESTAURANT_ORDERS}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors shadow-md shadow-blue-100"
+            >
+              <ShoppingBag size={15} />
+              Nouvelle commande
+            </Link>
+          )}
         </div>
       </div>
 
@@ -248,8 +253,8 @@ export default function RestaurantDashboard() {
       {/* ── Statut tables + Cuisine live ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        {/* Tables status */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        {/* Tables status — masqué si pas d'accès aux tables */}
+        {canPage('restaurantTables') && <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <SectionHeader
             title="Statut des tables"
             icon={Grid3x3}
@@ -308,7 +313,7 @@ export default function RestaurantDashboard() {
           ) : (
             <p className="text-sm text-gray-400 text-center py-6">Aucune donnée de table</p>
           )}
-        </div>
+        </div>}
 
         {/* État cuisine live */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -365,8 +370,8 @@ export default function RestaurantDashboard() {
         </div>
       </div>
 
-      {/* ── Top articles + Serveurs ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* ── Top articles + Serveurs — masqué pour CUISINIER ── */}
+      {!isCuisinier() && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Top articles aujourd'hui */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -473,10 +478,10 @@ export default function RestaurantDashboard() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
-      {/* ── Heures de pointe ── */}
-      {peakHours.length > 0 && (
+      {/* ── Heures de pointe — masqué pour CUISINIER ── */}
+      {!isCuisinier() && peakHours.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <SectionHeader title="Activité par heure" icon={BarChart2} />
           <div className="flex items-end gap-1.5 h-24">
@@ -518,38 +523,45 @@ export default function RestaurantDashboard() {
       )}
 
       {/* ── Accès rapide ── */}
-      <div>
-        <SectionHeader title="Accès rapide" icon={ArrowRight} />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {[
-            { to: ROUTES.RESTAURANT_TABLES, icon: Grid3x3, label: 'Tables', desc: 'Plan de salle', color: 'bg-orange-500' },
-            { to: ROUTES.RESTAURANT_ORDERS, icon: ShoppingBag, label: 'Commandes', desc: 'Actives', color: 'bg-blue-600' },
-            { to: ROUTES.RESTAURANT_KITCHEN, icon: ChefHat, label: 'Cuisine', desc: 'Écran cuisine', color: 'bg-amber-500' },
-            { to: ROUTES.RESTAURANT_BILLS, icon: Receipt, label: 'Tickets', desc: 'Paiements', color: 'bg-emerald-600' },
-            { to: ROUTES.RESTAURANT_RESERVATIONS, icon: CalendarDays, label: 'Réservations', desc: 'Planning', color: 'bg-teal-500' },
-            { to: ROUTES.RESTAURANT_REPORTS, icon: BarChart2, label: 'Rapports', desc: 'Statistiques', color: 'bg-gray-700' },
-            { to: ROUTES.RESTAURANT_BAR_STOCK, icon: Wine, label: 'Stock Bar', desc: 'Niveaux & alertes', color: 'bg-rose-500' },
-            { to: ROUTES.RESTAURANT_SHIFTS, icon: Banknote, label: 'Caisses', desc: 'Ouverture / fermeture', color: 'bg-slate-700' },
-          ].map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="group bg-white rounded-2xl border border-gray-100 p-4 hover:border-orange-200 hover:shadow-md transition-all flex flex-col items-center text-center gap-2"
-              >
-                <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform', link.color)}>
-                  <Icon size={19} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">{link.label}</p>
-                  <p className="text-[10px] text-gray-400">{link.desc}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {(() => {
+        const allLinks: { to: string; page: PageKey; icon: React.ElementType; label: string; desc: string; color: string }[] = [
+          { to: ROUTES.RESTAURANT_TABLES, page: 'restaurantTables', icon: Grid3x3, label: 'Tables', desc: 'Plan de salle', color: 'bg-orange-500' },
+          { to: ROUTES.RESTAURANT_ORDERS, page: 'restaurantOrders', icon: ShoppingBag, label: 'Commandes', desc: 'Actives', color: 'bg-blue-600' },
+          { to: ROUTES.RESTAURANT_KITCHEN, page: 'restaurantKitchen', icon: ChefHat, label: 'Cuisine', desc: 'Écran cuisine', color: 'bg-amber-500' },
+          { to: ROUTES.RESTAURANT_BILLS, page: 'restaurantBills', icon: Receipt, label: 'Tickets', desc: 'Paiements', color: 'bg-emerald-600' },
+          { to: ROUTES.RESTAURANT_RESERVATIONS, page: 'restaurantReservations', icon: CalendarDays, label: 'Réservations', desc: 'Planning', color: 'bg-teal-500' },
+          { to: ROUTES.RESTAURANT_REPORTS, page: 'restaurantReports', icon: BarChart2, label: 'Rapports', desc: 'Statistiques', color: 'bg-gray-700' },
+          { to: ROUTES.RESTAURANT_BAR_STOCK, page: 'restaurantBarStock', icon: Wine, label: 'Stock Bar', desc: 'Niveaux & alertes', color: 'bg-rose-500' },
+          { to: ROUTES.RESTAURANT_SHIFTS, page: 'restaurantShifts', icon: Banknote, label: 'Caisses', desc: 'Ouverture / fermeture', color: 'bg-slate-700' },
+        ];
+        const visibleLinks = allLinks.filter((l) => canPage(l.page));
+        if (visibleLinks.length === 0) return null;
+        return (
+          <div>
+            <SectionHeader title="Accès rapide" icon={ArrowRight} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {visibleLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className="group bg-white rounded-2xl border border-gray-100 p-4 hover:border-orange-200 hover:shadow-md transition-all flex flex-col items-center text-center gap-2"
+                  >
+                    <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform', link.color)}>
+                      <Icon size={19} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">{link.label}</p>
+                      <p className="text-[10px] text-gray-400">{link.desc}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

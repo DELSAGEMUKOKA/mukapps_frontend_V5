@@ -12,7 +12,7 @@ import {
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, PieChart as RePieChart, 
-  Pie, Cell, Legend, Line
+  Pie, Cell, Legend, LineChart as ReLineChart, Line
 } from 'recharts';
 import toast from 'react-hot-toast';
 import { restaurantDashboardApi } from '../api/restaurantApi';
@@ -43,6 +43,14 @@ interface QuickFilter {
   label: string;
   days: number;
   icon: React.ElementType;
+}
+
+interface TopItem {
+  menuItemId: string;
+  name: string;
+  quantitySold: number;
+  revenue: number;
+  orderCount: number;
 }
 
 // ============================================================================
@@ -225,7 +233,16 @@ export default function RestaurantReports() {
 
   const dashboard = dashboardData?.data;
   const daily = dailyReport?.data;
-  const topItemsData = topItems?.data || [];
+  
+  // ✅ Adaptation des données pour correspondre à la structure de l'API
+  const topItemsData: TopItem[] = (topItems?.data || []).map((item: any) => ({
+    menuItemId: item.menuItemId,
+    name: item.name,
+    quantitySold: item.quantitySold || item.count || item.quantity || 0,
+    revenue: item.revenue || item.totalRevenue || 0,
+    orderCount: item.orderCount || 0
+  }));
+  
   const serversData = serverPerformance?.data || [];
   const peakHoursData = peakHours?.data || [];
   const tipsData = tipsReport?.data;
@@ -443,14 +460,14 @@ export default function RestaurantReports() {
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h3 className="font-semibold text-gray-800 mb-4">Évolution quotidienne des commandes</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueData}>
+                  <ReLineChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} />
                     <YAxis stroke="#9CA3AF" fontSize={12} />
                     <Tooltip />
                     <Legend />
                     <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 4 }} />
-                  </LineChart>
+                  </ReLineChart>
                 </ResponsiveContainer>
               </div>
 
@@ -505,23 +522,23 @@ export default function RestaurantReports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {serversData.map((server, index) => (
+                    {serversData.map((server: any, index: number) => (
                       <tr key={server.userId} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
-                              {server.userName.charAt(0)}
+                              {server.userName?.charAt(0) || '?'}
                             </div>
                             <div>
                               <p className="font-medium text-gray-800">{server.userName}</p>
-                              <p className="text-xs text-gray-400">ID: {server.userId.slice(-6)}</p>
+                              <p className="text-xs text-gray-400">ID: {server.userId?.slice(-6)}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right font-semibold text-gray-700">{server.ordersHandled}</td>
-                        <td className="px-6 py-4 text-right font-semibold text-gray-700">{server.totalRevenue.toLocaleString()} {currency}</td>
-                        <td className="px-6 py-4 text-right font-semibold text-amber-600">{server.totalTips.toLocaleString()} {currency}</td>
-                        <td className="px-6 py-4 text-right text-gray-600">{server.avgTicket.toLocaleString()} {currency}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-gray-700">{server.ordersHandled || 0}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-gray-700">{server.totalRevenue?.toLocaleString() || 0} {currency}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-amber-600">{server.totalTips?.toLocaleString() || 0} {currency}</td>
+                        <td className="px-6 py-4 text-right text-gray-600">{server.avgTicket?.toLocaleString() || 0} {currency}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <span className="text-xs text-emerald-600 font-medium">
@@ -548,44 +565,45 @@ export default function RestaurantReports() {
             </div>
           )}
 
-          {/* Top Articles */}
+          {/* Top Articles - CORRIGÉ */}
           {activeTab === 'items' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
                 <h3 className="font-semibold text-gray-800 mb-4">📊 Top 10 des articles vendus</h3>
                 <div className="space-y-4">
-                  {topItemsData.slice(0, 10).map((item, index) => {
-                    const maxRevenue = Math.max(...topItemsData.map(i => i.revenue));
-                    const percentage = (item.revenue / maxRevenue) * 100;
-                    return (
-                      <div key={item.name}>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              'text-xs font-bold w-5',
-                              index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-amber-600' : 'text-gray-400'
-                            )}>
-                              #{index + 1}
-                            </span>
-                            <span className="font-medium text-gray-700">{item.name}</span>
+                  {topItemsData.length > 0 ? (
+                    topItemsData.slice(0, 10).map((item, index) => {
+                      const maxRevenue = Math.max(...topItemsData.map(i => i.revenue));
+                      const percentage = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0;
+                      return (
+                        <div key={item.menuItemId}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                'text-xs font-bold w-5',
+                                index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-amber-600' : 'text-gray-400'
+                              )}>
+                                #{index + 1}
+                              </span>
+                              <span className="font-medium text-gray-700">{item.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-400">{item.quantitySold} vendus</span>
+                              <span className="font-semibold text-gray-800">{item.revenue.toLocaleString()} {currency}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-gray-400">{item.count} vendus</span>
-                            <span className="font-semibold text-gray-800">{item.revenue.toLocaleString()} {currency}</span>
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
                           </div>
                         </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {topItemsData.length === 0 && (
+                      );
+                    })
+                  ) : (
                     <div className="text-center py-8 text-gray-400">
-                      Aucune donnée disponible
+                      Aucune donnée disponible pour la période sélectionnée
                     </div>
                   )}
                 </div>

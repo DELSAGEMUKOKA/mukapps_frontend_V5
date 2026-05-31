@@ -2,8 +2,9 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Building2, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/core/store';
+import { useAuth, useModules } from '@/core/store';
 import { authApi } from '@/core/api/authApi';
+import { subscriptionApi } from '@/core/api/subscriptionApi';
 import { ROUTES } from '@/shared/constants/routes';
 
 // Validation des champs
@@ -26,6 +27,7 @@ const validateForm = (form: {
 
 export default function Register() {
   const { setAuth } = useAuth();
+  const { setActiveModules } = useModules();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -96,16 +98,66 @@ export default function Register() {
     setLoading(true);
     try {
       const res = await authApi.register(form);
+      
+      // Stocker le refresh token si présent
+      if (res.refreshToken) {
+        localStorage.setItem('refresh_token', res.refreshToken);
+      }
+      
       setAuth(res.user, res.token);
-      toast.success('Compte créé avec succès !');
-      navigate(ROUTES.DASHBOARD);
+      
+      // ✅ VÉRIFICATION DES MODULES ACTIFS APRÈS INSCRIPTION
+      try {
+        const modules = await subscriptionApi.getModules();
+        const activeModules = modules.filter((m) => m.isActive);
+        const activeModuleNames = activeModules.map((m) => m.moduleName);
+        
+        setActiveModules(activeModuleNames);
+        
+        // ✅ Vérifier si l'utilisateur est ADMIN ou SUPER_ADMIN
+        const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'SUPER_ADMIN';
+        
+        // ✅ Si aucun module n'est actif et que l'utilisateur est admin
+        if (activeModules.length === 0 && isAdmin) {
+          toast.success(`Bienvenue ${res.user.firstName} ! Veuillez activer vos modules pour continuer.`);
+          navigate('/modules'); // ← Redirection vers la page de configuration des modules
+          return;
+        }
+        
+        // ✅ Si aucun module n'est actif mais l'utilisateur n'est pas admin
+        if (activeModules.length === 0 && !isAdmin) {
+          toast.error('Aucun module n\'est actif. Veuillez contacter votre administrateur.');
+          // Déconnexion car l'utilisateur ne peut rien faire
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
+          setLoading(false);
+          return;
+        }
+        
+        toast.success('Compte créé avec succès !');
+        navigate(ROUTES.DASHBOARD);
+        
+      } catch (error) {
+        console.warn('Erreur chargement modules:', error);
+        setActiveModules([]);
+        
+        // En cas d'erreur de chargement, vérifier si l'utilisateur est admin
+        const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'SUPER_ADMIN';
+        if (isAdmin) {
+          toast.error('Impossible de charger les modules. Veuillez vérifier votre configuration.');
+          navigate('/modules'); // ← Redirection vers la page de configuration des modules
+        } else {
+          toast.error('Erreur de configuration. Veuillez contacter votre administrateur.');
+        }
+      }
+      
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'inscription';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [form, setAuth, navigate]);
+  }, [form, setAuth, setActiveModules, navigate]);
 
   const isFormValid = () => {
     return form.firstName.trim() && 

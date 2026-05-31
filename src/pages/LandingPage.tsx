@@ -4,19 +4,19 @@ import { useState, useEffect } from 'react';
 
 const modules = [
   {
-    icon: <ShoppingCart size={28} className="text-primary-600" />,
+    icon: <ShoppingCart size={28} className="text-[var(--primary)]" />,
     title: 'Magasin',
     description: 'Gérez vos produits, catégories, stocks, ventes et factures depuis un seul endroit.',
     features: ['Gestion des produits', 'Suivi des stocks', 'Point de vente', 'Factures & rapports'],
   },
   {
-    icon: <Users size={28} className="text-accent-600" />,
+    icon: <Users size={28} className="text-[var(--accent)]" />,
     title: 'Clients',
     description: 'Centralisez vos clients, consultez leur historique et fidélisez votre clientèle.',
     features: ['Fiche client complète', 'Historique des achats', 'Gestion des dettes', 'Segmentation'],
   },
   {
-    icon: <Lock size={28} className="text-warning-600" />,
+    icon: <Lock size={28} className="text-[var(--warning)]" />,
     title: 'Utilisateurs',
     description: 'Contrôlez les accès de votre équipe avec des rôles et permissions précis.',
     features: ['Rôles & permissions', 'Multi-utilisateurs', 'Journal d\'activité', 'Sécurité avancée'],
@@ -33,22 +33,22 @@ const steps = [
 
 const advantages = [
   {
-    icon: <CheckCircle size={32} className="text-accent-500" />,
+    icon: <CheckCircle size={32} className="text-[var(--accent)]" />,
     title: 'Simple',
     desc: 'Interface claire et intuitive, aucune formation requise pour démarrer.',
   },
   {
-    icon: <Zap size={32} className="text-warning-500" />,
+    icon: <Zap size={32} className="text-[var(--warning)]" />,
     title: 'Rapide',
     desc: 'Temps de chargement minimal, actions instantanées pour gagner du temps.',
   },
   {
-    icon: <Shield size={32} className="text-primary-500" />,
+    icon: <Shield size={32} className="text-[var(--primary)]" />,
     title: 'Sécurisé',
     desc: 'Vos données sont protégées avec des contrôles d\'accès rigoureux.',
   },
   {
-    icon: <Building2 size={32} className="text-error-500" />,
+    icon: <Building2 size={32} className="text-[var(--error)]" />,
     title: 'Multi-entreprise',
     desc: 'Gérez plusieurs entreprises depuis un seul compte administrateur.',
   },
@@ -89,11 +89,9 @@ const contacts = [
 export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Mettre à jour le titre de la page
   useEffect(() => {
     document.title = 'MukApps | Solution de gestion d\'entreprise tout-en-un';
     
-    // Meta description (optionnel)
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute('content', 'Gérez votre magasin, vos clients et vos utilisateurs depuis une seule plateforme. Interface moderne, rapide et sécurisée.');
@@ -103,7 +101,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-secondary-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-[var(--border-light)]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <img src="/LOGO_Mukapps2.png" alt="MukApps" className="h-9" />
@@ -111,13 +109,13 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-sm font-medium text-secondary-600 hover:text-secondary-900 transition-colors px-4 py-2"
+              className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-4 py-2"
             >
               Connexion
             </Link>
             <Link
               to="/register"
-              className="text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+              className="btn btn-primary"
             >
               Commencer
             </Link>
@@ -127,9 +125,9 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="pt-32 pb-20 px-6 bg-gradient-to-br from-primary-950 via-primary-900 to-secondary-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 80% 20%, #10b981 0%, transparent 40%)' }} />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, var(--primary) 0%, transparent 50%), radial-gradient(circle at 80% 20%, var(--success) 0%, transparent 40%)' }} />
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-primary-600/20 border border-primary-500/30 text-primary-300 text-sm font-medium px-4 py-2 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-[var(--primary)]/20 border border-[var(--primary)]/30 text-primary-300 text-sm font-medium px-4 py-2 rounded-full mb-6">
             <Zap size={14} />
             Plateforme de gestion d'entreprise tout-en-un
           </div>
@@ -143,7 +141,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
-              className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-400 text-white font-semibold px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-primary-500/25 hover:scale-105"
+              className="btn btn-primary inline-flex items-center gap-2 px-8 py-4 text-base"
             >
               Commencer gratuitement
               <ArrowRight size={18} />
@@ -158,22 +156,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Apercu Dashboard - AVEC VIDÉO (taille réduite) */}
-      <section id="apercu" className="py-20 px-6 bg-secondary-50">
+      {/* Apercu Dashboard - AVEC VIDÉO */}
+      <section id="apercu" className="py-20 px-6 bg-[var(--bg-secondary)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">Aperçu du tableau de bord</h2>
-            <p className="text-secondary-500 text-lg">Une interface moderne et claire pour tout piloter d'un coup d'oeil.</p>
+            <h2 className="page-title text-3xl md:text-4xl mb-4">Aperçu du tableau de bord</h2>
+            <p className="text-[var(--text-secondary)] text-lg">Une interface moderne et claire pour tout piloter d'un coup d'oeil.</p>
           </div>
           
-          {/* Toggle entre Image et Vidéo */}
           <div className="flex justify-center gap-4 mb-6">
             <button
               onClick={() => setIsVideoPlaying(false)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 !isVideoPlaying 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-secondary-200 text-secondary-600 hover:bg-secondary-300'
+                  ? 'btn-primary' 
+                  : 'bg-[var(--gray-100)] text-[var(--text-secondary)] hover:bg-[var(--gray-200)]'
               }`}
             >
               Aperçu
@@ -182,8 +179,8 @@ export default function LandingPage() {
               onClick={() => setIsVideoPlaying(true)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 isVideoPlaying 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-secondary-200 text-secondary-600 hover:bg-secondary-300'
+                  ? 'btn-primary' 
+                  : 'bg-[var(--gray-100)] text-[var(--text-secondary)] hover:bg-[var(--gray-200)]'
               }`}
             >
               <Play size={14} />
@@ -191,14 +188,13 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Contenu : Image ou Vidéo - taille réduite */}
-          <div className="relative rounded-xl overflow-hidden shadow-lg border border-secondary-200 bg-white max-w-3xl mx-auto">
-            <div className="bg-secondary-800 px-4 py-2 flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-error-500" />
-              <div className="w-2.5 h-2.5 rounded-full bg-warning-500" />
-              <div className="w-2.5 h-2.5 rounded-full bg-accent-500" />
+          <div className="relative rounded-xl overflow-hidden shadow-lg border border-[var(--border-light)] bg-white max-w-3xl mx-auto">
+            <div className="bg-[var(--gray-800)] px-4 py-2 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--error)]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--warning)]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />
               <div className="flex-1 mx-3">
-                <div className="bg-secondary-700 rounded-md px-3 py-0.5 text-xs text-secondary-400 max-w-xs text-center">
+                <div className="bg-[var(--gray-700)] rounded-md px-3 py-0.5 text-xs text-[var(--gray-400)] max-w-xs text-center">
                   {isVideoPlaying ? 'app.mukapps.com/demo/video' : 'app.mukapps.com/dashboard'}
                 </div>
               </div>
@@ -212,7 +208,7 @@ export default function LandingPage() {
                 loading="lazy"
               />
             ) : (
-              <div className="relative aspect-video max-h-[400px] bg-secondary-900">
+              <div className="relative aspect-video max-h-[400px] bg-[var(--gray-900)]">
                 <video
                   src="/dasbord_mukapps_video.mp4"
                   poster="/dasbord_mukapps.jpeg"
@@ -229,8 +225,7 @@ export default function LandingPage() {
             )}
           </div>
 
-          {/* Légende */}
-          <p className="text-center text-secondary-400 text-sm mt-4">
+          <p className="text-center text-[var(--text-secondary)] text-sm mt-4">
             {!isVideoPlaying 
               ? "Interface principale du tableau de bord - Vue d'ensemble" 
               : "Vidéo démonstrative du tableau de bord - Découvrez toutes les fonctionnalités"}
@@ -242,24 +237,24 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">Nos modules</h2>
-            <p className="text-secondary-500 text-lg">Des outils puissants adaptés à chaque aspect de votre activité.</p>
+            <h2 className="page-title text-3xl md:text-4xl mb-4">Nos modules</h2>
+            <p className="text-[var(--text-secondary)] text-lg">Des outils puissants adaptés à chaque aspect de votre activité.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {modules.map((mod) => (
               <div
                 key={mod.title}
-                className="bg-secondary-50 rounded-2xl p-8 border border-secondary-100 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
+                className="card p-8 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
               >
-                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm mb-5 border border-secondary-100">
+                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm mb-5 border border-[var(--border-light)]">
                   {mod.icon}
                 </div>
-                <h3 className="text-xl font-bold text-secondary-900 mb-3">{mod.title}</h3>
-                <p className="text-secondary-500 text-sm mb-5 leading-relaxed">{mod.description}</p>
+                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">{mod.title}</h3>
+                <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">{mod.description}</p>
                 <ul className="space-y-2">
                   {mod.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-secondary-600">
-                      <ChevronRight size={14} className="text-primary-500 flex-shrink-0" />
+                    <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                      <ChevronRight size={14} className="text-[var(--primary)] flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -271,32 +266,32 @@ export default function LandingPage() {
       </section>
 
       {/* Comment ca marche */}
-      <section className="py-20 px-6 bg-secondary-900">
+      <section className="py-20 px-6 bg-[var(--gray-900)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 bg-primary-600/20 border border-primary-500/30 text-primary-300 text-sm font-medium px-4 py-2 rounded-full mb-4">
+            <div className="inline-flex items-center gap-2 bg-[var(--primary)]/20 border border-[var(--primary)]/30 text-primary-300 text-sm font-medium px-4 py-2 rounded-full mb-4">
               <Zap size={14} />
               Simple et rapide
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Comment ca marche ?</h2>
-            <p className="text-secondary-400 text-lg">Soyez operationnel en quelques minutes.</p>
+            <p className="text-[var(--gray-400)] text-lg">Soyez operationnel en quelques minutes.</p>
           </div>
           <div className="space-y-4">
             {steps.map((step, i) => (
               <div
                 key={step.number}
-                className="flex items-start gap-6 bg-secondary-800/60 border border-secondary-700 rounded-2xl p-6 hover:bg-secondary-800 transition-colors"
+                className="flex items-start gap-6 bg-[var(--gray-800)]/60 border border-[var(--gray-700)] rounded-2xl p-6 hover:bg-[var(--gray-800)] transition-colors"
               >
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center font-bold text-white text-sm">
+                <div className="flex-shrink-0 w-12 h-12 bg-[var(--primary)] rounded-xl flex items-center justify-center font-bold text-white text-sm">
                   {step.number}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-white font-semibold text-lg mb-1">{step.title}</h3>
-                  <p className="text-secondary-400 text-sm leading-relaxed">{step.desc}</p>
+                  <p className="text-[var(--gray-400)] text-sm leading-relaxed">{step.desc}</p>
                 </div>
                 {i < steps.length - 1 && (
                   <div className="flex-shrink-0 self-center">
-                    <ChevronRight size={20} className="text-secondary-600" />
+                    <ChevronRight size={20} className="text-[var(--gray-600)]" />
                   </div>
                 )}
               </div>
@@ -306,22 +301,22 @@ export default function LandingPage() {
       </section>
 
       {/* Témoignages */}
-      <section className="py-20 px-6 bg-secondary-50">
+      <section className="py-20 px-6 bg-[var(--bg-secondary)]">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">Ils nous font confiance</h2>
-            <p className="text-secondary-500 text-lg">Rejoignez des centaines d'entreprises satisfaites</p>
+            <h2 className="page-title text-3xl md:text-4xl mb-4">Ils nous font confiance</h2>
+            <p className="text-[var(--text-secondary)] text-lg">Rejoignez des centaines d'entreprises satisfaites</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {testimonials.map((t, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-card border border-secondary-100">
+              <div key={i} className="card p-6">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-lg">
+                  <div className="w-12 h-12 bg-[var(--primary-light)] rounded-full flex items-center justify-center text-[var(--primary)] font-bold text-lg">
                     {t.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-secondary-900">{t.name}</h4>
-                    <p className="text-xs text-secondary-500">{t.role}</p>
+                    <h4 className="font-semibold text-[var(--text-primary)]">{t.name}</h4>
+                    <p className="text-xs text-[var(--text-secondary)]">{t.role}</p>
                   </div>
                 </div>
                 <div className="flex mb-3">
@@ -329,7 +324,7 @@ export default function LandingPage() {
                     <Star key={j} size={16} className="fill-amber-500 text-amber-500" />
                   ))}
                 </div>
-                <p className="text-secondary-600 text-sm leading-relaxed">"{t.content}"</p>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">"{t.content}"</p>
               </div>
             ))}
           </div>
@@ -340,31 +335,31 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">Des offres pour tous les besoins</h2>
-            <p className="text-secondary-500 text-lg">Choisissez le plan adapté à votre activité</p>
+            <h2 className="page-title text-3xl md:text-4xl mb-4">Des offres pour tous les besoins</h2>
+            <p className="text-[var(--text-secondary)] text-lg">Choisissez le plan adapté à votre activité</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricing.map((plan) => (
               <div
                 key={plan.name}
                 className={`relative rounded-2xl p-8 border-2 transition-all hover:-translate-y-1 hover:shadow-xl ${
-                  plan.popular ? 'border-primary-500 shadow-lg bg-gradient-to-b from-white to-primary-50' : 'border-secondary-200 bg-white'
+                  plan.popular ? 'border-[var(--primary)] shadow-lg bg-gradient-to-b from-white to-[var(--primary-light)]' : 'border-[var(--border-light)] bg-white'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--primary)] text-white text-xs font-bold px-3 py-1 rounded-full">
                     Populaire
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-secondary-900 mb-2">{plan.name}</h3>
-                <p className="text-3xl font-bold text-secondary-900 mb-4">
+                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{plan.name}</h3>
+                <p className="text-3xl font-bold text-[var(--text-primary)] mb-4">
                   {plan.price}
-                  {plan.price !== '0€' && <span className="text-sm font-normal text-secondary-500">/mois</span>}
+                  {plan.price !== '0€' && <span className="text-sm font-normal text-[var(--text-secondary)]">/mois</span>}
                 </p>
                 <ul className="space-y-2 mb-8">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-secondary-600">
-                      <CheckCircle size={14} className="text-accent-500 flex-shrink-0" />
+                    <li key={f} className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                      <CheckCircle size={14} className="text-[var(--accent)] flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -373,8 +368,8 @@ export default function LandingPage() {
                   to="/register"
                   className={`block text-center py-3 rounded-xl font-semibold transition-colors ${
                     plan.popular
-                      ? 'bg-primary-600 text-white hover:bg-primary-700'
-                      : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                      ? 'btn-primary'
+                      : 'bg-[var(--gray-100)] text-[var(--text-secondary)] hover:bg-[var(--gray-200)]'
                   }`}
                 >
                   Commencer
@@ -389,18 +384,18 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-4">Pourquoi choisir MukApps ?</h2>
-            <p className="text-secondary-500 text-lg">Concu pour les entreprises qui veulent aller vite et bien.</p>
+            <h2 className="page-title text-3xl md:text-4xl mb-4">Pourquoi choisir MukApps ?</h2>
+            <p className="text-[var(--text-secondary)] text-lg">Concu pour les entreprises qui veulent aller vite et bien.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {advantages.map((adv) => (
               <div
                 key={adv.title}
-                className="text-center p-8 rounded-2xl bg-secondary-50 border border-secondary-100 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
+                className="text-center p-8 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-light)] hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
               >
                 <div className="flex justify-center mb-4">{adv.icon}</div>
-                <h3 className="text-lg font-bold text-secondary-900 mb-2">{adv.title}</h3>
-                <p className="text-secondary-500 text-sm leading-relaxed">{adv.desc}</p>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{adv.title}</h3>
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{adv.desc}</p>
               </div>
             ))}
           </div>
@@ -408,13 +403,13 @@ export default function LandingPage() {
       </section>
 
       {/* Contact WhatsApp */}
-      <section className="py-16 px-6 bg-accent-50 border-y border-accent-100">
+      <section className="py-16 px-6 bg-[var(--accent-light)] border-y border-[var(--accent)]/20">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex justify-center mb-4">
-            <MessageCircle size={36} className="text-accent-600" />
+            <MessageCircle size={36} className="text-[var(--accent)]" />
           </div>
-          <h2 className="text-2xl font-bold text-secondary-900 mb-2">Besoin d'aide ? Contactez-nous</h2>
-          <p className="text-secondary-500 mb-8">Notre equipe est disponible sur WhatsApp pour repondre a vos questions.</p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Besoin d'aide ? Contactez-nous</h2>
+          <p className="text-[var(--text-secondary)] mb-8">Notre equipe est disponible sur WhatsApp pour repondre a vos questions.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {contacts.map((c) => (
               <a
@@ -422,7 +417,7 @@ export default function LandingPage() {
                 href={`https://wa.me/${c.phone.replace('+', '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 bg-accent-600 hover:bg-accent-700 text-white font-semibold px-7 py-4 rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-105"
+                className="inline-flex items-center gap-3 bg-[var(--accent)] hover:bg-[var(--accent-dark)] text-white font-semibold px-7 py-4 rounded-xl transition-all shadow-sm hover:shadow-md hover:scale-105"
               >
                 <MessageCircle size={20} />
                 {c.display}
@@ -434,7 +429,7 @@ export default function LandingPage() {
 
       {/* CTA Final */}
       <section className="py-24 px-6 bg-gradient-to-br from-primary-900 to-secondary-900 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #3b82f6 0%, transparent 60%)' }} />
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, var(--primary) 0%, transparent 60%)' }} />
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
             Pret a transformer votre <br />
@@ -445,7 +440,7 @@ export default function LandingPage() {
           </p>
           <Link
             to="/register"
-            className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-400 text-white font-bold px-10 py-5 rounded-2xl transition-all shadow-xl hover:shadow-primary-500/30 hover:scale-105 text-lg"
+            className="btn btn-primary inline-flex items-center gap-3 px-10 py-5 text-lg"
           >
             Creer mon compte maintenant
             <ArrowRight size={22} />
@@ -454,11 +449,11 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-secondary-950 py-8 px-6 text-center">
+      <footer className="bg-[var(--gray-950)] py-8 px-6 text-center">
         <div className="flex items-center justify-center mb-3">
           <img src="/LOGO_Mukapps2.png" alt="MukApps" className="h-8 brightness-0 invert" />
         </div>
-        <p className="text-secondary-500 text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           &copy; {new Date().getFullYear()} MukApps. Tous droits reserves.
         </p>
       </footer>

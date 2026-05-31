@@ -19,9 +19,12 @@ export const useAppStore = create<AppStore>()(
       }),
       {
         name: 'mukapps-store',
+        // Persist only the minimum needed; token lives in localStorage via tokenService
         partialize: (state) => ({
-          user: state.user,
-          token: state.token,
+          // Only persist safe, non-sensitive fields from the user object
+          user: state.user
+            ? { id: state.user.id, firstName: state.user.firstName, lastName: state.user.lastName, role: state.user.role }
+            : null,
           isAuthenticated: state.isAuthenticated,
           company: state.company,
           activeModules: state.activeModules,

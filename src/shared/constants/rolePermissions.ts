@@ -26,6 +26,7 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
+      modules: false,           // ← AJOUTÉ
       restaurant: false,
       restaurantTables: false,
       restaurantMenu: false,
@@ -34,8 +35,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: false,
       restaurantReservations: false,
       restaurantReports: false,
-      restaurantBarStock: false,   // ← Ajouté
-      restaurantShifts: false,      // ← Ajouté
+      restaurantBarStock: false,
+      restaurantShifts: false,
     },
   },
 
@@ -62,6 +63,7 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
+      modules: true,            // ← AJOUTÉ (Admin peut voir modules)
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: true,
@@ -70,8 +72,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: true,
-      restaurantBarStock: true,    // ← Ajouté
-      restaurantShifts: true,       // ← Ajouté
+      restaurantBarStock: true,
+      restaurantShifts: true,
     },
   },
 
@@ -98,6 +100,7 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: true,
       invoicing: true,
+      modules: false,           // ← AJOUTÉ (Superviseur ne peut pas gérer modules)
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: true,
@@ -106,8 +109,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: true,
-      restaurantBarStock: true,    // ← Ajouté
-      restaurantShifts: true,       // ← Ajouté
+      restaurantBarStock: true,
+      restaurantShifts: true,
     },
   },
 
@@ -134,6 +137,7 @@ export const ROLE_PERMISSIONS = {
       quotes: true,
       Proforma: false,
       invoicing: false,
+      modules: false,           // ← AJOUTÉ
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: false,
@@ -142,8 +146,8 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: true,
       restaurantReports: false,
-      restaurantBarStock: false,   // ← Ajouté (opérateur peut-être pas accès)
-      restaurantShifts: false,      // ← Ajouté
+      restaurantBarStock: false,
+      restaurantShifts: false,
     },
   },
 
@@ -170,6 +174,7 @@ export const ROLE_PERMISSIONS = {
       quotes: false,
       Proforma: false,
       invoicing: false,
+      modules: false,           // ← AJOUTÉ
       restaurant: true,
       restaurantTables: true,
       restaurantMenu: false,
@@ -178,8 +183,159 @@ export const ROLE_PERMISSIONS = {
       restaurantBills: true,
       restaurantReservations: false,
       restaurantReports: false,
-      restaurantBarStock: false,   // ← Ajouté
-      restaurantShifts: false,      // ← Ajouté
+      restaurantBarStock: false,
+      restaurantShifts: false,
+    },
+  },
+  // ─── SERVEUR ───────────────────────────────────────────────────────────────
+  [ROLES.SERVEUR]: {
+    magasin: false,
+    client: false,
+    users: false,
+    settings: true,
+    subscription: false,
+    pages: {
+      dashboard: false,
+      pos: false,
+      products: false,
+      categories: false,
+      invoices: false,
+      stock: false,
+      expiry: false,
+      reports: false,
+      financial: false,
+      clients: false,
+      users: false,
+      settings: true,
+      subscription: false,
+      quotes: false,
+      Proforma: false,
+      invoicing: false,
+      modules: false,           // ← AJOUTÉ
+      restaurant: false,
+      restaurantTables: false,
+      restaurantMenu: false,
+      restaurantOrders: true,
+      restaurantKitchen: false,
+      restaurantBills: false,
+      restaurantReservations: true,
+      restaurantReports: false,
+      restaurantBarStock: false,
+      restaurantShifts: false,
+    },
+  },
+
+  // ─── BARMAN ────────────────────────────────────────────────────────────────
+  [ROLES.BARMAN]: {
+    magasin: false,
+    client: false,
+    users: false,
+    settings: false,
+    subscription: false,
+    pages: {
+      dashboard: false,
+      pos: false,
+      products: false,
+      categories: false,
+      invoices: false,
+      stock: false,
+      expiry: false,
+      reports: false,
+      financial: false,
+      clients: false,
+      users: false,
+      settings: false,
+      subscription: false,
+      quotes: false,
+      Proforma: false,
+      invoicing: false,
+      modules: false,           // ← AJOUTÉ
+      restaurant: false,
+      restaurantTables: false,
+      restaurantMenu: false,
+      restaurantOrders: false,
+      restaurantKitchen: true,
+      restaurantBills: false,
+      restaurantReservations: false,
+      restaurantReports: false,
+      restaurantBarStock: true,
+      restaurantShifts: false,
+    },
+  },
+
+  // ─── CUISINIER ─────────────────────────────────────────────────────────────
+  [ROLES.CUISINIER]: {
+    magasin: false,
+    client: false,
+    users: false,
+    settings: true,
+    subscription: false,
+    pages: {
+      dashboard: false,
+      pos: false,
+      products: false,
+      categories: false,
+      invoices: false,
+      stock: false,
+      expiry: false,
+      reports: false,
+      financial: false,
+      clients: false,
+      users: false,
+      settings: true,
+      subscription: false,
+      quotes: false,
+      Proforma: false,
+      invoicing: false,
+      modules: false,           // ← AJOUTÉ
+      restaurant: false,
+      restaurantTables: false,
+      restaurantMenu: false,
+      restaurantOrders: false,
+      restaurantKitchen: true,
+      restaurantBills: false,
+      restaurantReservations: false,
+      restaurantReports: false,
+      restaurantBarStock: false,
+      restaurantShifts: false,
+    },
+  },
+
+  // ─── CAISSIER_RESTO ────────────────────────────────────────────────────────
+  [ROLES.CAISSIER_RESTO]: {
+    magasin: false,
+    client: false,
+    users: false,
+    settings: false,
+    subscription: false,
+    pages: {
+      dashboard: false,
+      pos: false,
+      products: false,
+      categories: false,
+      invoices: false,
+      stock: false,
+      expiry: false,
+      reports: false,
+      financial: false,
+      clients: false,
+      users: false,
+      settings: false,
+      subscription: false,
+      quotes: false,
+      Proforma: false,
+      invoicing: false,
+      modules: false,           // ← AJOUTÉ
+      restaurant: true,
+      restaurantTables: false,
+      restaurantMenu: false,
+      restaurantOrders: true,
+      restaurantKitchen: false,
+      restaurantBills: true,
+      restaurantReservations: true,
+      restaurantReports: false,
+      restaurantBarStock: false,
+      restaurantShifts: true,
     },
   },
 } as const;
@@ -191,7 +347,8 @@ export function getRolePermissions(role: string) {
 }
 
 export function canAccessPage(role: string, page: PageKey): boolean {
-  if (role === ROLES.SUPER_ADMIN) return false;
+  // SUPER_ADMIN has full access to all pages
+  if (role === ROLES.SUPER_ADMIN) return true;
   const perms = getRolePermissions(role);
   return perms.pages[page] ?? false;
 }

@@ -13,25 +13,21 @@ import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
-// Configuration des statuts - Version corrigée avec les valeurs du backend
+// Configuration des statuts
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  // Statuts du backend
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
   EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw },
   SERVIE: { label: 'Servie', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
   SERVI: { label: 'Servi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle },
   ANNULE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
   ANNULEE: { label: 'Annulée', color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
-  // Fallback
   UNKNOWN: { label: 'Statut inconnu', color: 'text-gray-600', bg: 'bg-gray-100', icon: AlertCircle },
 };
 
-// Fonction utilitaire pour récupérer la config d'un statut
 const getStatusConfig = (status: string) => {
   return STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN;
 };
 
-// Interface pour la réponse de l'API
 interface OrdersApiResponse {
   orders: Order[];
   total: number;
@@ -40,17 +36,14 @@ interface OrdersApiResponse {
   pages: number;
 }
 
-// Composant principal
 export default function Orders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currency = useCurrency();
 
-  // Filtres
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
   const [search, setSearch] = useState('');
 
-  // Requête
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ['restaurant-orders', statusFilter, search],
     queryFn: () => ordersApi.getAll({ 
@@ -60,10 +53,8 @@ export default function Orders() {
     }),
   });
 
-  // ✅ CORRECTION: Utiliser 'orders' au lieu de 'items'
   const orders = (ordersData?.data as OrdersApiResponse)?.orders ?? [];
 
-  // Mutation pour annuler une commande
   const cancelOrder = useMutation({
     mutationFn: ordersApi.cancel,
     onSuccess: () => {
@@ -78,16 +69,16 @@ export default function Orders() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Commandes</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="page-title">Commandes</h1>
+          <p className="page-subtitle">
             Gérez toutes les commandes de votre établissement
           </p>
         </div>
         <button
           onClick={() => navigate('/restaurant/orders/new')}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
+          className="btn btn-primary"
         >
           <Plus size={16} /> Nouvelle commande
         </button>
@@ -99,7 +90,7 @@ export default function Orders() {
           label="Total commandes" 
           value={orders.length} 
           icon={Coffee} 
-          color="bg-orange-500" 
+          color="bg-[var(--primary)]" 
         />
         <StatCard 
           label="En attente" 
@@ -131,14 +122,14 @@ export default function Orders() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher une commande..."
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="input pl-9 pr-4 w-64"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}
-            className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+            className="input w-auto"
           >
             <option value="">Tous les statuts</option>
             <option value="EN_ATTENTE">En attente</option>
@@ -150,7 +141,7 @@ export default function Orders() {
 
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: ['restaurant-orders'] })}
-          className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 transition-colors"
+          className="btn btn-ghost p-2"
         >
           <RefreshCw size={18} />
         </button>
@@ -158,7 +149,7 @@ export default function Orders() {
 
       {/* Orders list */}
       {orders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
+        <div className="text-center py-12 card">
           <div className="w-16 h-16 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
             <Package size={28} className="text-gray-400" />
           </div>
@@ -169,7 +160,7 @@ export default function Orders() {
           {!search && !statusFilter && (
             <button
               onClick={() => navigate('/restaurant/orders/new')}
-              className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600"
+              className="btn btn-primary mt-4"
             >
               Nouvelle commande
             </button>
@@ -201,9 +192,9 @@ export default function Orders() {
 // StatCard component
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-gray-400 uppercase">{label}</p>
+        <p className="label uppercase mb-0">{label}</p>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', color)}>
           <Icon size={14} className="text-white" />
         </div>
@@ -221,19 +212,16 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
   onView: () => void; 
   onCancel: () => void;
 }) {
-  // Récupération du statut avec fallback
   const statusConfig = getStatusConfig(order.status);
   const StatusIcon = statusConfig.icon;
   
-  // Format date
   const date = new Date(order.createdAt);
   const formattedDate = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-  // Vérifier si la commande peut être annulée (non annulée et non servie)
   const canCancel = order.status !== 'ANNULE' && order.status !== 'ANNULEE' && order.status !== 'SERVIE' && order.status !== 'SERVI';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-all">
+    <div className="card p-4 hover:shadow-md transition-all">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', statusConfig.bg)}>
@@ -243,7 +231,7 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
             <p className="font-bold text-gray-800">
               {order.orderNumber ?? `#${order.id.slice(-6)}`}
             </p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="text-xs text-gray-400">{formattedDate}</span>
               {order.table && (
                 <>
@@ -278,21 +266,21 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
             <p className="text-[10px] text-gray-400">{order.items?.length ?? 0} article(s)</p>
           </div>
 
-          <span className={cn('text-[10px] font-bold px-2 py-1 rounded-full', statusConfig.bg, statusConfig.color)}>
+          <span className={cn('badge', statusConfig.bg, statusConfig.color)}>
             {statusConfig.label}
           </span>
 
           <div className="flex items-center gap-1">
             <button
               onClick={onView}
-              className="px-3 py-1.5 text-xs font-semibold text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+              className="btn btn-ghost text-[var(--primary)] hover:bg-[var(--primary-light)]"
             >
               Détails
             </button>
             {canCancel && (
               <button
                 onClick={onCancel}
-                className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="btn btn-ghost text-red-600 hover:bg-red-50"
               >
                 Annuler
               </button>

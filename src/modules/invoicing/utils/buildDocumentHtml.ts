@@ -1,4 +1,5 @@
 import type { Quote, ProformaInvoice, InvoiceDoc } from '../api/invoicingApi';
+import { escapeHtml } from '@/shared/helpers/securityHelper';
 
 export type DocumentDesign = 'classique' | 'moderne' | 'minimaliste';
 
@@ -25,8 +26,11 @@ function fmtDate(d: string) {
 }
 
 function logoBlock(logoUrl?: string) {
-  return logoUrl
-    ? `<img src="${logoUrl}" alt="Logo" style="max-height:72px;max-width:200px;object-fit:contain;display:block;" />`
+  if (!logoUrl) return '';
+  // Only allow http/https and data: URIs for logos
+  const safe = /^(https?:|data:image\/)/.test(logoUrl) ? escapeHtml(logoUrl) : '';
+  return safe
+    ? `<img src="${safe}" alt="Logo" style="max-height:72px;max-width:200px;object-fit:contain;display:block;" />`
     : '';
 }
 
@@ -36,13 +40,46 @@ function addressCard(company: Company) {
 
 function legalBlock(company: Company, extras: string[] = []) {
   const lines: string[] = [];
-  if (company.rccm) lines.push(`RCCM\u00a0: ${company.rccm}`);
-  if (company.idNat) lines.push(`ID NAT\u00a0: ${company.idNat}`);
-  if (company.impotNumber) lines.push(`N°\u00a0Impôt\u00a0: ${company.impotNumber}`);
-  lines.push(...extras);
+  if (company.rccm) lines.push(`RCCM\u00a0: ${escapeHtml(company.rccm)}`);
+  if (company.idNat) lines.push(`ID NAT\u00a0: ${escapeHtml(company.idNat)}`);
+  if (company.impotNumber) lines.push(`N°\u00a0Impôt\u00a0: ${escapeHtml(company.impotNumber)}`);
+  lines.push(...extras.map(escapeHtml));
   return lines.length > 0
     ? lines.map(l => `<div style="font-size:11px;color:#475569;padding:3px 0;">${l}</div>`).join('')
     : `<div style="font-size:11px;color:#94a3b8;font-style:italic;">Aucune information légale renseignée</div>`;
+}
+
+function legalInlineBlock(company: Company) {
+  const lines: string[] = [];
+  if (company.rccm) lines.push(`RCCM\u00a0: ${escapeHtml(company.rccm)}`);
+  if (company.idNat) lines.push(`ID NAT\u00a0: ${escapeHtml(company.idNat)}`);
+  if (company.impotNumber) lines.push(`N°\u00a0Impôt\u00a0: ${escapeHtml(company.impotNumber)}`);
+  if (lines.length === 0) return '';
+  return `<div style="margin-top:8px;padding-top:7px;border-top:1px dashed #e2e8f0;">
+    ${lines.map(l => `<div style="font-size:10px;color:#94a3b8;line-height:1.7;">${l}</div>`).join('')}
+  </div>`;
+}
+
+function legalInlineBlockModerne(company: Company) {
+  const lines: string[] = [];
+  if (company.rccm) lines.push(`RCCM\u00a0: ${escapeHtml(company.rccm)}`);
+  if (company.idNat) lines.push(`ID NAT\u00a0: ${escapeHtml(company.idNat)}`);
+  if (company.impotNumber) lines.push(`N°\u00a0Impôt\u00a0: ${escapeHtml(company.impotNumber)}`);
+  if (lines.length === 0) return '';
+  return `<div style="margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.2);">
+    ${lines.map(l => `<div style="font-size:10px;color:rgba(255,255,255,0.5);line-height:1.7;">${l}</div>`).join('')}
+  </div>`;
+}
+
+function legalInlineBlockMinimaliste(company: Company) {
+  const lines: string[] = [];
+  if (company.rccm) lines.push(`RCCM\u00a0: ${escapeHtml(company.rccm)}`);
+  if (company.idNat) lines.push(`ID NAT\u00a0: ${escapeHtml(company.idNat)}`);
+  if (company.impotNumber) lines.push(`N°\u00a0Impôt\u00a0: ${escapeHtml(company.impotNumber)}`);
+  if (lines.length === 0) return '';
+  return `<div style="margin-top:8px;padding-top:7px;border-top:1px solid #e5e5e5;">
+    ${lines.map(l => `<div style="font-size:10px;color:#aaa;line-height:1.7;">${l}</div>`).join('')}
+  </div>`;
 }
 
 function itemRows(items: { description: string; quantity: number; unitPrice: number }[], currency: string, accentColor = '#2563EB') {
@@ -50,7 +87,7 @@ function itemRows(items: { description: string; quantity: number; unitPrice: num
     const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
     const lineTotal = item.quantity * item.unitPrice;
     return `<tr style="background:${bg};">
-      <td style="padding:11px 16px;font-size:12.5px;color:#1e293b;border-bottom:1px solid #f1f5f9;">${item.description || '<em style="color:#94a3b8;">—</em>'}</td>
+      <td style="padding:11px 16px;font-size:12.5px;color:#1e293b;border-bottom:1px solid #f1f5f9;">${escapeHtml(item.description) || '<em style="color:#94a3b8;">—</em>'}</td>
       <td style="padding:11px 16px;text-align:center;font-size:12.5px;color:#475569;border-bottom:1px solid #f1f5f9;">${item.quantity}</td>
       <td style="padding:11px 16px;text-align:right;font-size:12.5px;color:#475569;border-bottom:1px solid #f1f5f9;">${fmtN(item.unitPrice, currency)}</td>
       <td style="padding:11px 16px;text-align:right;font-size:12.5px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;">${fmtN(lineTotal, currency)}</td>
@@ -78,13 +115,14 @@ function summaryCard(rows: string[], total: string, accentColor = '#2563EB') {
   </div>`;
 }
 
-function clientCard(client?: { firstName?: string; lastName?: string; email?: string; phone?: string } | null, extra?: string, accentColor = '#2563EB') {
-  const name = client ? `${client.firstName || ''} ${client.lastName || ''}`.trim() || '—' : '—';
+function clientCard(client?: { firstName?: string; lastName?: string; email?: string; phone?: string; address?: string } | null, extra?: string, accentColor = '#2563EB') {
+  const name = client ? escapeHtml(`${client.firstName || ''} ${client.lastName || ''}`.trim()) || '—' : '—';
   return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;border-top:3px solid ${accentColor};">
     <div style="font-size:14px;font-weight:700;color:#0f172a;">${name}</div>
-    ${extra ? `<div style="font-size:11px;color:#64748b;margin-top:5px;">${extra}</div>` : ''}
-    ${client?.email ? `<div style="font-size:11px;color:#64748b;margin-top:3px;">${client.email}</div>` : ''}
-    ${client?.phone ? `<div style="font-size:11px;color:#64748b;margin-top:3px;">${client.phone}</div>` : ''}
+    ${extra ? `<div style="font-size:11px;color:#64748b;margin-top:5px;">${escapeHtml(extra)}</div>` : ''}
+    ${client?.address ? `<div style="font-size:11px;color:#64748b;margin-top:3px;">${escapeHtml(client.address)}</div>` : ''}
+    ${client?.email ? `<div style="font-size:11px;color:#64748b;margin-top:3px;">${escapeHtml(client.email)}</div>` : ''}
+    ${client?.phone ? `<div style="font-size:11px;color:#64748b;margin-top:3px;">${escapeHtml(client.phone)}</div>` : ''}
   </div>`;
 }
 
@@ -115,7 +153,7 @@ function baseHtmlModerne(body: string, accentColor = '#1d4ed8') {
 </div>
 <div style="height:4px;background:linear-gradient(90deg,${accentColor}44 0%,${accentColor} 100%);"></div>
 <div style="padding:12px 52px;text-align:right;">
-  <span style="font-size:9px;color:#94a3b8;">Document généré automatiquement</span>
+  <span style="font-size:9px;color:#94a3b8;"></span>
 </div>
 </body></html>`;
 }
@@ -128,7 +166,7 @@ function baseHtmlMinimaliste(body: string) {
 <div style="padding:60px 64px 56px;">${body}</div>
 <div style="padding:0 64px 32px;">
   <div style="height:1px;background:#e5e5e5;"></div>
-  <div style="padding-top:12px;font-size:9px;color:#999;text-align:center;">Document généré automatiquement</div>
+  <div style="padding-top:12px;font-size:9px;color:#999;text-align:center;"></div>
 </div>
 </body></html>`;
 }
@@ -139,7 +177,8 @@ function baseHtmlMinimaliste(body: string) {
 
 const CLASSIQUE_COLOR = '#2563EB';
 
-function docHeaderClassique(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '') {
+function docHeaderClassique(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '', company?: Company) {
+  const legal = company ? legalInlineBlock(company) : '';
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
   <tr>
     <td style="vertical-align:top;width:52%;">
@@ -151,12 +190,13 @@ function docHeaderClassique(logo: string, companyName: string, companyAddr: stri
           ${email ? `<div>${email}</div>` : ''}
           ${phone ? `<div>${phone}</div>` : ''}
         </div>
+        ${legal}
       </div>
     </td>
     <td style="vertical-align:top;text-align:right;width:48%;">
       <div style="display:inline-block;text-align:right;margin-bottom:16px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${CLASSIQUE_COLOR};margin-bottom:4px;">${docType}</div>
-        <div style="font-size:28px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;line-height:1;">${docNumber}</div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${CLASSIQUE_COLOR};margin-bottom:4px;line-height:1;">${docType}</div>
+        <div style="font-size:13px;font-weight:600;color:#64748b;letter-spacing:0.5px;">${docNumber}</div>
         <div style="height:3px;background:${CLASSIQUE_COLOR};border-radius:2px;margin-top:6px;"></div>
       </div>
       <table cellpadding="0" cellspacing="0" style="margin-left:auto;">${metaRows}</table>
@@ -173,7 +213,8 @@ function docHeaderClassique(logo: string, companyName: string, companyAddr: stri
 
 const MODERNE_COLOR = '#2563eb';
 
-function docHeaderModerne(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '') {
+function docHeaderModerne(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '', company?: Company) {
+  const legal = company ? legalInlineBlockModerne(company) : '';
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
   <tr>
     <td style="vertical-align:top;width:55%;">
@@ -184,11 +225,12 @@ function docHeaderModerne(logo: string, companyName: string, companyAddr: string
         ${email ? `<div>${email}</div>` : ''}
         ${phone ? `<div>${phone}</div>` : ''}
       </div>
+      ${legal}
     </td>
     <td style="vertical-align:top;text-align:right;width:45%;">
       <div style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:16px;padding:20px 24px;text-align:right;">
-        <div style="font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:6px;">${docType}</div>
-        <div style="font-size:30px;font-weight:900;color:#ffffff;letter-spacing:-1px;line-height:1;">${docNumber}</div>
+        <div style="font-size:26px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:#ffffff;margin-bottom:6px;line-height:1;">${docType}</div>
+        <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.5px;">${docNumber}</div>
         ${badgeHtml ? `<div style="margin-top:10px;">${badgeHtml}</div>` : ''}
       </div>
       <table cellpadding="0" cellspacing="0" style="margin-left:auto;margin-top:16px;">${metaRows}</table>
@@ -205,7 +247,8 @@ function docBodyModerne(body: string) {
 // MINIMALISTE design helpers (white, serif, black lines)
 // ══════════════════════════════════════════════════════════════════════════════
 
-function docHeaderMinimaliste(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '') {
+function docHeaderMinimaliste(logo: string, companyName: string, companyAddr: string, email: string, phone: string, docType: string, docNumber: string, metaRows: string, badgeHtml = '', company?: Company) {
+  const legal = company ? legalInlineBlockMinimaliste(company) : '';
   return `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px;">
   <div>
     ${logo ? `<div style="margin-bottom:16px;">${logo}</div>` : ''}
@@ -215,10 +258,11 @@ function docHeaderMinimaliste(logo: string, companyName: string, companyAddr: st
       ${email ? `<div>${email}</div>` : ''}
       ${phone ? `<div>${phone}</div>` : ''}
     </div>
+    ${legal}
   </div>
   <div style="text-align:right;">
-    <div style="font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#999;margin-bottom:8px;">${docType}</div>
-    <div style="font-size:32px;font-weight:300;color:#1a1a1a;letter-spacing:-1px;line-height:1;">${docNumber}</div>
+    <div style="font-size:28px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#1a1a1a;margin-bottom:8px;line-height:1;">${docType}</div>
+    <div style="font-size:13px;font-weight:400;color:#666;letter-spacing:0.5px;">${docNumber}</div>
     ${badgeHtml ? `<div style="margin-top:10px;">${badgeHtml}</div>` : ''}
     <table cellpadding="0" cellspacing="0" style="margin-left:auto;margin-top:12px;">${metaRows}</table>
   </div>
@@ -279,7 +323,7 @@ function buildQuoteHtmlClassique(quote: Quote, company: Company, logoUrl: string
     ${quote.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${quote.subject}</td></tr>` : ''}
     ${quote.validityDays ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Validité</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${quote.validityDays} jours</td></tr>` : ''}`;
 
-  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge);
+  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge, company);
 
   const totalSummaryRows: string[] = [];
   totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(quote.subtotal)}</td></tr>`);
@@ -292,13 +336,9 @@ function buildQuoteHtmlClassique(quote: Quote, company: Company, logoUrl: string
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${CLASSIQUE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           ${clientCard(quote.client, undefined, CLASSIQUE_COLOR)}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company)}</div>
         </td>
       </tr>
     </table>
@@ -342,7 +382,7 @@ function buildQuoteHtmlModerne(quote: Quote, company: Company, logoUrl: string |
     ${quote.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${quote.subject}</td></tr>` : ''}
     ${quote.validityDays ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Validité</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${quote.validityDays} jours</td></tr>` : ''}`;
 
-  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge);
+  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge, company);
 
   const totalSummaryRows: string[] = [];
   totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(quote.subtotal)}</td></tr>`);
@@ -354,18 +394,12 @@ function buildQuoteHtmlModerne(quote: Quote, company: Company, logoUrl: string |
   const bodyContent = `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${MODERNE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           ${clientCard(quote.client, undefined, MODERNE_COLOR)}
         </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company)}</div>
-        </td>
       </tr>
     </table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:28px;">
-      <thead><tr style="background:${MODERNE_COLOR};">
         <th style="padding:13px 16px;text-align:left;font-size:10.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#ffffff;">Désignation</th>
         <th style="padding:13px 16px;text-align:center;font-size:10.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.85);width:70px;">Qté</th>
         <th style="padding:13px 16px;text-align:right;font-size:10.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.85);width:140px;">Prix unitaire</th>
@@ -404,7 +438,7 @@ function buildQuoteHtmlMinimaliste(quote: Quote, company: Company, logoUrl: stri
     ${quote.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${quote.subject}</td></tr>` : ''}
     ${quote.validityDays ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Validité</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${quote.validityDays} jours</td></tr>` : ''}`;
 
-  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge);
+  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'DEVIS', quote.quoteNumber, meta, badge, company);
 
   const items = (quote.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
 
@@ -417,15 +451,12 @@ function buildQuoteHtmlMinimaliste(quote: Quote, company: Company, logoUrl: stri
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:20px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${quote.client ? `${quote.client.firstName || ''} ${quote.client.lastName || ''}`.trim() || '—' : '—'}</div>
+          ${quote.client?.address ? `<div style="font-size:11px;color:#666;margin-top:3px;">${quote.client.address}</div>` : ''}
           ${quote.client?.email ? `<div style="font-size:11px;color:#666;margin-top:3px;">${quote.client.email}</div>` : ''}
           ${quote.client?.phone ? `<div style="font-size:11px;color:#666;margin-top:2px;">${quote.client.phone}</div>` : ''}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:20px;">
-          <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          ${legalBlock(company)}
         </td>
       </tr>
     </table>
@@ -468,16 +499,16 @@ function buildProformaHtmlClassique(Proforma: ProformaInvoice, company: Company,
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
+  const docNumber = Proforma.proformaNumber || (Proforma as any).ProformaNumber || '—';
 
   const meta = `
     <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#1e293b;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
     ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.subject}</td></tr>` : ''}
     ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Conditions paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}
-    ${Proforma.deliveryDetails ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Livraison</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.deliveryDetails}</td></tr>` : ''}`;
+    ${Proforma.deliveryDetails ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Main d'oeuvre</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${Proforma.deliveryDetails}</td></tr>` : ''}`;
 
-  const badge = `<div style="display:inline-flex;align-items:center;gap:6px;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:10.5px;color:#92400e;font-weight:600;">Document non contractuel</div>`;
-  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
+  const badge = `<div style="display:inline-flex;align-items:center;gap:6px;background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:10.5px;color:#92400e;font-weight:600;"></div>`;
+  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge, company);
 
   const totalSummaryRows: string[] = [];
   totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.subtotal)}</td></tr>`);
@@ -495,13 +526,9 @@ function buildProformaHtmlClassique(Proforma: ProformaInvoice, company: Company,
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${CLASSIQUE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           ${clientCard(Proforma.client, undefined, CLASSIQUE_COLOR)}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company)}</div>
         </td>
       </tr>
     </table>
@@ -530,15 +557,15 @@ function buildProformaHtmlModerne(Proforma: ProformaInvoice, company: Company, l
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
+  const docNumber = Proforma.proformaNumber || (Proforma as any).ProformaNumber || '—';
 
-  const badge = `<div style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:10.5px;color:#fff;font-weight:600;">Document non contractuel</div>`;
+  const badge = `<div style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:10.5px;color:#fff;font-weight:600;"></div>`;
   const meta = `
     <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:700;color:#fff;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
     ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${Proforma.subject}</td></tr>` : ''}
     ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}`;
 
-  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
+  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge, company);
 
   const totalSummaryRows: string[] = [];
   totalSummaryRows.push(`<tr><td style="padding:6px 0;font-size:12px;color:#64748b;">Sous-total HT</td><td style="padding:6px 0;text-align:right;font-size:12px;font-weight:600;color:#334155;">${fmt(Proforma.subtotal)}</td></tr>`);
@@ -555,13 +582,9 @@ function buildProformaHtmlModerne(Proforma: ProformaInvoice, company: Company, l
   const bodyContent = `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${MODERNE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           ${clientCard(Proforma.client, undefined, MODERNE_COLOR)}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company)}</div>
         </td>
       </tr>
     </table>
@@ -590,15 +613,15 @@ function buildProformaHtmlMinimaliste(Proforma: ProformaInvoice, company: Compan
   const logo = logoBlock(logoUrl);
   const compAddr = addressCard(company);
   const fmt = (n: number) => fmtN(n, currency);
-  const docNumber = Proforma.ProformaNumber || (Proforma as any).ProformaNumber || '—';
+  const docNumber = Proforma.proformaNumber || (Proforma as any).ProformaNumber || '—';
 
-  const badge = `<span style="font-size:10.5px;color:#666;font-style:italic;">Document non contractuel</span>`;
+  const badge = `<span style="font-size:10.5px;color:#666;font-style:italic;"></span>`;
   const meta = `
     <tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Date d'émission</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1a1a1a;text-align:right;">${fmtDate(Proforma.createdAt)}</td></tr>
     ${Proforma.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${Proforma.subject}</td></tr>` : ''}
     ${Proforma.paymentTerms ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Paiement</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${Proforma.paymentTerms}</td></tr>` : ''}`;
 
-  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge);
+  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'Proforma', docNumber, meta, badge, company);
 
   const items = (Proforma.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
 
@@ -616,15 +639,12 @@ function buildProformaHtmlMinimaliste(Proforma: ProformaInvoice, company: Compan
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:20px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">DESTINATAIRE</div>
           <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${Proforma.client ? `${Proforma.client.firstName || ''} ${Proforma.client.lastName || ''}`.trim() || '—' : '—'}</div>
+          ${Proforma.client?.address ? `<div style="font-size:11px;color:#666;margin-top:3px;">${Proforma.client.address}</div>` : ''}
           ${Proforma.client?.email ? `<div style="font-size:11px;color:#666;margin-top:3px;">${Proforma.client.email}</div>` : ''}
           ${Proforma.client?.phone ? `<div style="font-size:11px;color:#666;margin-top:2px;">${Proforma.client.phone}</div>` : ''}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:20px;">
-          <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          ${legalBlock(company)}
         </td>
       </tr>
     </table>
@@ -673,7 +693,7 @@ function buildInvoiceHtmlClassique(invoice: InvoiceDoc, company: Company, logoUr
     ${invoice.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${invoice.subject}</td></tr>` : ''}
     ${internalRef ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap;">Référence</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#1e293b;text-align:right;">${internalRef}</td></tr>` : ''}`;
 
-  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta);
+  const header = docHeaderClassique(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta, '', company);
 
   const extraLegal = vatNumber ? [`N°\u00a0TVA\u00a0: ${vatNumber}`] : [];
   const totalSummaryRows: string[] = [];
@@ -692,13 +712,9 @@ function buildInvoiceHtmlClassique(invoice: InvoiceDoc, company: Company, logoUr
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${CLASSIQUE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">FACTURÉ À</div>
           ${clientCard(invoice.client, undefined, CLASSIQUE_COLOR)}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company, extraLegal)}</div>
         </td>
       </tr>
     </table>
@@ -737,7 +753,7 @@ function buildInvoiceHtmlModerne(invoice: InvoiceDoc, company: Company, logoUrl:
     ${invoice.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${invoice.subject}</td></tr>` : ''}
     ${internalRef ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:rgba(255,255,255,0.6);text-align:right;white-space:nowrap;">Référence</td><td style="padding:3px 0;font-size:11px;font-weight:600;color:#fff;text-align:right;">${internalRef}</td></tr>` : ''}`;
 
-  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta);
+  const header = docHeaderModerne(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta, '', company);
 
   const extraLegal = vatNumber ? [`N°\u00a0TVA\u00a0: ${vatNumber}`] : [];
   const totalSummaryRows: string[] = [];
@@ -755,13 +771,9 @@ function buildInvoiceHtmlModerne(invoice: InvoiceDoc, company: Company, logoUrl:
   const bodyContent = `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:16px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:700;color:${MODERNE_COLOR};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">FACTURÉ À</div>
           ${clientCard(invoice.client, undefined, MODERNE_COLOR)}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;background:#fafafa;">${legalBlock(company, extraLegal)}</div>
         </td>
       </tr>
     </table>
@@ -800,7 +812,7 @@ function buildInvoiceHtmlMinimaliste(invoice: InvoiceDoc, company: Company, logo
     ${invoice.subject ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Objet</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${invoice.subject}</td></tr>` : ''}
     ${internalRef ? `<tr><td style="padding:3px 10px 3px 0;font-size:11px;color:#999;text-align:right;white-space:nowrap;">Référence</td><td style="padding:3px 0;font-size:11px;color:#1a1a1a;text-align:right;">${internalRef}</td></tr>` : ''}`;
 
-  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta);
+  const header = docHeaderMinimaliste(logo, company.companyName || '', compAddr, company.email || '', company.phone || '', 'FACTURE', invoice.invoiceNumber, meta, '', company);
 
   const extraLegal = vatNumber ? [`N°\u00a0TVA\u00a0: ${vatNumber}`] : [];
   const items = (invoice.items || []).map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice }));
@@ -815,15 +827,12 @@ function buildInvoiceHtmlMinimaliste(invoice: InvoiceDoc, company: Company, logo
     ${header}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:36px;">
       <tr>
-        <td style="vertical-align:top;width:48%;padding-right:20px;">
+        <td style="vertical-align:top;width:100%;">
           <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">FACTURÉ À</div>
           <div style="font-size:14px;font-weight:600;color:#1a1a1a;">${invoice.client ? `${invoice.client.firstName || ''} ${invoice.client.lastName || ''}`.trim() || '—' : '—'}</div>
+          ${invoice.client?.address ? `<div style="font-size:11px;color:#666;margin-top:3px;">${invoice.client.address}</div>` : ''}
           ${invoice.client?.email ? `<div style="font-size:11px;color:#666;margin-top:3px;">${invoice.client.email}</div>` : ''}
           ${invoice.client?.phone ? `<div style="font-size:11px;color:#666;margin-top:2px;">${invoice.client.phone}</div>` : ''}
-        </td>
-        <td style="vertical-align:top;width:52%;padding-left:20px;">
-          <div style="font-size:9.5px;font-weight:600;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          ${legalBlock(company, extraLegal)}
         </td>
       </tr>
     </table>

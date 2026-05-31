@@ -1,15 +1,17 @@
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Tag, Archive, Calendar,
   ChartBar as BarChart2, DollarSign, Users, UserCheck, Settings, CreditCard,
   Building2, Activity, Shield, Barcode,
   MonitorSmartphone, FileText, ShoppingCart, ChevronLeft, ChevronRight, Plus,
   ClipboardList, Receipt, UtensilsCrossed, Grid3x3, ChefHat, CalendarCheck,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, useUi, useModules } from '@/core/store';
 import { usePermissions } from '@/core/hooks/usePermissions';
 import { ROUTES } from '@/shared/constants/routes';
+import toast from 'react-hot-toast';
 
 interface NavItem {
   label: string;
@@ -179,6 +181,7 @@ function useSidebarNav() {
       sections: [{
         items: [
           ...(canPage('quotes') ? [{ label: 'Devis', to: ROUTES.INVOICING_QUOTES, icon: ClipboardList }] : []),
+          // ✅ CORRECTION: Utiliser INVOICING_Proforma au lieu de INVOICING_PROFORMA
           ...(canPage('Proforma') ? [{ label: 'Proforma', to: ROUTES.INVOICING_Proforma, icon: FileText }] : []),
           ...(canPage('invoicing') ? [{ label: 'Factures', to: ROUTES.INVOICING_INVOICES, icon: Receipt }] : []),
         ],
@@ -227,11 +230,27 @@ function useSidebarNav() {
 }
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, clearAuth } = useAuth();  // ✅ Utiliser clearAuth au lieu de logout
   const { sidebarOpen, sidebarCollapsed, toggleSidebar, toggleSidebarCollapsed } = useUi();
   const { title, sections } = useSidebarNav();
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  const handleLogout = () => {
+    // Supprimer le token du localStorage
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    
+    // Nettoyer le store d'authentification
+    clearAuth();  // ✅ clearAuth au lieu de logout
+    
+    // Notification de déconnexion
+    toast.success('Déconnexion réussie. À bientôt !');
+    
+    // Rediriger vers la page de connexion
+    navigate('/login');
+  };
 
   return (
     <>
@@ -266,7 +285,7 @@ export default function Sidebar() {
                 to={ROUTES.SUBSCRIPTION}
                 title="Abonnement"
                 className={cn(
-                  'flex items-center justify-center rounded bg-[#2563EB] text-white hover:bg-[1D4ED8] transition-colors',
+                  'flex items-center justify-center rounded bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-colors',
                   sidebarCollapsed ? 'w-7 h-7' : 'w-5 h-5'
                 )}
               >
@@ -295,10 +314,10 @@ export default function Sidebar() {
         {isAdmin && (
           <div className={cn('border-t border-gray-100 flex-shrink-0', sidebarCollapsed ? 'px-1 py-2 flex justify-center' : 'px-2 py-2')}>
             <Link
-              to={ROUTES.SUBSCRIPTION}
+              to={ROUTES.MODULES}
               title="Installer module"
               className={cn(
-                'flex items-center gap-2 rounded bg-[#2563EB] text-white hover:bg-[1D4ED8] transition-colors font-semibold',
+                'flex items-center gap-2 rounded bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-colors font-semibold',
                 sidebarCollapsed ? 'w-8 h-8 justify-center' : 'px-3 py-2 w-full'
               )}
             >
@@ -308,9 +327,13 @@ export default function Sidebar() {
           </div>
         )}
 
-        {!sidebarCollapsed && (
-          <div className="px-2 py-2 border-t border-gray-100 flex-shrink-0">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50">
+        {/* Section de l'utilisateur avec bouton déconnexion */}
+        <div className={cn(
+          'border-t border-gray-100 flex-shrink-0',
+          sidebarCollapsed ? 'px-1 py-2' : 'px-2 py-2'
+        )}>
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50 mb-2">
               <div className="w-5 h-5 bg-[#2563EB] rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
                 {`${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`.toUpperCase()}
               </div>
@@ -319,8 +342,27 @@ export default function Sidebar() {
                 <p className="text-[10px] text-gray-400 truncate leading-tight">{user?.email}</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Bouton Déconnexion */}
+          <button
+            onClick={handleLogout}
+            title={sidebarCollapsed ? "Déconnexion" : undefined}
+            className={cn(
+              'flex items-center gap-2.5 rounded transition-all duration-150 group text-red-600 hover:bg-red-50',
+              sidebarCollapsed ? 'justify-center w-8 h-8 mx-auto' : 'px-2.5 py-1.5 w-full',
+              sidebarCollapsed ? 'hover:bg-red-50' : 'hover:bg-red-50'
+            )}
+          >
+            <LogOut size={14} className={cn(
+              'flex-shrink-0 transition-colors',
+              sidebarCollapsed ? 'text-red-500' : 'text-red-500 group-hover:text-red-600'
+            )} />
+            {!sidebarCollapsed && (
+              <span className="text-xs font-medium truncate">Déconnexion</span>
+            )}
+          </button>
+        </div>
       </aside>
     </>
   );

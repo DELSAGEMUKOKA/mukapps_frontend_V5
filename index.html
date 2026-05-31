@@ -39,33 +39,32 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=()">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), ambient-light-sensor=(), autoplay=(), fullscreen=(self)">
 
-  <!-- ✅ CSP CORRIGÉE - Ajout des domaines Google Analytics dans connect-src -->
+  <!-- CSP renforcée: suppression de unsafe-inline/unsafe-eval, frame-ancestors DENY, form-action self -->
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; 
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com; 
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-      font-src 'self' https://fonts.gstatic.com; 
-      img-src 'self' data: https:; 
-      connect-src 'self' http://localhost:4000 https://zzqswsgxyjrmreotglzh.supabase.co https://www.google-analytics.com https://www.google.com https://*.google-analytics.com https://*.google.com;
-      frame-src 'none'; 
-      object-src 'none'; 
-      base-uri 'self';">
+    content="default-src 'self';
+      script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https:;
+      connect-src 'self' http://localhost:4000 https://zzqswsgxyjrmreotglzh.supabase.co https://www.google-analytics.com https://*.google-analytics.com;
+      frame-src 'none';
+      frame-ancestors 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';">
 
-  <!-- Google Analytics avec gestion d'erreur -->
+  <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
   <script>
-    // Vérifier si l'environnement autorise GA
     if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX');
-      console.log('✅ Google Analytics initialisé');
-    } else {
-      console.log('🔍 Google Analytics désactivé en développement');
+      gtag('config', 'G-XXXXXXXXXX', { anonymize_ip: true });
     }
   </script>
 

@@ -243,27 +243,7 @@ function buildFallbackHtml(p: {
     <div style="height:1px; background:#e2e8f0; margin-bottom:28px;"></div>
 
     <!-- ── ADDRESSES ── -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-      <tr>
-        <td style="vertical-align:top; width:48%; padding-right:16px;">
-          <div style="font-size:9.5px; font-weight:700; color:#2563EB; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">FACTURÉ À</div>
-          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; border-top:3px solid #2563EB;">
-            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:2px;">${clientName}</div>
-            ${clientAddress ? `<div style="font-size:11px; color:#64748b; margin-top:5px;">${clientAddress}</div>` : ''}
-            ${clientEmail ? `<div style="font-size:11px; color:#64748b; margin-top:3px;">${clientEmail}</div>` : ''}
-            ${clientPhone ? `<div style="font-size:11px; color:#64748b; margin-top:3px;">${clientPhone}</div>` : ''}
-          </div>
-        </td>
-        <td style="vertical-align:top; width:52%; padding-left:16px;">
-          <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;">INFORMATIONS LÉGALES</div>
-          <div style="border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; background:#fafafa;">
-            ${legalLines.length > 0
-              ? legalLines.map(l => `<div style="font-size:11px; color:#475569; padding:3px 0;">${l}</div>`).join('')
-              : `<div style="font-size:11px; color:#94a3b8; font-style:italic;">Renseignez vos informations légales dans les paramètres</div>`}
-          </div>
-        </td>
-      </tr>
-    </table>
+  
 
     <!-- ── ITEMS TABLE ── -->
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:28px;">
@@ -822,28 +802,7 @@ export default function InvoiceDocFormPage() {
           </div>
 
           {/* SOCIÉTÉ (optionnel) */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Informations société <span className="text-gray-400 font-normal normal-case">(optionnel)</span></h3>
-            </div>
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {([
-                { label: 'N° TVA', value: vatNumber, onChange: setVatNumber, placeholder: 'FR12345...' },
-                { label: 'N° enregistrement', value: registrationNumber, onChange: setRegistrationNumber, placeholder: '12345678' },
-                { label: 'Coordonnées bancaires', value: companyBankDetails, onChange: setCompanyBankDetails, placeholder: 'IBAN...' },
-                { label: 'Adresse société', value: companyAddress, onChange: setCompanyAddress, placeholder: '123 rue...' },
-                { label: 'Téléphone', value: companyPhone, onChange: setCompanyPhone, placeholder: '+243...' },
-                { label: 'Email facturation', value: companyEmail, onChange: setCompanyEmail, placeholder: 'billing@...' },
-                { label: 'Référence interne', value: internalReference, onChange: setInternalReference, placeholder: 'PRJ-2024-001' },
-              ] as { label: string; value: string; onChange: (v: string) => void; placeholder: string }[]).map(({ label, value, onChange, placeholder }) => (
-                <div key={label} className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-700">{label}</label>
-                  <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
-                </div>
-              ))}
-            </div>
-          </div>
+        
 
           {/* Mobile PDF */}
           <div className="sm:hidden">
@@ -877,11 +836,7 @@ export default function InvoiceDocFormPage() {
                   </div>
                 )}
               </div>
-              <button type="button" onClick={handleExportPdf} disabled={exportingPdf}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60">
-                {exportingPdf ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download size={12} />}
-                Télécharger PDF
-              </button>
+           
             </div>
             <div className="flex-1 overflow-auto p-6 flex justify-center">
               <div className="relative shadow-2xl rounded-sm overflow-hidden" style={{ width: '794px', minHeight: '1123px', flexShrink: 0 }}>

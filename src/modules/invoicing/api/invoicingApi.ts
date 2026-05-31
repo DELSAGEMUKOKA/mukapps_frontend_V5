@@ -57,7 +57,7 @@ export interface Quote {
   id: string;
   quoteNumber: string;
   clientId: string;
-  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
+  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string; address?: string };
   subject: string;
   description?: string;
   lineItems: InvoicingLineItem[];
@@ -96,7 +96,7 @@ export interface ProformaInvoice {
   id: string;
   proformaNumber: string;  // ✅ Correction: minuscule
   clientId: string;
-  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
+  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string; address?: string };
   quoteId?: string;
   subject: string;
   lineItems: InvoicingLineItem[];
@@ -144,7 +144,7 @@ export interface InvoiceDoc {
   id: string;
   invoiceNumber: string;
   clientId: string;
-  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string };
+  client?: { id: string; firstName: string; lastName: string; email?: string; phone?: string; address?: string };
   proformaId?: string;  // ✅ Correction: minuscule
   quoteId?: string;
   subject: string;

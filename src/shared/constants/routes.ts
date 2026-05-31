@@ -43,6 +43,7 @@ export const ROUTES = {
   // Subscription
   SUBSCRIPTION: '/subscription',
   SUBSCRIPTION_REQUIRED: '/subscription-required',
+   MODULES: '/modules',
 
   // Invoicing module
   INVOICING: '/invoicing',

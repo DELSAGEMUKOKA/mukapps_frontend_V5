@@ -1,4 +1,5 @@
 import type { CompanySettings } from '@/shared/types';
+import { escapeHtml } from '@/shared/helpers/securityHelper';
 
 export interface TemplateRenderData {
   document: {
@@ -69,6 +70,9 @@ function fmtDate(d: string): string {
   }
 }
 
+// Keys that contain pre-formatted numeric/HTML values — do NOT escape these
+const NUMERIC_KEYS = new Set(['totals.taxAmountFormatted', 'totals.discountFormatted', 'totals.taxLabel', 'totals.discountLabel', 'totals.taxRateFormatted', 'totals.discountPercentageFormatted']);
+
 function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -76,7 +80,9 @@ function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, stri
     if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
       Object.assign(result, flatten(v as Record<string, unknown>, key));
     } else {
-      result[key] = v == null ? '' : String(v);
+      const raw = v == null ? '' : String(v);
+      // Escape text values to prevent XSS; numeric/formatted keys are safe (numbers only)
+      result[key] = NUMERIC_KEYS.has(key) ? raw : escapeHtml(raw);
     }
   }
   return result;
@@ -113,7 +119,7 @@ export function renderTemplate(content: string, data: TemplateRenderData): strin
       };
       // Formatted string map for plain {{this.X}} and {{item.X}}
       const itemMap: Record<string, string> = {
-        description: item.description,
+        description: escapeHtml(item.description),
         quantity: String(item.quantity),
         unitPrice: fmt(item.unitPrice, currency),
         taxRate: String(item.taxRate),

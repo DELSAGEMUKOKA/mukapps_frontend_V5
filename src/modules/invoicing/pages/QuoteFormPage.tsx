@@ -338,8 +338,8 @@ function buildFallbackHtml(params: {
         <td width="50%">
           <!-- Signature area placeholder -->
           <div style="border:1px dashed #e2e8f0; border-radius:10px; padding:16px 18px; height:80px;">
-            <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">BON POUR ACCORD</div>
-            <div style="font-size:10px; color:#cbd5e1;">Signature et cachet du client</div>
+            <div style="font-size:9.5px; font-weight:700; color:#94a3b8; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;"></div>
+            <div style="font-size:10px; color:#cbd5e1;"></div>
           </div>
         </td>
         <td width="4%"></td>
@@ -697,17 +697,7 @@ const docNumber = existingQuote?.quoteNumber ?? `DEV-${new Date().getFullYear()}
             </button>
 
             {/* Export PDF */}
-            <button
-              type="button"
-              onClick={handleExportPdf}
-              disabled={exportingPdf}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-[#2563EB] text-[#2563EB] rounded-lg text-sm font-medium hover:bg-[#2563EB]/5 transition-colors disabled:opacity-60"
-            >
-              {exportingPdf
-                ? <span className="w-3.5 h-3.5 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" />
-                : <Download size={14} />}
-              PDF
-            </button>
+           
 
             <button
               type="button"
@@ -930,17 +920,7 @@ const docNumber = existingQuote?.quoteNumber ?? `DEV-${new Date().getFullYear()}
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handleExportPdf}
-                disabled={exportingPdf}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#016a70] transition-colors disabled:opacity-60"
-              >
-                {exportingPdf
-                  ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <Download size={12} />}
-                Télécharger PDF
-              </button>
+           
             </div>
 
             {/* A4 document preview */}

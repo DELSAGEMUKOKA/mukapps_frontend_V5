@@ -245,29 +245,7 @@ export default function InvoiceDocFormModal({ onClose, onSaved }: Props) {
                 </div>
               </div>
 
-              {/* Section SOCIÉTÉ */}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
-                  <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Informations société (optionnel)</h3>
-                </div>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { label: 'N° TVA', val: vatNumber, set: setVatNumber, placeholder: 'FR12345...' },
-                    { label: 'N° enregistrement', val: registrationNumber, set: setRegistrationNumber, placeholder: '12345678' },
-                    { label: 'Coordonnées bancaires', val: companyBankDetails, set: setCompanyBankDetails, placeholder: 'IBAN...' },
-                    { label: 'Adresse société', val: companyAddress, set: setCompanyAddress, placeholder: '123 rue...' },
-                    { label: 'Téléphone', val: companyPhone, set: setCompanyPhone, placeholder: '+33...' },
-                    { label: 'Email facturation', val: companyEmail, set: setCompanyEmail, placeholder: 'billing@...' },
-                    { label: 'Référence interne', val: internalReference, set: setInternalReference, placeholder: 'PRJ-2024-001' },
-                  ].map(({ label, val, set, placeholder }) => (
-                    <div key={label} className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-700">{label}</label>
-                      <input value={val} onChange={e => set(e.target.value)} placeholder={placeholder}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+         
 
               {/* Section NOTES */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">

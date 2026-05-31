@@ -5,6 +5,7 @@ export const API = {
     REGISTER: '/auth/register',
     ME: '/auth/me',
     CHANGE_PASSWORD: '/auth/change-password',
+    REFRESH: '/auth/refresh',
   },
 
   // Users
@@ -119,43 +120,43 @@ export const API = {
   // ==
   // NOUVEAUX ENDPOINTS POUR LA GESTION DES LOTS
   // ==
-  BATCH: {
-    // Lots
-    BASE: '/stock/batches',
-    BY_ID: (id: string) => `/stock/batches/${id}`,
-    BY_PRODUCT: (productId: string) => `/stock/batches/product/${productId}`,
-    ADJUST: (id: string) => `/stock/batches/${id}/adjust`,
-    CONSUME: (id: string) => `/stock/batches/${id}/consume`,
-    ARCHIVE_EXPIRED: '/stock/batches/archive-expired',
+BATCH: {
+  // Lots - Version backend (sans /magasin/)
+  BASE: '/stock/batches',
+  BY_ID: (id: string) => `/stock/batches/${id}`,
+  BY_PRODUCT: (productId: string) => `/stock/batches/product/${productId}`,
+  ADJUST: (id: string) => `/stock/batches/${id}/adjust`,
+  CONSUME: (id: string) => `/stock/batches/${id}/consume`,
+  ARCHIVE_EXPIRED: '/stock/batches/archive-expired',
 
-    // Ventes FEFO
-    CONSUME_FEFO: (productId: string) => `/stock/product/${productId}/consume-fefo`,
-    CHECK_AVAILABILITY: (productId: string) => `/stock/product/${productId}/check-availability`,
-    SIMULATE_FEFO: (productId: string) => `/stock/product/${productId}/simulate-fefo`,
+  // Ventes FEFO - Version backend (sans /magasin/)
+  CONSUME_FEFO: (productId: string) => `/stock/product/${productId}/consume-fefo`,
+  CHECK_AVAILABILITY: (productId: string) => `/stock/product/${productId}/check-availability`,
+  SIMULATE_FEFO: (productId: string) => `/stock/product/${productId}/simulate-fefo`,
 
-    // Résumé et statistiques
-    SUMMARY: '/stock/summary',
-    STATISTICS: '/stock/statistics',
-    DASHBOARD_ALERTS: '/stock/dashboard-alerts',
+  // Résumé et statistiques
+  SUMMARY: '/stock/summary',
+  STATISTICS: '/stock/statistics',
+  DASHBOARD_ALERTS: '/stock/dashboard-alerts',
 
-    // Alertes
-    ALERTS: '/stock/alerts/expiry',
-    ALERT_BY_ID: (id: string) => `/stock/alerts/${id}`,
-    RESOLVE_ALERT: (id: string) => `/stock/alerts/${id}/resolve`,
-    RESOLVE_BULK: '/stock/alerts/resolve-bulk',
-    GENERATE_ALERTS: '/stock/alerts/generate',
+  // Alertes
+  ALERTS: '/stock/alerts/expiry',
+  ALERT_BY_ID: (id: string) => `/stock/alerts/${id}`,
+  RESOLVE_ALERT: (id: string) => `/stock/alerts/${id}/resolve`,
+  RESOLVE_BULK: '/stock/alerts/resolve-bulk',
+  GENERATE_ALERTS: '/stock/alerts/generate',
 
-    // Historique
-    MOVEMENTS: '/stock/movements/history',
-    MOVEMENTS_BY_BATCH: (id: string) => `/stock/movements/batch/${id}`,
-    MOVEMENTS_BY_PRODUCT: (id: string) => `/stock/movements/product/${id}`,
-    EXPORT_MOVEMENTS: '/stock/movements/export',
+  // Historique
+  MOVEMENTS: '/stock/movements/history',
+  MOVEMENTS_BY_BATCH: (id: string) => `/stock/movements/batch/${id}`,
+  MOVEMENTS_BY_PRODUCT: (id: string) => `/stock/movements/product/${id}`,
+  EXPORT_MOVEMENTS: '/stock/movements/export',
 
-    // Rapports
-    REPORTS_BATCHES: '/stock/reports/batches',
-    REPORTS_SALES_BY_BATCH: '/stock/reports/sales-by-batch',
-    REPORTS_EXPIRED_LOSS: '/stock/reports/expired-loss',
-  },
+  // Rapports
+  REPORTS_BATCHES: '/stock/reports/batches',
+  REPORTS_SALES_BY_BATCH: '/stock/reports/sales-by-batch',
+  REPORTS_EXPIRED_LOSS: '/stock/reports/expired-loss',
+},
 
   DASHBOARD: {
     STATS: '/magasin/dashboard/stats',

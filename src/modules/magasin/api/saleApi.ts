@@ -2,6 +2,9 @@ import apiClient from '@/core/api/axiosConfig';
 import { API } from '@/shared/constants/apiEndpoints';
 import type { Sale, SaleItem as SaleItemType, ApiResponse, PaginatedResponse } from '@/shared/types';
 import { batchApi } from './batchApi';
+import { TOKEN_KEY } from '@/core/config/constants';
+import axios from 'axios';
+import { env } from '@/core/config/env';
 
 export interface SaleItem {
   productId: string;
@@ -45,6 +48,67 @@ export interface SaleResult {
   fefoDetails?: FefoDetails;
 }
 
+// Vérification et rafraîchissement du token
+const refreshTokenIfNeeded = async (): Promise<boolean> => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    console.warn('Aucun token trouvé');
+    return false;
+  }
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expDate = new Date(payload.exp * 1000);
+    const now = new Date();
+    const twoMinutesFromNow = new Date(now.getTime() + 2 * 60000);
+    
+    if (expDate < twoMinutesFromNow) {
+      console.log('Token proche de l\'expiration, tentative de rafraîchissement...');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        console.warn('Aucun refresh token trouvé');
+        return false;
+      }
+      
+      try {
+        const response = await axios.post(`${env.API_URL}/auth/refresh`, {
+          refreshToken
+        });
+        
+        const { token: newToken, refreshToken: newRefreshToken } = response.data.data;
+        localStorage.setItem(TOKEN_KEY, newToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refresh_token', newRefreshToken);
+        }
+        console.log('Token rafraîchi avec succès');
+        return true;
+      } catch (refreshError) {
+        console.error('Erreur lors du rafraîchissement du token:', refreshError);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch(e) {
+    console.error('Erreur lors de la vérification du token:', e);
+    return false;
+  }
+};
+
+// Vérification de l'authentification avant une opération critique
+const checkAuthAndRefresh = async (): Promise<boolean> => {
+  const isValid = await refreshTokenIfNeeded();
+  if (!isValid) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('refresh_token');
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+    return false;
+  }
+  return true;
+};
+
 const toBackendItems = (items: SaleItem[]) =>
   items.map(({ unitPrice, sellingPrice, batchId, ...rest }) => ({
     ...rest,
@@ -66,21 +130,51 @@ export const saleApi = {
     return res.data.data;
   },
 
+  /**
+   * Méthode principale de création de vente
+   * Gère intelligemment :
+   * - Produits avec lots spécifiques (batchId fourni)
+   * - Produits avec lots (utilisation FEFO)
+   * - Produits sans lots (stock simple)
+   */
   create: async (payload: CreateSalePayload): Promise<SaleResult> => {
-    const hasSpecificBatches = payload.items.some(item => item.batchId);
+    const isAuthenticated = await checkAuthAndRefresh();
+    if (!isAuthenticated) {
+      throw new Error('Session expirée, veuillez vous reconnecter');
+    }
     
+    // Cas 1: Des batches spécifiques ont été sélectionnés
+    const hasSpecificBatches = payload.items.some(item => item.batchId);
     if (hasSpecificBatches) {
       return await saleApi.createWithSpecificBatches(payload);
     }
     
+    // Cas 2: Utiliser FEFO pour les produits avec lots
+    // Le backend gérera automatiquement :
+    // - Si le produit a des lots -> consommation FEFO
+    // - Si le produit n'a pas de lots -> consommation stock simple
     return await saleApi.createWithFefo(payload);
   },
 
+  /**
+   * Création de vente avec consommation FEFO
+   * Le backend détermine automatiquement si le produit a des lots
+   */
   createWithFefo: async (payload: CreateSalePayload): Promise<SaleResult> => {
+    const isAuthenticated = await checkAuthAndRefresh();
+    if (!isAuthenticated) {
+      throw new Error('Session expirée, veuillez vous reconnecter');
+    }
+    
     const fefoResults: FefoDetails['batchesUsed'] = [];
     
     for (const item of payload.items) {
       try {
+        console.log(`Traitement FEFO pour produit ${item.productId} - Quantité: ${item.quantity}`);
+        
+        // Appel FEFO - Le backend gère :
+        // 1. Produits avec lots -> consommation FEFO
+        // 2. Produits sans lots -> consommation stock simple
         const result = await batchApi.consumeFefo(item.productId, {
           quantity: item.quantity,
           reason: 'SALE',
@@ -89,21 +183,45 @@ export const saleApi = {
         });
         
         const response = result.data;
-        if (response.success && response.data) {
+        console.log('Réponse API FEFO:', JSON.stringify(response, null, 2));
+        
+        if (response.success) {
+          // ✅ CORRECTION: Vérifier que batchesUsed existe
+          const batchesUsed = response.data?.batchesUsed || [];
+          
           fefoResults.push({
             productId: item.productId,
             productName: '',
-            batchNumber: response.data.batchesUsed.map(b => b.batchNumber).join(', '),
+            batchNumber: batchesUsed.length > 0 
+              ? batchesUsed.map((b: any) => b.batchNumber).join(', ') 
+              : 'STOCK_SIMPLE',
             quantity: item.quantity,
-            costPrice: response.data.batchesUsed.reduce((sum, b) => sum + b.costPrice, 0) / response.data.batchesUsed.length,
+            costPrice: batchesUsed.length > 0
+              ? batchesUsed.reduce((sum: number, b: any) => sum + (b.costPrice || 0), 0) / batchesUsed.length
+              : 0,
           });
+        } else {
+          throw new Error(response.message || 'Erreur lors de la consommation FEFO');
         }
       } catch (error) {
         console.error(`Erreur FEFO pour le produit ${item.productId}:`, error);
+        
+        // Afficher le détail de l'erreur
+        if (axios.isAxiosError(error) && error.response?.data) {
+          console.error('Détail erreur backend:', error.response.data);
+        }
+        
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem('refresh_token');
+          throw new Error('Session expirée, veuillez vous reconnecter');
+        }
+        
         throw new Error(`Stock insuffisant pour le produit ${item.productId}`);
       }
     }
     
+    // Créer la vente dans la base de données
     const res = await apiClient.post<ApiResponse<Sale>>(API.SALES.BASE, {
       ...payload,
       items: toBackendItems(payload.items),
@@ -117,7 +235,16 @@ export const saleApi = {
     };
   },
 
+  /**
+   * Création de vente avec lots spécifiques
+   * Pour les cas où l'utilisateur sélectionne manuellement un lot
+   */
   createWithSpecificBatches: async (payload: CreateSalePayload): Promise<SaleResult> => {
+    const isAuthenticated = await checkAuthAndRefresh();
+    if (!isAuthenticated) {
+      throw new Error('Session expirée, veuillez vous reconnecter');
+    }
+    
     const batchResults: FefoDetails['batchesUsed'] = [];
     
     for (const item of payload.items) {
@@ -141,6 +268,13 @@ export const saleApi = {
           }
         } catch (error) {
           console.error(`Erreur pour le lot ${item.batchId}:`, error);
+          
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem('refresh_token');
+            throw new Error('Session expirée, veuillez vous reconnecter');
+          }
+          
           throw new Error(`Stock insuffisant pour le lot sélectionné`);
         }
       }
@@ -159,6 +293,10 @@ export const saleApi = {
     };
   },
 
+  /**
+   * Vérification de la disponibilité du stock
+   * Simule une consommation FEFO sans modifier le stock
+   */
   checkAvailability: async (items: SaleItem[]) => {
     const availabilityResults = [];
     
@@ -249,5 +387,7 @@ export const saleApi = {
   },
 };
 
-// Les types sont déjà exportés avec export interface ci-dessus
-// Pas besoin de bloc export type supplémentaire
+// Export d'une fonction utilitaire pour vérifier l'authentification avant paiement
+export const validateAuthBeforePayment = async (): Promise<boolean> => {
+  return await checkAuthAndRefresh();
+};

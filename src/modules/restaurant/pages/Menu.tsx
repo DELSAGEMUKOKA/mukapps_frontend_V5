@@ -4,7 +4,7 @@ import {
   Plus, Trash2, X, Eye, EyeOff, ChefHat, Wine, UtensilsCrossed,
   Search, Leaf, Cake, Coffee, GlassWater, Beer, Flame, Utensils,
   Package, TriangleAlert, CircleCheck as CheckCircle2, Edit,
-  ChevronDown, LayoutGrid, AlertCircle, Clock, Tag
+  ChevronDown, LayoutGrid, AlertCircle, Clock, Tag, Upload, Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { menuApi, type MenuCategory, type MenuItem, type Station } from '../api/restaurantApi';
@@ -13,6 +13,7 @@ import { useCurrency } from '@/shared/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 import { productApi } from '@/modules/magasin/api/productApi';
 import { ProductSearchInput } from '../components/ProductSearchInput';
+import { ImageUpload } from '../components/ImageUpload';
 import type { Product } from '@/shared/types';
 
 // ======
@@ -23,7 +24,7 @@ type ViewMode = 'grid' | 'list';
 
 const STATION_CONFIG: Record<Station, { label: string; Icon: React.ElementType; color: string; bg: string; border: string }> = {
   BAR: { label: 'Bar', Icon: Wine, color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' },
-  CUISINE: { label: 'Cuisine', Icon: ChefHat, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  CUISINE: { label: 'Cuisine', Icon: ChefHat, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
   DESSERTS: { label: 'Desserts', Icon: Cake, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200' },
 };
 
@@ -41,7 +42,7 @@ const CAT_STYLES: {
   bg: string;
 }[] = [
   { keywords: ['entrée', 'entree', 'salade', 'soupe', 'starter'], Icon: Leaf, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { keywords: ['plat', 'viande', 'poulet', 'poisson', 'pasta', 'burger', 'steak'], Icon: UtensilsCrossed, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { keywords: ['plat', 'viande', 'poulet', 'poisson', 'pasta', 'burger', 'steak'], Icon: UtensilsCrossed, color: 'text-blue-600', bg: 'bg-blue-50' },
   { keywords: ['dessert', 'gâteau', 'cake', 'glace', 'sucré'], Icon: Cake, color: 'text-pink-600', bg: 'bg-pink-50' },
   { keywords: ['boisson', 'jus', 'eau', 'soda', 'soft'], Icon: GlassWater, color: 'text-sky-600', bg: 'bg-sky-50' },
   { keywords: ['cocktail', 'mojito', 'gin', 'sirop'], Icon: Wine, color: 'text-teal-600', bg: 'bg-teal-50' },
@@ -111,7 +112,7 @@ function ConfirmModal({
         <div className="flex gap-2.5">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 font-medium transition-all"
+            className="flex-1 btn btn-secondary"
           >
             {cancelLabel}
           </button>
@@ -119,7 +120,7 @@ function ConfirmModal({
             onClick={onConfirm}
             disabled={loading}
             className={cn(
-              'flex-1 px-4 py-2.5 text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50',
+              'flex-1 btn text-white transition-all disabled:opacity-50',
               styles.buttonBg
             )}
           >
@@ -177,44 +178,38 @@ function CategoryForm({ initial, onSave, onClose, loading }: CategoryFormProps) 
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-              Nom *
-            </label>
+            <label className="label">Nom *</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="ex: Boissons, Plats principaux..."
               autoFocus
               className={cn(
-                'w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all',
-                errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                'input',
+                errors.name && 'border-red-300 bg-red-50'
               )}
             />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-              Description
-            </label>
+            <label className="label">Description</label>
             <input
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Courte description..."
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+              className="input"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-              Ordre d'affichage
-            </label>
+            <label className="label">Ordre d'affichage</label>
             <input
               type="number"
               min={1}
               value={sortOrder}
               onChange={e => setSortOrder(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+              className="input"
             />
           </div>
         </div>
@@ -222,14 +217,14 @@ function CategoryForm({ initial, onSave, onClose, loading }: CategoryFormProps) 
         <div className="flex gap-2.5 px-6 pb-6">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 font-medium transition-all"
+            className="flex-1 btn btn-secondary"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || loading}
-            className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 disabled:opacity-50 transition-all"
+            className="flex-1 btn btn-primary"
           >
             {loading ? 'Enregistrement...' : 'Enregistrer'}
           </button>
@@ -240,7 +235,11 @@ function CategoryForm({ initial, onSave, onClose, loading }: CategoryFormProps) 
 }
 
 // ======
-// ITEM FORM MODAL
+// ITEM FORM MODAL (AVEC IMAGE UPLOAD)
+// ======
+
+// ======
+// ITEM FORM MODAL - VERSION AMÉLIORÉE
 // ======
 
 interface ItemFormData {
@@ -253,6 +252,7 @@ interface ItemFormData {
   isAvailable: boolean;
   linkedProductId?: string;
   stockDeductionQty?: number;
+  imageUrl?: string | null;
 }
 
 interface ItemFormProps {
@@ -266,7 +266,7 @@ interface ItemFormProps {
 function ItemForm({ categories, initial, onSave, onClose, loading }: ItemFormProps) {
   const currency = useCurrency();
 
-  // Form state
+  // États
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [price, setPrice] = useState(initial?.price ?? 0);
@@ -278,51 +278,70 @@ function ItemForm({ categories, initial, onSave, onClose, loading }: ItemFormPro
   const [linkedProductId, setLinkedProductId] = useState(initial?.linkedProductId ?? '');
   const [stockDeductionQty, setStockDeductionQty] = useState(initial?.stockDeductionQty ?? 0.04);
   const [productSearch, setProductSearch] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
+  const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; price?: string; categoryId?: string }>({});
+  const [activeTab, setActiveTab] = useState<'general' | 'stock'>('general'); // Nouvel onglet
 
-  // Queries
+  // Requête produits
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ['products-for-menu-link', productSearch],
     queryFn: () => productApi.getAll({ limit: 100, search: productSearch || undefined }),
     enabled: linkStock,
   });
 
-  // Extraction des produits selon la structure réelle de l'API
   const products = useMemo((): Product[] => {
     if (!productsData) return [];
-    
-    // Structure réelle: { success, data: { products: [...], pagination } }
-    if (productsData?.data?.products && Array.isArray(productsData.data.products)) {
-      return productsData.data.products;
-    }
-    
-    // Fallback: data directement un tableau
-    if (Array.isArray(productsData?.data)) {
-      return productsData.data;
-    }
-    
-    // Fallback: productsData directement un tableau
-    if (Array.isArray(productsData)) {
-      return productsData;
-    }
-    
+    if (productsData?.data?.products && Array.isArray(productsData.data.products)) return productsData.data.products;
+    if (Array.isArray(productsData?.data)) return productsData.data;
+    if (Array.isArray(productsData)) return productsData;
     return [];
   }, [productsData]);
 
-  const selectedProduct = useMemo(() => {
-    return products.find((p: Product) => p.id === linkedProductId);
-  }, [products, linkedProductId]);
-  
+  const selectedProduct = useMemo(() => products.find(p => p.id === linkedProductId), [products, linkedProductId]);
   const portionsLeft = useMemo(() => {
     if (!selectedProduct || stockDeductionQty <= 0) return null;
     return Math.floor(selectedProduct.stock / stockDeductionQty);
   }, [selectedProduct, stockDeductionQty]);
 
+  // Gestion image
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      if (initial?.id) {
+        const result = await menuApi.uploadItemImage(initial.id, file);
+        setImageUrl(result.imageUrl);
+        toast.success('Image téléchargée');
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => setImageUrl(reader.result as string);
+        reader.readAsDataURL(file);
+        toast.success('Image ajoutée (sera enregistrée avec l\'article)');
+      }
+    } catch {
+      toast.error('Erreur lors de l\'upload');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleImageDelete = async () => {
+    try {
+      if (initial?.id && initial.imageUrl) {
+        await menuApi.deleteItemImage(initial.id);
+        toast.success('Image supprimée');
+      }
+      setImageUrl(null);
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
   // Validation
   const validate = useCallback(() => {
     const newErrors: { name?: string; price?: string; categoryId?: string } = {};
     if (!name.trim()) newErrors.name = 'Le nom est requis';
-    if (price <= 0) newErrors.price = 'Le prix doit être supérieur à 0';
+    if (price <= 0) newErrors.price = 'Le prix doit être > 0';
     if (!categoryId) newErrors.categoryId = 'La catégorie est requise';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -339,6 +358,7 @@ function ItemForm({ categories, initial, onSave, onClose, loading }: ItemFormPro
       station,
       preparationTime: prepTime,
       isAvailable: available,
+      imageUrl: imageUrl,
     };
 
     if (linkStock && linkedProductId && stockDeductionQty > 0) {
@@ -353,329 +373,336 @@ function ItemForm({ categories, initial, onSave, onClose, loading }: ItemFormPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-lg font-bold text-gray-900">
               {initial?.id ? 'Modifier l\'article' : 'Nouvel article'}
             </h2>
-            {initial?.name && (
-              <p className="text-xs text-gray-400 mt-0.5">ID: {initial.id?.slice(0, 8) ?? 'nouveau'}...</p>
-            )}
+            <p className="text-xs text-gray-400 mt-0.5">
+              {initial?.id ? 'Modifiez les informations ci-dessous' : 'Remplissez les informations pour créer un nouvel article'}
+            </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
-            <X size={16} />
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Onglets */}
+        <div className="flex border-b border-gray-200 px-6 shrink-0">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={cn(
+              'py-2.5 px-4 text-sm font-medium transition-all relative',
+              activeTab === 'general'
+                ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            📝 Général
+          </button>
+          <button
+            onClick={() => setActiveTab('stock')}
+            className={cn(
+              'py-2.5 px-4 text-sm font-medium transition-all relative',
+              activeTab === 'stock'
+                ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            📦 Stock Bar (optionnel)
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          {/* Basic Information */}
-          <div>
-            <div className="flex items-center gap-2 mb-3.5">
-              <Tag size={12} className="text-gray-400" />
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Informations de base
-              </p>
-            </div>
+          {/* Onglet Général */}
+          {activeTab === 'general' && (
+            <div className="space-y-6">
+              {/* Image */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <ImageIcon size={14} className="text-gray-400" />
+                  <label className="text-sm font-semibold text-gray-700">Image de l'article</label>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="w-32 h-32">
+                    <ImageUpload
+                      currentImage={imageUrl}
+                      onUpload={handleImageUpload}
+                      onDelete={handleImageDelete}
+                      isLoading={isUploading}
+                      aspectRatio="square"
+                    />
+                  </div>
+                  <div className="flex-1 text-sm text-gray-500 space-y-1">
+                    <p>Format recommandé : carré (500x500px). Max 1MB.</p>
+                    <p>Formats acceptés : JPG, PNG, WEBP, GIF.</p>
+                    <p>Une bonne image améliore l’expérience du serveur.</p>
+                  </div>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="col-span-2">
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Nom *
+              {/* Nom */}
+              <div>
+                <label className="label flex items-center gap-1">
+                  Nom * <span className="text-xs text-gray-400">(obligatoire)</span>
                 </label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="ex: Whisky Single Malt, Steak Grillé..."
+                  placeholder="ex: Whisky Single Malt, Steak Grillé, Tiramisu..."
                   autoFocus
-                  className={cn(
-                    'w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all',
-                    errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                  )}
+                  className={cn('input', errors.name && 'border-red-300 bg-red-50')}
                 />
                 {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
               </div>
 
-              <div className="col-span-2">
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Description
-                </label>
+              {/* Description */}
+              <div>
+                <label className="label">Description</label>
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="Description affichée sur le menu..."
+                  placeholder="Une brève description qui apparaîtra sur le menu (optionnel)"
                   rows={2}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
+                  className="input resize-none"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Prix *
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={price}
-                    onChange={e => setPrice(Number(e.target.value))}
-                    className={cn(
-                      'w-full px-3.5 py-2.5 pr-14 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent',
-                      errors.price ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                    )}
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
-                    {currency}
-                  </span>
+              {/* Prix + Temps */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Prix *</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      step={10}
+                      value={price}
+                      onChange={e => setPrice(Number(e.target.value))}
+                      className={cn('input pr-12', errors.price && 'border-red-300 bg-red-50')}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currency}</span>
+                  </div>
+                  {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
                 </div>
-                {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Temps de préparation
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min={0}
-                    value={prepTime}
-                    onChange={e => setPrepTime(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-                  />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
-                    min
-                  </span>
+                <div>
+                  <label className="label">Temps de préparation</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={prepTime}
+                      onChange={e => setPrepTime(Number(e.target.value))}
+                      className="input pr-12"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">minutes</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Temps estimé en cuisine/bar</p>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Catégorie *
-                </label>
-                <div className="relative">
+              {/* Catégorie + Station */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Catégorie *</label>
                   <select
                     value={categoryId}
                     onChange={e => setCategoryId(e.target.value)}
-                    className={cn(
-                      'w-full px-3.5 py-2.5 pr-8 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent',
-                      errors.categoryId ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                    )}
+                    className={cn('input', errors.categoryId && 'border-red-300 bg-red-50')}
                   >
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  {errors.categoryId && <p className="text-xs text-red-500 mt-1">{errors.categoryId}</p>}
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                  Station
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(Object.entries(STATION_CONFIG) as [Station, typeof STATION_CONFIG[Station]][]).map(([key, config]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setStation(key)}
-                      className={cn(
-                        'flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all',
-                        station === key
-                          ? `${config.bg} ${config.color} border-transparent shadow-sm`
-                          : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
-                      )}
-                    >
-                      <config.Icon size={12} />
-                      {config.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="col-span-2">
-                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700">Disponible à la commande</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Visible et commandable par les serveurs</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAvailable(v => !v)}
-                    className={cn(
-                      'w-11 h-6 rounded-full transition-colors relative shrink-0 ml-4',
-                      available ? 'bg-emerald-500' : 'bg-gray-300'
-                    )}
-                  >
-                    <span className={cn(
-                      'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
-                      available ? 'translate-x-5' : 'translate-x-0.5'
-                    )} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Stock Link Section avec recherche améliorée */}
-          <div className="border border-dashed border-gray-200 rounded-2xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setLinkStock(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  'w-8 h-8 rounded-xl flex items-center justify-center transition-colors',
-                  linkStock ? 'bg-sky-100' : 'bg-gray-100'
-                )}>
-                  <Package size={15} className={linkStock ? 'text-sky-600' : 'text-gray-400'} />
-                </div>
-                <div className="text-left">
-                  <p className={cn('text-sm font-semibold', linkStock ? 'text-gray-800' : 'text-gray-600')}>
-                    Lien Stock Bar
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    Déduction automatique du stock à chaque vente
-                  </p>
-                </div>
-              </div>
-              <div className={cn(
-                'w-10 h-5.5 rounded-full transition-colors relative shrink-0 ml-4',
-                linkStock ? 'bg-sky-500' : 'bg-gray-300'
-              )} style={{ height: '22px', width: '40px' }}>
-                <span className={cn(
-                  'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                  linkStock ? 'translate-x-5' : 'translate-x-0.5'
-                )} />
-              </div>
-            </button>
-
-            {linkStock && (
-              <div className="border-t border-dashed border-gray-200 bg-sky-50/30 px-4 pb-4 pt-4 space-y-3.5">
-                {/* Composant de recherche avec suggestions */}
                 <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                    Produit en stock *
-                  </label>
-                  <ProductSearchInput
-                    value={productSearch}
-                    onChange={setProductSearch}
-                    onSelect={(productId, product) => {
-                      setLinkedProductId(productId);
-                      // Optionnel: pré-remplir la quantité déduite
-                      // setStockDeductionQty(0.04);
-                    }}
-                    onClear={() => {
-                      setLinkedProductId('');
-                      setStockDeductionQty(0.04);
-                    }}
-                    products={products}
-                    isLoading={productsLoading}
-                    selectedProduct={selectedProduct}
-                    placeholder="Rechercher par nom ou code-barres..."
-                  />
-                </div>
-
-                {/* Quantité déduite par vente */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-                    Quantité déduite par vente
-                  </label>
-                  <div className="flex gap-1.5 flex-wrap mb-2.5">
-                    {DEDUCTION_PRESETS.map(preset => (
+                  <label className="label">Station de travail</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(STATION_CONFIG) as [Station, typeof STATION_CONFIG[Station]][]).map(([key, config]) => (
                       <button
-                        key={preset.value}
+                        key={key}
                         type="button"
-                        onClick={() => setStockDeductionQty(preset.value)}
+                        onClick={() => setStation(key)}
                         className={cn(
-                          'px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all',
-                          Math.abs(stockDeductionQty - preset.value) < 0.001
-                            ? 'border-sky-400 bg-sky-100 text-sky-700'
+                          'flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-semibold border transition-all',
+                          station === key
+                            ? `${config.bg} ${config.color} border-transparent shadow-sm`
                             : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
                         )}
                       >
-                        {preset.label}
+                        <config.Icon size={14} />
+                        <span>{config.label}</span>
                       </button>
                     ))}
                   </div>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min={0.001}
-                      step={0.001}
-                      value={stockDeductionQty}
-                      onChange={e => setStockDeductionQty(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 pr-24 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent bg-white"
-                    />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">
-                      {selectedProduct?.unit ?? 'unités'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1.5">
-                    Shot 4cl → 0.04 · Verre 15cl → 0.15 · Demi-bouteille → 0.375 · Bouteille → 1.0
-                  </p>
                 </div>
-
-                {/* Info stock */}
-                {selectedProduct && (
-                  <div className={cn(
-                    'rounded-xl px-3.5 py-3 text-xs flex items-start gap-2.5 border',
-                    portionsLeft !== null && portionsLeft < 10
-                      ? 'bg-amber-50 border-amber-200'
-                      : 'bg-emerald-50 border-emerald-200'
-                  )}>
-                    {portionsLeft !== null && portionsLeft < 10 ? (
-                      <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                    ) : (
-                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-800">{selectedProduct.name}</p>
-                      <p className="text-gray-500 mt-0.5">
-                        Stock actuel :{' '}
-                        <span className="font-semibold text-gray-700">
-                          {selectedProduct.stock} {selectedProduct.unit ?? 'u.'}
-                        </span>
-                        {portionsLeft !== null && (
-                          <>
-                            {' '}→{' '}
-                            <span className={cn('font-bold', portionsLeft < 10 ? 'text-amber-600' : 'text-emerald-600')}>
-                              {portionsLeft} portion{portionsLeft > 1 ? 's' : ''} restante{portionsLeft > 1 ? 's' : ''}
-                            </span>
-                          </>
-                        )}
-                      </p>
-                      {portionsLeft !== null && portionsLeft < 10 && (
-                        <p className="text-amber-600 font-semibold mt-1">
-                          ⚠️ Stock bas — réapprovisionnement recommandé
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
-          </div>
+
+              {/* Disponibilité */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Disponible à la commande</p>
+                  <p className="text-xs text-gray-400">Visible et commandable par les serveurs</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAvailable(v => !v)}
+                  className={cn(
+                    'w-11 h-6 rounded-full transition-colors relative shrink-0',
+                    available ? 'bg-emerald-500' : 'bg-gray-300'
+                  )}
+                >
+                  <span className={cn(
+                    'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    available ? 'translate-x-5' : 'translate-x-0.5'
+                  )} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Onglet Stock Bar */}
+          {activeTab === 'stock' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 rounded-xl p-3 text-sm text-blue-700">
+                💡 Lier cet article à un produit en stock permet une déduction automatique du stock à chaque vente (ex: un shot de whisky consomme 0.04L de bouteille).
+              </div>
+
+              <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-4">
+                <div>
+                  <p className="font-semibold text-gray-800">Activer le lien avec le stock bar</p>
+                  <p className="text-xs text-gray-500">Déduit automatiquement la quantité vendue</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLinkStock(v => !v)}
+                  className={cn(
+                    'w-11 h-6 rounded-full transition-colors relative',
+                    linkStock ? 'bg-sky-500' : 'bg-gray-300'
+                  )}
+                >
+                  <span className={cn(
+                    'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    linkStock ? 'translate-x-5' : 'translate-x-0.5'
+                  )} />
+                </button>
+              </div>
+
+              {linkStock && (
+                <div className="space-y-4 border-l-4 border-sky-200 pl-4 ml-2">
+                  <div>
+                    <label className="label">Produit en stock</label>
+                    <ProductSearchInput
+                      value={productSearch}
+                      onChange={setProductSearch}
+                      onSelect={(productId) => setLinkedProductId(productId)}
+                      onClear={() => {
+                        setLinkedProductId('');
+                        setStockDeductionQty(0.04);
+                      }}
+                      products={products}
+                      isLoading={productsLoading}
+                      selectedProduct={selectedProduct}
+                      placeholder="Rechercher une bouteille ou un produit..."
+                    />
+                    {!selectedProduct && linkStock && (
+                      <p className="text-xs text-amber-600 mt-1">⚠️ Aucun produit sélectionné</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="label">Quantité déduite par vente</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {DEDUCTION_PRESETS.map(preset => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => setStockDeductionQty(preset.value)}
+                          className={cn(
+                            'px-3 py-1 rounded-full text-xs font-medium border transition-all',
+                            Math.abs(stockDeductionQty - preset.value) < 0.001
+                              ? 'bg-sky-100 text-sky-700 border-sky-300'
+                              : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                          )}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0.001}
+                        step={0.001}
+                        value={stockDeductionQty}
+                        onChange={e => setStockDeductionQty(Number(e.target.value))}
+                        className="input pr-20"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                        {selectedProduct?.unit ?? 'unités'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      Exemples : Shot 4cl → 0.04 · Verre 15cl → 0.15 · Demi-bouteille → 0.375 · Bouteille → 1.0
+                    </p>
+                  </div>
+
+                  {selectedProduct && (
+                    <div className={cn(
+                      'rounded-xl p-3 text-xs',
+                      portionsLeft !== null && portionsLeft < 10
+                        ? 'bg-amber-50 border border-amber-200'
+                        : 'bg-emerald-50 border border-emerald-200'
+                    )}>
+                      <div className="flex items-start gap-2">
+                        {portionsLeft !== null && portionsLeft < 10 ? (
+                          <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                        ) : (
+                          <CheckCircle2 size={14} className="text-emerald-500 shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">{selectedProduct.name}</p>
+                          <p className="text-gray-600">
+                            Stock : <span className="font-bold">{selectedProduct.stock} {selectedProduct.unit ?? 'u.'}</span>
+                            {portionsLeft !== null && (
+                              <> → <span className="font-bold">{portionsLeft} portions restantes</span></>
+                            )}
+                          </p>
+                          {portionsLeft !== null && portionsLeft < 10 && (
+                            <p className="text-amber-700 font-semibold mt-1">⚠️ Stock bas – réapprovisionnez bientôt</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-2.5 px-6 py-4 border-t border-gray-100 shrink-0">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 font-medium transition-all"
-          >
+        {/* Footer avec boutons */}
+        <div className="flex gap-3 px-6 py-4 border-t border-gray-100 shrink-0 bg-gray-50">
+          <button onClick={onClose} className="flex-1 btn btn-secondary">
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={!isValid || loading}
-            className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 disabled:opacity-50 transition-all"
+            className="flex-1 btn btn-primary"
           >
-            {loading ? 'Enregistrement...' : initial?.id ? 'Mettre à jour' : 'Créer l\'article'}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Enregistrement...
+              </>
+            ) : (
+              initial?.id ? 'Mettre à jour' : 'Créer l\'article'
+            )}
           </button>
         </div>
       </div>
@@ -696,10 +723,10 @@ interface StatsCardProps {
 
 function StatsCard({ label, value, icon: Icon, color }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+    <div className="card p-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+          <p className="label uppercase mb-0">{label}</p>
           <p className="text-xl font-bold text-gray-800 mt-1">{value}</p>
         </div>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', color)}>
@@ -720,13 +747,11 @@ export default function Menu() {
   const queryClient = useQueryClient();
   const currency = useCurrency();
 
-  // UI State
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
   const [stationFilter, setStationFilter] = useState<'' | Station>('');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
-  // Modal states
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<MenuCategory | null>(null);
@@ -734,14 +759,12 @@ export default function Menu() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<MenuItem | null>(null);
 
-  // Data queries
   const { data: fullData, isLoading, error } = useQuery({
     queryKey: ['restaurant-menu-full'],
     queryFn: () => menuApi.getFull(),
     staleTime: 30000,
   });
 
-  // fullData.data est directement le tableau des catégories
   const rawCategories = useMemo((): WithItems[] => {
     const data = fullData?.data;
     if (Array.isArray(data)) {
@@ -769,6 +792,7 @@ export default function Menu() {
       ...i, 
       price: typeof i.price === 'string' ? parseFloat(i.price) : i.price,
       stockDeductionQty: typeof i.stockDeductionQty === 'string' ? parseFloat(i.stockDeductionQty) : i.stockDeductionQty,
+      imageUrl: i.imageUrl,
       category: { 
         id: c.id,
         name: c.name,
@@ -781,7 +805,6 @@ export default function Menu() {
     }))
   ), [rawCategories]);
 
-  // Stats
   const stats = useMemo(() => ({
     totalItems: allItems.length,
     availableItems: allItems.filter(i => i.isAvailable).length,
@@ -790,7 +813,6 @@ export default function Menu() {
     dessertsItems: allItems.filter(i => i.station === 'DESSERTS').length,
   }), [allItems]);
 
-  // Filtered items
   const displayedItems = useMemo(() => allItems.filter(item => {
     if (activeCategoryId !== 'all' && item.categoryId !== activeCategoryId) return false;
     if (stationFilter && item.station !== stationFilter) return false;
@@ -798,7 +820,6 @@ export default function Menu() {
     return true;
   }), [allItems, activeCategoryId, stationFilter, search]);
 
-  // Invalidate helper
   const invalidateMenu = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['restaurant-menu-full'] });
   }, [queryClient]);
@@ -828,16 +849,40 @@ export default function Menu() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Item mutations
+  // ✅ Item mutations avec gestion d'image
   const createItem = useMutation({
     mutationFn: async (data: ItemFormData) => {
-      const result = await menuApi.createItem(data);
+      const result = await menuApi.createItem({
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        categoryId: data.categoryId,
+        station: data.station,
+        preparationTime: data.preparationTime,
+        isAvailable: data.isAvailable,
+        imageUrl: data.imageUrl || undefined,
+      });
+      
       if (data.linkedProductId && data.stockDeductionQty && result.data?.id) {
         await menuApi.setStockLink(result.data.id, {
           linkedProductId: data.linkedProductId,
           stockDeductionQty: data.stockDeductionQty,
         });
       }
+      
+      // Si imageUrl existe et c'est une nouvelle image (base64), l'uploader
+      if (data.imageUrl && data.imageUrl.startsWith('data:image') && result.data?.id) {
+        try {
+          // Convertir base64 en fichier
+          const fetchResponse = await fetch(data.imageUrl);
+          const blob = await fetchResponse.blob();
+          const file = new File([blob], 'image.jpg', { type: blob.type });
+          await menuApi.uploadItemImage(result.data.id, file);
+        } catch (err) {
+          console.error('Erreur upload image:', err);
+        }
+      }
+      
       return result;
     },
     onSuccess: () => { toast.success('Article créé'); invalidateMenu(); setShowItemForm(false); },
@@ -854,6 +899,7 @@ export default function Menu() {
         station: data.station,
         preparationTime: data.preparationTime,
         isAvailable: data.isAvailable,
+        imageUrl: data.imageUrl || undefined,
       });
 
       if (data.linkedProductId && data.stockDeductionQty) {
@@ -882,7 +928,6 @@ export default function Menu() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Loading state
   if (isLoading) return <SmartLoader isLoading={true}><div /></SmartLoader>;
   
   if (error) {
@@ -895,7 +940,7 @@ export default function Menu() {
         <p className="text-xs text-gray-400 mt-1">{error.message}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold"
+          className="btn btn-primary mt-4"
         >
           Réessayer
         </button>
@@ -906,11 +951,11 @@ export default function Menu() {
   const activeCategory = allCategories.find(c => c.id === activeCategoryId);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[var(--bg-secondary)]">
 
       {/* LEFT: CATEGORIES SIDEBAR */}
-      <aside className="w-64 shrink-0 flex flex-col bg-white border-r border-gray-100 shadow-sm">
-        <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
+      <aside className="w-64 shrink-0 flex flex-col sidebar shadow-sm">
+        <div className="px-4 py-3.5 border-b border-[var(--border-light)] flex items-center justify-between">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Catégories</p>
           <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
             {allCategories.length}
@@ -924,25 +969,25 @@ export default function Menu() {
             className={cn(
               'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left group',
               activeCategoryId === 'all'
-                ? 'bg-orange-50 shadow-sm'
+                ? 'bg-[var(--primary-light)] shadow-sm'
                 : 'hover:bg-gray-50'
             )}
           >
             <div className={cn(
               'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-              activeCategoryId === 'all' ? 'bg-orange-500' : 'bg-gray-100'
+              activeCategoryId === 'all' ? 'bg-[var(--primary)]' : 'bg-gray-100'
             )}>
               <LayoutGrid size={13} className={activeCategoryId === 'all' ? 'text-white' : 'text-gray-500'} />
             </div>
             <span className={cn(
               'flex-1 text-xs font-semibold truncate',
-              activeCategoryId === 'all' ? 'text-orange-700' : 'text-gray-700'
+              activeCategoryId === 'all' ? 'text-[var(--primary)]' : 'text-gray-700'
             )}>
               Tous les articles
             </span>
             <span className={cn(
               'text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0',
-              activeCategoryId === 'all' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'
+              activeCategoryId === 'all' ? 'bg-[var(--primary-light)] text-[var(--primary)]' : 'bg-gray-100 text-gray-500'
             )}>
               {allItems.length}
             </span>
@@ -962,24 +1007,24 @@ export default function Menu() {
                     onClick={() => setActiveCategoryId(cat.id)}
                     className={cn(
                       'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left',
-                      isActive ? 'bg-orange-50 shadow-sm' : 'hover:bg-gray-50'
+                      isActive ? 'bg-[var(--primary-light)] shadow-sm' : 'hover:bg-gray-50'
                     )}
                   >
                     <div className={cn(
                       'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-                      isActive ? 'bg-orange-500' : style.bg
+                      isActive ? 'bg-[var(--primary)]' : style.bg
                     )}>
                       <style.Icon size={13} className={isActive ? 'text-white' : style.color} />
                     </div>
                     <span className={cn(
                       'flex-1 text-xs font-semibold truncate',
-                      isActive ? 'text-orange-700' : 'text-gray-700'
+                      isActive ? 'text-[var(--primary)]' : 'text-gray-700'
                     )}>
                       {cat.name}
                     </span>
                     <span className={cn(
                       'text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0',
-                      isActive ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'
+                      isActive ? 'bg-[var(--primary-light)] text-[var(--primary)]' : 'bg-gray-100 text-gray-500'
                     )}>
                       {count}
                     </span>
@@ -1013,10 +1058,10 @@ export default function Menu() {
           )}
         </div>
 
-        <div className="p-3 border-t border-gray-100 shrink-0">
+        <div className="p-3 border-t border-[var(--border-light)] shrink-0">
           <button
             onClick={() => setShowCategoryForm(true)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-500 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+            className="btn btn-secondary w-full flex items-center justify-center gap-1.5 border-dashed"
           >
             <Plus size={13} /> Nouvelle catégorie
           </button>
@@ -1028,14 +1073,14 @@ export default function Menu() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-4 gap-3 px-5 pt-4 pb-2 shrink-0">
-          <StatsCard label="Total articles" value={stats.totalItems} icon={UtensilsCrossed} color="bg-orange-500" />
+          <StatsCard label="Total articles" value={stats.totalItems} icon={UtensilsCrossed} color="bg-[var(--primary)]" />
           <StatsCard label="Disponibles" value={stats.availableItems} icon={CheckCircle2} color="bg-emerald-500" />
           <StatsCard label="Bar" value={stats.barItems} icon={Wine} color="bg-sky-500" />
           <StatsCard label="Cuisine" value={stats.cuisineItems} icon={ChefHat} color="bg-amber-500" />
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-white border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-white border-b border-[var(--border-light)] shrink-0">
           <div className="flex items-center gap-2.5">
             {activeCategoryId !== 'all' && (() => {
               const style = getCategoryStyle(activeCategory?.name ?? '');
@@ -1065,7 +1110,7 @@ export default function Menu() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Rechercher..."
-                className="pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent w-44 bg-gray-50"
+                className="input pl-8 pr-3 py-2 w-44 bg-gray-50"
               />
               {search && (
                 <button
@@ -1104,7 +1149,7 @@ export default function Menu() {
               <select
                 value={stationFilter}
                 onChange={e => setStationFilter(e.target.value as '' | Station)}
-                className="pl-3 pr-7 py-2 text-xs border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white"
+                className="input pl-3 pr-7 py-2 appearance-none"
               >
                 <option value="">Toutes stations</option>
                 <option value="BAR">Bar</option>
@@ -1117,14 +1162,14 @@ export default function Menu() {
             {/* Add button */}
             <button
               onClick={() => setShowItemForm(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold hover:bg-orange-600 transition-all shadow-sm"
+              className="btn btn-primary"
             >
               <Plus size={13} /> Nouvel article
             </button>
           </div>
         </div>
 
-        {/* Items List/Grid */}
+        {/* Items List/Grid avec images */}
         <div className="flex-1 overflow-y-auto p-4">
           {displayedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -1140,14 +1185,14 @@ export default function Menu() {
               {(search || stationFilter) ? (
                 <button
                   onClick={() => { setSearch(''); setStationFilter(''); setActiveCategoryId('all'); }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors"
+                  className="btn btn-secondary"
                 >
                   <X size={14} /> Effacer les filtres
                 </button>
               ) : (
                 <button
                   onClick={() => setShowItemForm(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-colors"
+                  className="btn btn-primary"
                 >
                   <Plus size={14} /> Créer un article
                 </button>
@@ -1163,18 +1208,27 @@ export default function Menu() {
                   <div
                     key={item.id}
                     className={cn(
-                      'group flex items-center gap-4 bg-white rounded-xl border px-4 py-3 transition-all hover:shadow-md',
+                      'group flex items-center gap-3 bg-white rounded-xl border px-3 py-2.5 transition-all hover:shadow-md',
                       item.isAvailable
                         ? 'border-gray-100 hover:border-gray-200'
                         : 'border-gray-100 opacity-60'
                     )}
                   >
-                    {/* Category icon */}
-                    <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', catStyle.bg)}>
-                      <catStyle.Icon size={16} className={catStyle.color} />
+                    {/* ✅ Image miniature */}
+                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className={cn('w-full h-full flex items-center justify-center', catStyle.bg)}>
+                          <catStyle.Icon size={16} className={catStyle.color} />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
@@ -1199,12 +1253,10 @@ export default function Menu() {
                       </div>
                     </div>
 
-                    {/* Price */}
                     <p className="text-sm font-bold text-gray-900 shrink-0 tabular-nums">
                       {formatCurrency(item.price, currency)}
                     </p>
 
-                    {/* Station badge */}
                     <span className={cn(
                       'inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0',
                       stationConfig.bg,
@@ -1215,7 +1267,6 @@ export default function Menu() {
                       {stationConfig.label}
                     </span>
 
-                    {/* Availability toggle */}
                     <button
                       onClick={() => toggleAvailability.mutate({ id: item.id, isAvailable: !item.isAvailable })}
                       className={cn(
@@ -1229,7 +1280,6 @@ export default function Menu() {
                       {item.isAvailable ? 'Disponible' : 'Indisponible'}
                     </button>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setEditingItem(item)}
@@ -1264,31 +1314,40 @@ export default function Menu() {
                       item.isAvailable ? 'border-gray-100' : 'border-gray-100 opacity-60'
                     )}
                   >
-                    <div className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', catStyle.bg)}>
-                          <catStyle.Icon size={18} className={catStyle.color} />
+                    {/* ✅ Image en haut */}
+                    <div className="aspect-square bg-gray-100 relative">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <catStyle.Icon size={32} className="text-gray-300" />
                         </div>
-                        <span className={cn(
-                          'inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg',
-                          stationConfig.bg,
-                          stationConfig.color
-                        )}>
-                          <stationConfig.Icon size={9} />
-                          {stationConfig.label}
-                        </span>
-                      </div>
+                      )}
+                      <span className={cn(
+                        'absolute top-2 right-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm',
+                        stationConfig.bg,
+                        stationConfig.color
+                      )}>
+                        <stationConfig.Icon size={9} />
+                        {stationConfig.label}
+                      </span>
+                    </div>
 
+                    <div className="p-3">
                       <p className="font-bold text-gray-800 text-sm line-clamp-1">{item.name}</p>
                       {item.description && (
                         <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
                       )}
 
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
                         <p className="text-base font-bold text-gray-900">
                           {formatCurrency(item.price, currency)}
                         </p>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => toggleAvailability.mutate({ id: item.id, isAvailable: !item.isAvailable })}
                             className={cn(
@@ -1297,18 +1356,21 @@ export default function Menu() {
                                 ? 'text-emerald-600 hover:bg-emerald-50'
                                 : 'text-gray-400 hover:bg-gray-100'
                             )}
+                            title={item.isAvailable ? 'Rendre indisponible' : 'Rendre disponible'}
                           >
                             {item.isAvailable ? <Eye size={14} /> : <EyeOff size={14} />}
                           </button>
                           <button
                             onClick={() => setEditingItem(item)}
                             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                            title="Modifier"
                           >
                             <Edit size={14} />
                           </button>
                           <button
                             onClick={() => setDeletingItem(item)}
                             className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Supprimer"
                           >
                             <Trash2 size={14} />
                           </button>
