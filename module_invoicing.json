@@ -1,0 +1,311 @@
+{
+  "info": {
+    "_postman_id": "invoicing-templates-collection",
+    "name": "MUKAPPS - Invoicing & Templates",
+    "description": "Complete testing collection for Invoicing module and Document Templates management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"companyName\": \"My Company\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates Management",
+      "item": [
+        {
+          "name": "Get Available Variables",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/variables/available",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "variables", "available"]
+            }
+          }
+        },
+        {
+          "name": "Create Invoice Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"INVOICE\",\n  \"name\": \"Professional Invoice Template\",\n  \"description\": \"Modern invoice with company branding\",\n  \"isDefault\": true,\n  \"content\": \"<html>\\n<head>\\n  <meta charset=\\\"UTF-8\\\">\\n  <style>\\n    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }\\n    .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }\\n    .company-name { font-size: 24px; font-weight: bold; }\\n    .invoice-title { font-size: 18px; color: #666; }\\n    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }\\n    .info-box h3 { font-size: 12px; text-transform: uppercase; color: #999; margin: 0 0 5px 0; }\\n    table { width: 100%; border-collapse: collapse; margin: 30px 0; }\\n    th { background: #f0f0f0; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; }\\n    td { padding: 10px; border-bottom: 1px solid #ddd; }\\n    .total-section { text-align: right; margin-top: 30px; }\\n    .total-value { font-size: 20px; font-weight: bold; }\\n  </style>\\n</head>\\n<body>\\n  <div class=\\\"header\\\">\\n    {{#if company.logo}}<img src=\\\"{{company.logo}}\\\" style=\\\"max-height: 50px; margin-bottom: 10px;\\\">{{/if}}\\n    <div class=\\\"company-name\\\">{{company.name}}</div>\\n    <div class=\\\"invoice-title\\\">INVOICE</div>\\n  </div>\\n\\n  <div class=\\\"info-grid\\\">\\n    <div>\\n      <div class=\\\"info-box\\\">\\n        <h3>Invoice Date</h3>\\n        <p>{{formatDate document.date}}</p>\\n        <h3 style=\\\"margin-top: 15px;\\\">Due Date</h3>\\n        <p>{{formatDate document.dueDate}}</p>\\n      </div>\\n    </div>\\n    <div>\\n      <div class=\\\"info-box\\\">\\n        <h3>Bill To</h3>\\n        <p><strong>{{client.name}}</strong></p>\\n        <p>{{client.address}}</p>\\n        <p>{{client.email}}</p>\\n      </div>\\n    </div>\\n  </div>\\n\\n  <table>\\n    <thead>\\n      <tr>\\n        <th>Description</th>\\n        <th style=\\\"width: 80px;\\\">Qty</th>\\n        <th style=\\\"width: 100px;\\\">Unit Price</th>\\n        <th style=\\\"width: 60px;\\\">Tax %</th>\\n        <th style=\\\"width: 100px;\\\">Total</th>\\n      </tr>\\n    </thead>\\n    <tbody>\\n      {{#each items}}\\n      <tr>\\n        <td>{{this.description}}</td>\\n        <td style=\\\"text-align: center;\\\">{{this.quantity}}</td>\\n        <td style=\\\"text-align: right;\\\">{{formatCurrency this.unitPrice}}</td>\\n        <td style=\\\"text-align: center;\\\">{{this.taxRate}}%</td>\\n        <td style=\\\"text-align: right;\\\">{{formatCurrency this.total}}</td>\\n      </tr>\\n      {{/each}}\\n    </tbody>\\n  </table>\\n\\n  <div class=\\\"total-section\\\">\\n    <p>Subtotal: <strong>{{formatCurrency totals.subtotal}}</strong></p>\\n    {{#if totals.discount}}<p>Discount: <strong>-{{formatCurrency totals.discount}}</strong></p>{{/if}}\\n    <p>Tax: <strong>{{formatCurrency totals.taxAmount}}</strong></p>\\n    <p class=\\\"total-value\\\">TOTAL: {{formatCurrency totals.grandTotal}}</p>\\n  </div>\\n\\n  <div style=\\\"margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;\\\">\\n    <p><strong>{{company.name}}</strong></p>\\n    <p>{{company.email}} | {{company.phone}}</p>\\n    <p>{{company.website}}</p>\\n  </div>\\n</body>\\n</html>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates"]
+            }
+          }
+        },
+        {
+          "name": "Create Quote Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"QUOTE\",\n  \"name\": \"Standard Quote Template\",\n  \"description\": \"Professional quotation template\",\n  \"isDefault\": true,\n  \"content\": \"<html><head><meta charset=\\\"UTF-8\\\"><style>body { font-family: Arial; margin: 20px; } h1 { color: #0066cc; } table { width: 100%; border-collapse: collapse; margin: 20px 0; } th { background: #0066cc; color: white; padding: 10px; } td { padding: 10px; border-bottom: 1px solid #ddd; } .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }</style></head><body><h1>QUOTATION #{{document.number}}</h1><p>Date: {{formatDate document.date}}</p><p>Valid Until: {{formatDate document.dueDate}}</p><h2>For: {{client.name}}</h2><p>{{client.address}}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead><tbody>{{#each items}}<tr><td>{{this.description}}</td><td>{{this.quantity}}</td><td>{{formatCurrency this.unitPrice}}</td><td>{{formatCurrency this.total}}</td></tr>{{/each}}</tbody></table><div class=\\\"total\\\">TOTAL: {{formatCurrency totals.grandTotal}}</div><p style=\\\"font-size: 12px; color: #666; margin-top: 30px;\\\">{{company.name}} | {{company.email}} | {{company.phone}}</p></body></html>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates"]
+            }
+          }
+        },
+        {
+          "name": "Create Proforma Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Proforma_INVOICE\",\n  \"name\": \"Proforma Invoice Template\",\n  \"description\": \"Proforma invoice with payment terms\",\n  \"isDefault\": true,\n  \"content\": \"<html><head><meta charset=\\\"UTF-8\\\"><style>body { font-family: Arial; margin: 20px; } .header { background: #ffc107; padding: 10px; font-weight: bold; margin-bottom: 20px; } table { width: 100%; border-collapse: collapse; margin: 20px 0; } th { background: #f0f0f0; padding: 10px; border-bottom: 2px solid #ddd; } td { padding: 10px; border-bottom: 1px solid #ddd; } .total { float: right; width: 300px; text-align: right; } .total-row { display: flex; justify-content: space-between; padding: 5px 0; }</style></head><body><div class=\\\"header\\\">Proforma INVOICE #{{document.number}}</div><p>Date: {{formatDate document.date}}</p><h3>Invoice To:</h3><p><strong>{{client.name}}</strong></p><p>{{client.address}}</p><table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax %</th><th>Total</th></tr></thead><tbody>{{#each items}}<tr><td>{{this.description}}</td><td>{{this.quantity}}</td><td>{{formatCurrency this.unitPrice}}</td><td>{{this.taxRate}}%</td><td>{{formatCurrency this.total}}</td></tr>{{/each}}</tbody></table><div class=\\\"total\\\"><div class=\\\"total-row\\\"><span>Subtotal:</span><span>{{formatCurrency totals.subtotal}}</span></div><div class=\\\"total-row\\\"><span>Tax:</span><span>{{formatCurrency totals.taxAmount}}</span></div><div class=\\\"total-row\\\" style=\\\"font-weight: bold; font-size: 16px;\\\"><span>TOTAL:</span><span>{{formatCurrency totals.grandTotal}}</span></div></div><div style=\\\"clear: both; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px;\\\"><p>Payment Terms: {{payment.terms}}</p><p>Bank: {{payment.bankDetails}}</p></div></body></html>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates"]
+            }
+          }
+        },
+        {
+          "name": "List Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates?type=INVOICE&skip=0&take=50",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates"],
+              "query": [
+                {"key": "type", "value": "INVOICE"},
+                {"key": "skip", "value": "0"},
+                {"key": "take", "value": "50"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Template by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/{{template_id}}",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "{{template_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Default Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/default/INVOICE",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "default", "INVOICE"]
+            }
+          }
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Invoice Template\",\n  \"description\": \"Modified invoice template\",\n  \"content\": \"<html><body><h1>Invoice #{{document.number}}</h1><p>Client: {{client.name}}</p></body></html>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/{{template_id}}",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "{{template_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Set Template as Default",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/{{template_id}}/default",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "{{template_id}}", "default"]
+            }
+          }
+        },
+        {
+          "name": "Clone Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newName\": \"Invoice Template Copy\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/{{template_id}}/clone",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "{{template_id}}", "clone"]
+            }
+          }
+        },
+        {
+          "name": "Preview Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateContent\": \"<html><body><h1>Invoice #{{document.number}}</h1><p>For: {{client.name}}</p><p>Total: {{formatCurrency totals.grandTotal}}</p></body></html>\",\n  \"sampleData\": {\n    \"document\": {\n      \"number\": \"INV-2025-001\",\n      \"date\": \"2025-04-27\",\n      \"dueDate\": \"2025-05-27\"\n    },\n    \"client\": {\n      \"name\": \"Acme Corporation\",\n      \"email\": \"contact@acme.com\",\n      \"address\": \"123 Business St\"\n    },\n    \"items\": [\n      {\"description\": \"Product A\", \"quantity\": 2, \"unitPrice\": 100, \"taxRate\": 19, \"total\": 238},\n      {\"description\": \"Product B\", \"quantity\": 1, \"unitPrice\": 50, \"taxRate\": 19, \"total\": 59.5}\n    ],\n    \"totals\": {\n      \"subtotal\": 150,\n      \"discount\": 0,\n      \"taxAmount\": 28.5,\n      \"shipping\": 0,\n      \"grandTotal\": 178.5\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/preview",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "preview"]
+            }
+          }
+        },
+        {
+          "name": "Render Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateContent\": \"<html><body><h1>Invoice #{{document.number}}</h1><table><tr><th>Item</th><th>Qty</th><th>Total</th></tr>{{#each items}}<tr><td>{{this.description}}</td><td>{{this.quantity}}</td><td>{{formatCurrency this.total}}</td></tr>{{/each}}</table><p>Grand Total: {{formatCurrency totals.grandTotal}}</p></body></html>\",\n  \"data\": {\n    \"document\": {\n      \"type\": \"INVOICE\",\n      \"number\": \"INV-2025-001\",\n      \"date\": \"2025-04-27\",\n      \"dueDate\": \"2025-05-27\",\n      \"currency\": \"FC\"\n    },\n    \"company\": {\n      \"name\": \"My Company\",\n      \"email\": \"info@company.com\",\n      \"phone\": \"+243123456789\",\n      \"website\": \"https://company.com\"\n    },\n    \"client\": {\n      \"name\": \"Client Name\",\n      \"email\": \"client@example.com\",\n      \"address\": \"Client Address\"\n    },\n    \"items\": [\n      {\"description\": \"Service A\", \"quantity\": 1, \"unitPrice\": 500, \"taxRate\": 19, \"total\": 595},\n      {\"description\": \"Service B\", \"quantity\": 2, \"unitPrice\": 250, \"taxRate\": 19, \"total\": 595}\n    ],\n    \"totals\": {\n      \"subtotal\": 1000,\n      \"discount\": 0,\n      \"taxAmount\": 190,\n      \"shipping\": 0,\n      \"grandTotal\": 1190\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/render",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "render"]
+            }
+          }
+        },
+        {
+          "name": "Generate PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"htmlContent\": \"<html><head><style>body { font-family: Arial; margin: 20px; } h1 { color: #333; } table { width: 100%; border-collapse: collapse; } th { background: #f0f0f0; padding: 10px; border-bottom: 2px solid #ddd; } td { padding: 10px; border-bottom: 1px solid #ddd; }</style></head><body><h1>INVOICE #INV-2025-001</h1><p>Date: April 27, 2025</p><table><tr><th>Description</th><th>Qty</th><th>Total</th></tr><tr><td>Product A</td><td>2</td><td>FC 238</td></tr><tr><td>Product B</td><td>1</td><td>FC 59.50</td></tr></table><p><strong>Grand Total: FC 1,190</strong></p></body></html>\",\n  \"filename\": \"invoice-2025-001.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/pdf",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "pdf"]
+            }
+          }
+        },
+        {
+          "name": "Delete Template",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/invoicing/templates/{{template_id}}",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "invoicing", "templates", "{{template_id}}"]
+            }
+          }
+        }
+      ]
+    }

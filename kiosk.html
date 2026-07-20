@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="description" content="Borne de pointage QR Code - MukApps" />
+
+  <!-- Manifest dédié borne : installe une app séparée de l'app principale Mukapps -->
+  <link rel="manifest" href="/kiosk.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Borne Pointage" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <link rel="icon" type="image/png" href="/LOGO_Mukapps.png" />
+
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+  <title>Borne de Pointage - MukApps</title>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!--
+    kiosk.html charge le même bundle JS que index.html.
+    Le routeur React rend directement /kiosk (RhQrKiosk) sans auth.
+    Le manifest /kiosk.webmanifest (scope=/kiosk) permet l'installation
+    en tant qu'app autonome séparée de l'app principale.
+  -->
+  <script type="module" src="/src/main.tsx"></script>
+
+  <script>
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.classList.add('standalone-mode');
+    }
+    // Empêche le scroll sur borne dédiée
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  </script>
+</body>
+</html>

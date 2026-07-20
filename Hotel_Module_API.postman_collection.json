@@ -1,0 +1,1363 @@
+{
+  "info": {
+    "_postman_id": "hotel-module-v1",
+    "name": "MUKAPPS — Module Hôtellerie",
+    "description": "Collection complète des routes du module hôtellerie.\n\nBase URL: {{baseUrl}}/api/hotel\nAuthentification: Bearer Token JWT\n\nVariables requises:\n- baseUrl: http://localhost:3000\n- token: JWT obtenu via POST /api/auth/login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "roomTypeId", "value": "", "type": "string" },
+    { "key": "roomId", "value": "", "type": "string" },
+    { "key": "rateId", "value": "", "type": "string" },
+    { "key": "bookingId", "value": "", "type": "string" },
+    { "key": "stayId", "value": "", "type": "string" },
+    { "key": "serviceId", "value": "", "type": "string" },
+    { "key": "taskId", "value": "", "type": "string" },
+    { "key": "billId", "value": "", "type": "string" },
+    { "key": "guestId", "value": "", "type": "string" },
+    { "key": "paymentId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "01 — Types de Chambres",
+      "item": [
+        {
+          "name": "Lister les types de chambres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types"]
+            }
+          }
+        },
+        {
+          "name": "Créer un type de chambre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('roomTypeId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chambre Standard\",\n  \"description\": \"Chambre confortable avec vue sur jardin\",\n  \"basePrice\": 85000,\n  \"maxOccupancy\": 2,\n  \"bedType\": \"DOUBLE\",\n  \"amenities\": [\"wifi\", \"climatisation\", \"tv\"],\n  \"sortOrder\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types"]
+            }
+          }
+        },
+        {
+          "name": "Créer un type — Suite Junior",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Suite Junior\",\n  \"description\": \"Suite spacieuse avec salon et vue sur piscine\",\n  \"basePrice\": 150000,\n  \"maxOccupancy\": 3,\n  \"bedType\": \"KING\",\n  \"amenities\": [\"wifi\", \"climatisation\", \"tv\", \"minibar\", \"jacuzzi\"],\n  \"sortOrder\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'un type de chambre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types/{{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types", "{{roomTypeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Modifier un type de chambre",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chambre Standard Deluxe\",\n  \"basePrice\": 90000,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types/{{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types", "{{roomTypeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un type de chambre",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/room-types/{{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "room-types", "{{roomTypeId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — Chambres",
+      "item": [
+        {
+          "name": "Vue d'ensemble des chambres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Disponibilité des chambres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/availability?checkIn=2026-07-01&checkOut=2026-07-04&roomTypeId={{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "availability"],
+              "query": [
+                { "key": "checkIn", "value": "2026-07-01" },
+                { "key": "checkOut", "value": "2026-07-04" },
+                { "key": "roomTypeId", "value": "{{roomTypeId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lister les chambres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms?status=LIBRE&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms"],
+              "query": [
+                { "key": "status", "value": "LIBRE" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Créer une chambre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('roomId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomTypeId\": \"{{roomTypeId}}\",\n  \"number\": \"101\",\n  \"name\": \"Chambre Palmier\",\n  \"floor\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms"]
+            }
+          }
+        },
+        {
+          "name": "Créer plusieurs chambres — lot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomTypeId\": \"{{roomTypeId}}\",\n  \"number\": \"102\",\n  \"name\": \"Chambre Bougainvillée\",\n  \"floor\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'une chambre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/{{roomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "{{roomId}}"]
+            }
+          }
+        },
+        {
+          "name": "Modifier une chambre",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chambre Palmier Royale\",\n  \"floor\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/{{roomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "{{roomId}}"]
+            }
+          }
+        },
+        {
+          "name": "Changer le statut d'une chambre",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"EN_MENAGE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/{{roomId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "{{roomId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Bloquer une chambre",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isBlocked\": true,\n  \"blockedReason\": \"Travaux de rénovation salle de bain\",\n  \"blockedUntil\": \"2026-07-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/{{roomId}}/block",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "{{roomId}}", "block"]
+            }
+          }
+        },
+        {
+          "name": "Débloquer une chambre",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isBlocked\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rooms/{{roomId}}/block",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rooms", "{{roomId}}", "block"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — Plans Tarifaires",
+      "item": [
+        {
+          "name": "Calculer le prix (période)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates/calculate?roomTypeId={{roomTypeId}}&checkIn=2026-07-01&checkOut=2026-07-04",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates", "calculate"],
+              "query": [
+                { "key": "roomTypeId", "value": "{{roomTypeId}}" },
+                { "key": "checkIn", "value": "2026-07-01" },
+                { "key": "checkOut", "value": "2026-07-04" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lister les plans tarifaires",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates?roomTypeId={{roomTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates"],
+              "query": [{ "key": "roomTypeId", "value": "{{roomTypeId}}" }]
+            }
+          }
+        },
+        {
+          "name": "Créer un plan tarifaire — Tarif Standard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('rateId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomTypeId\": \"{{roomTypeId}}\",\n  \"name\": \"Tarif Standard\",\n  \"pricePerNight\": 85000,\n  \"priority\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates"]
+            }
+          }
+        },
+        {
+          "name": "Créer un plan tarifaire — Week-end",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomTypeId\": \"{{roomTypeId}}\",\n  \"name\": \"Tarif Week-end\",\n  \"pricePerNight\": 95000,\n  \"daysOfWeek\": [5, 6],\n  \"minNights\": 2,\n  \"priority\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates"]
+            }
+          }
+        },
+        {
+          "name": "Créer un plan tarifaire — Haute Saison",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomTypeId\": \"{{roomTypeId}}\",\n  \"name\": \"Haute Saison\",\n  \"pricePerNight\": 110000,\n  \"startDate\": \"2026-12-20\",\n  \"endDate\": \"2027-01-05\",\n  \"priority\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'un plan tarifaire",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates/{{rateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates", "{{rateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Modifier un plan tarifaire",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerNight\": 92000,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates/{{rateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates", "{{rateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un plan tarifaire",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/rates/{{rateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "rates", "{{rateId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 — Réservations",
+      "item": [
+        {
+          "name": "Lister les réservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings?status=EN_ATTENTE&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings"],
+              "query": [
+                { "key": "status", "value": "EN_ATTENTE" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Calendrier des réservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/calendar?startDate=2026-07-01&endDate=2026-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "calendar"],
+              "query": [
+                { "key": "startDate", "value": "2026-07-01" },
+                { "key": "endDate", "value": "2026-07-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Créer une réservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('bookingId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"guestName\": \"Jean Dupont\",\n  \"guestPhone\": \"+225 07 12 34 56 78\",\n  \"guestEmail\": \"jean.dupont@email.com\",\n  \"guestIdNumber\": \"CI-123456789\",\n  \"checkInDate\": \"2026-07-10\",\n  \"checkOutDate\": \"2026-07-13\",\n  \"adults\": 2,\n  \"children\": 0,\n  \"depositAmount\": 85000,\n  \"source\": \"DIRECT\",\n  \"notes\": \"Client préférant chambre calme\",\n  \"specialRequests\": \"Lit supplémentaire si possible\",\n  \"guests\": [\n    {\n      \"firstName\": \"Marie\",\n      \"lastName\": \"Dupont\",\n      \"nationality\": \"Ivoirienne\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Créer une réservation — Agence",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"guestName\": \"Sophie Martin\",\n  \"guestPhone\": \"+33 06 78 90 12 34\",\n  \"guestEmail\": \"sophie.martin@corp.fr\",\n  \"checkInDate\": \"2026-08-01\",\n  \"checkOutDate\": \"2026-08-05\",\n  \"adults\": 1,\n  \"source\": \"AGENCE\",\n  \"notes\": \"Voyage d'affaires, facture entreprise requise\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'une réservation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Modifier une réservation",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestPhone\": \"+225 07 99 88 77 66\",\n  \"specialRequests\": \"Vue sur jardin, étage élevé\",\n  \"depositAmount\": 100000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Confirmer une réservation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Annuler une réservation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Annulation par le client pour raisons personnelles\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Marquer comme no-show",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/no-show",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "no-show"]
+            }
+          }
+        },
+        {
+          "name": "Lister les accompagnants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/guests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "guests"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter un accompagnant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('guestId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Marie\",\n  \"lastName\": \"Dupont\",\n  \"idType\": \"CNI\",\n  \"idNumber\": \"CI-789012\",\n  \"nationality\": \"Ivoirienne\",\n  \"dateOfBirth\": \"1990-05-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/guests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "guests"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un accompagnant",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/guests/{{guestId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "guests", "{{guestId}}"]
+            }
+          }
+        },
+        {
+          "name": "Recherche — par nom",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings?search=Jean Dupont",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings"],
+              "query": [{ "key": "search", "value": "Jean Dupont" }]
+            }
+          }
+        },
+        {
+          "name": "Filtrer — réservations du mois",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings?startDate=2026-07-01&endDate=2026-07-31&status=CONFIRMEE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings"],
+              "query": [
+                { "key": "startDate", "value": "2026-07-01" },
+                { "key": "endDate", "value": "2026-07-31" },
+                { "key": "status", "value": "CONFIRMEE" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 — Check-in / Check-out",
+      "item": [
+        {
+          "name": "Check-in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('stayId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"keyGiven\": true,\n  \"keyNumber\": \"A-101\",\n  \"notes\": \"Client arrivé à 14h30, demande oreillers supplémentaires\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/checkin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "checkin"]
+            }
+          }
+        },
+        {
+          "name": "Check-out",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Départ à 11h00, clé rendue, chambre en bon état\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "checkout"]
+            }
+          }
+        },
+        {
+          "name": "Prolonger un séjour",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newCheckOutDate\": \"2026-07-16\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/extend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "extend"]
+            }
+          }
+        },
+        {
+          "name": "Séjours actifs en cours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "active"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 — Séjours & Services",
+      "item": [
+        {
+          "name": "Détails d'un séjour",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}"]
+            }
+          }
+        },
+        {
+          "name": "Services d'un séjour",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}", "services"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter un service — Room Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('serviceId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"ROOM_SERVICE\",\n  \"description\": \"Petit-déjeuner en chambre (2 personnes)\",\n  \"quantity\": 1,\n  \"unitPrice\": 17000,\n  \"notes\": \"Commande passée à 8h00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}", "services"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter un service — Minibar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"MINIBAR\",\n  \"description\": \"Eau minérale 50cl x4 + chips\",\n  \"quantity\": 1,\n  \"unitPrice\": 8500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}", "services"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter un service — Laverie",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"LAVERIE\",\n  \"description\": \"Pressing 3 chemises\",\n  \"quantity\": 3,\n  \"unitPrice\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}", "services"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un service",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/stays/{{stayId}}/services/{{serviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "stays", "{{stayId}}", "services", "{{serviceId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 — Housekeeping",
+      "item": [
+        {
+          "name": "Tableau de bord housekeeping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Lister les tâches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping?status=EN_ATTENTE&priority=HAUTE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping"],
+              "query": [
+                { "key": "status", "value": "EN_ATTENTE" },
+                { "key": "priority", "value": "HAUTE" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Créer une tâche — Nettoyage complet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('taskId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"type\": \"NETTOYAGE_COMPLET\",\n  \"priority\": \"HAUTE\",\n  \"scheduledAt\": \"2026-07-13T10:00:00Z\",\n  \"notes\": \"Départ à 11h00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping"]
+            }
+          }
+        },
+        {
+          "name": "Créer une tâche — Inspection",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"type\": \"INSPECTION\",\n  \"priority\": \"NORMALE\",\n  \"notes\": \"Inspection qualité hebdomadaire\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping"]
+            }
+          }
+        },
+        {
+          "name": "Créer une tâche — Maintenance",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"type\": \"MAINTENANCE\",\n  \"priority\": \"URGENTE\",\n  \"notes\": \"Climatisation en panne, signalée par le client\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'une tâche",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Assigner une tâche",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedTo\": \"uuid-de-l-agent-housekeeping\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Démarrer une tâche",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "start"]
+            }
+          }
+        },
+        {
+          "name": "Compléter une tâche",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Chambre nettoyée, literie changée, salle de bain désinfectée\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Inspecter une tâche — Approuvée",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passed\": true,\n  \"notes\": \"Chambre conforme aux standards de l'hôtel\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/inspect",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "inspect"]
+            }
+          }
+        },
+        {
+          "name": "Inspecter une tâche — Refusée",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passed\": false,\n  \"notes\": \"Traces sur les vitres, poussière sous le lit\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/inspect",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "inspect"]
+            }
+          }
+        },
+        {
+          "name": "Rejeter une tâche",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Salle de bain non nettoyée, rideaux non changés, recloison\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/housekeeping/{{taskId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "housekeeping", "{{taskId}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 — Facturation",
+      "item": [
+        {
+          "name": "Lister les factures",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills?status=OUVERTE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills"],
+              "query": [{ "key": "status", "value": "OUVERTE" }]
+            }
+          }
+        },
+        {
+          "name": "Facture d'une réservation (voir)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/bill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "bill"]
+            }
+          }
+        },
+        {
+          "name": "Générer la facture d'une réservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('billId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bookings/{{bookingId}}/bill",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bookings", "{{bookingId}}", "bill"]
+            }
+          }
+        },
+        {
+          "name": "Détails d'une facture",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter un article à la facture",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SERVICE\",\n  \"description\": \"Blanchisserie express\",\n  \"quantity\": 1,\n  \"unitPrice\": 15000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}", "items"]
+            }
+          }
+        },
+        {
+          "name": "Enregistrer un paiement — Espèces",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) pm.collectionVariables.set('paymentId', res.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100000,\n  \"method\": \"CASH\",\n  \"notes\": \"Paiement partiel en espèces\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Enregistrer un paiement — Carte",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 155000,\n  \"method\": \"CARD\",\n  \"reference\": \"TXN-VISA-2026-1234\",\n  \"notes\": \"Paiement solde restant par carte Visa\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Enregistrer un paiement — Mobile Money",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 85000,\n  \"method\": \"MOBILE_MONEY\",\n  \"reference\": \"MM-WAVE-2026-5678\",\n  \"notes\": \"Wave Money\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Annuler un paiement",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/bills/{{billId}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "bills", "{{billId}}", "payments", "{{paymentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 — Dashboard & Rapports",
+      "item": [
+        {
+          "name": "Vue d'ensemble",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Arrivées du jour",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/arrivals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "arrivals"]
+            }
+          }
+        },
+        {
+          "name": "Arrivées d'une date spécifique",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/arrivals?date=2026-07-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "arrivals"],
+              "query": [{ "key": "date", "value": "2026-07-15" }]
+            }
+          }
+        },
+        {
+          "name": "Départs du jour",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/departures",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "departures"]
+            }
+          }
+        },
+        {
+          "name": "Départs d'une date spécifique",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/departures?date=2026-07-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "departures"],
+              "query": [{ "key": "date", "value": "2026-07-15" }]
+            }
+          }
+        },
+        {
+          "name": "Rapport d'occupation — mois",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/reports/occupancy?startDate=2026-07-01&endDate=2026-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "reports", "occupancy"],
+              "query": [
+                { "key": "startDate", "value": "2026-07-01" },
+                { "key": "endDate", "value": "2026-07-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rapport d'occupation — trimestre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/reports/occupancy?startDate=2026-07-01&endDate=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "reports", "occupancy"],
+              "query": [
+                { "key": "startDate", "value": "2026-07-01" },
+                { "key": "endDate", "value": "2026-09-30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rapport de revenus — mois",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/reports/revenue?startDate=2026-07-01&endDate=2026-07-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "reports", "revenue"],
+              "query": [
+                { "key": "startDate", "value": "2026-07-01" },
+                { "key": "endDate", "value": "2026-07-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rapport de revenus — année",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotel/dashboard/reports/revenue?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotel", "dashboard", "reports", "revenue"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "00 — Authentification",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token enregistré:', res.data.token.substring(0, 30) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@hotel.com\",\n  \"password\": \"votre-mot-de-passe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

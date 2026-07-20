@@ -1,0 +1,867 @@
+{
+  "info": {
+    "name": "MukApps - SuperAdmin API",
+    "description": "Collection complète pour tester toutes les routes SuperAdmin de MukApps",
+    "_postman_id": "mukapps-superadmin-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token superadmin - rempli automatiquement après login"
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "type": "string",
+      "description": "ID d'une company - rempli automatiquement après création"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string",
+      "description": "ID d'un utilisateur"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login SuperAdmin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token sauvegardé:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"superadmin@mukapps.com\",\n  \"password\": \"SuperAdmin@2024!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Connexion en tant que SuperAdmin. Le token JWT est sauvegardé automatiquement dans la variable 'token'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Statistiques Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "dashboard", "stats"]
+            },
+            "description": "Retourne les statistiques globales : nombre de companies, utilisateurs, ventes, revenus, companies par plan, companies récentes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Lister toutes les companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Recherche par nom ou email",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "Filtre par statut : ACTIVE | TRIAL | EXPIRED | CANCELLED",
+                  "disabled": true
+                },
+                {
+                  "key": "plan",
+                  "value": "PREMIUM",
+                  "description": "Filtre par plan : FREE | BASIC | PREMIUM | ENTERPRISE",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Liste toutes les companies avec pagination. Filtres optionnels : search, status, plan."
+          }
+        },
+        {
+          "name": "Créer une company",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('companyId', res.data.id);",
+                  "  console.log('Company ID sauvegardé:', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Entreprise Test SARL\",\n  \"email\": \"contact@entreprisetest.com\",\n  \"phone\": \"+243812345678\",\n  \"address\": \"123 Avenue de la Paix, Kinshasa, RDC\",\n  \"adminEmail\": \"admin@entreprisetest.com\",\n  \"adminPassword\": \"Admin@2024!\",\n  \"adminFirstName\": \"Jean\",\n  \"adminLastName\": \"Dupont\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies"]
+            },
+            "description": "Crée une nouvelle company avec son administrateur. L'ID de la company est sauvegardé automatiquement. La company est créée en mode TRIAL (1 jour)."
+          }
+        },
+        {
+          "name": "Détails d'une company",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}"]
+            },
+            "description": "Retourne les détails complets d'une company : utilisateurs, modules souscrits, compteurs (produits, ventes, paiements...)."
+          }
+        },
+        {
+          "name": "Modifier une company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Entreprise Test SARL (Modifiée)\",\n  \"email\": \"nouveau@entreprisetest.com\",\n  \"phone\": \"+243899999999\",\n  \"address\": \"456 Boulevard du Commerce, Kinshasa, RDC\",\n  \"logo\": \"https://example.com/logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}"]
+            },
+            "description": "Modifie les informations d'une company (nom, email, téléphone, adresse, logo)."
+          }
+        },
+        {
+          "name": "Activer une company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "status"]
+            },
+            "description": "Active une company (isActive: true)."
+          }
+        },
+        {
+          "name": "Suspendre une company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "status"]
+            },
+            "description": "Suspend une company (isActive: false)."
+          }
+        },
+        {
+          "name": "Supprimer une company",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}"]
+            },
+            "description": "Supprime définitivement une company et toutes ses données. Action irréversible."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Abonnements (Subscriptions)",
+      "item": [
+        {
+          "name": "Activer un abonnement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"PREMIUM\",\n  \"durationMonths\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/subscription/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "subscription", "activate"]
+            },
+            "description": "Active un abonnement pour une company.\n\nPlans disponibles : FREE | BASIC | PREMIUM | ENTERPRISE\ndurationMonths : durée en mois (ex: 1, 3, 6, 12)"
+          }
+        },
+        {
+          "name": "Activer abonnement - Plan BASIC 3 mois",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"BASIC\",\n  \"durationMonths\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/subscription/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "subscription", "activate"]
+            },
+            "description": "Active un abonnement BASIC pour 3 mois."
+          }
+        },
+        {
+          "name": "Activer abonnement - Plan ENTERPRISE 1 mois",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"ENTERPRISE\",\n  \"durationMonths\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/subscription/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "subscription", "activate"]
+            },
+            "description": "Active un abonnement ENTERPRISE pour 1 mois."
+          }
+        },
+        {
+          "name": "Prolonger un abonnement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationMonths\": 6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/subscription/extend",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "subscription", "extend"]
+            },
+            "description": "Prolonge l'abonnement existant d'une company. Si l'abonnement est expiré, repart de la date actuelle. Sinon, s'ajoute à la date d'expiration actuelle."
+          }
+        },
+        {
+          "name": "Annuler un abonnement",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/subscription/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "subscription", "cancel"]
+            },
+            "description": "Annule l'abonnement d'une company. Le statut passe à CANCELLED. Aucun body requis."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modules",
+      "item": [
+        {
+          "name": "Activer un module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleName\": \"magasin\",\n  \"isActive\": true,\n  \"durationMonths\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "modules"]
+            },
+            "description": "Active un module pour une company avec une durée optionnelle.\n\nModules disponibles : magasin | client | users | superadmin\ndurationMonths : optionnel, si absent le module n'expire pas"
+          }
+        },
+        {
+          "name": "Activer module - sans expiration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleName\": \"magasin\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "modules"]
+            },
+            "description": "Active un module sans date d'expiration (accès illimité)."
+          }
+        },
+        {
+          "name": "Activer module client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleName\": \"client\",\n  \"isActive\": true,\n  \"durationMonths\": 6\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "modules"]
+            },
+            "description": "Active le module client pour 6 mois."
+          }
+        },
+        {
+          "name": "Désactiver un module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleName\": \"magasin\",\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/companies/{{companyId}}/modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "companies", "{{companyId}}", "modules"]
+            },
+            "description": "Désactive un module pour une company."
+          }
+        },
+        {
+          "name": "Statistiques d'utilisation des modules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/modules/usage/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "modules", "usage", "stats"]
+            },
+            "description": "Retourne les statistiques globales d'utilisation de tous les modules."
+          }
+        },
+        {
+          "name": "Modules les plus utilisés",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/modules/most-used?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "modules", "most-used"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Nombre de modules à retourner (défaut: 10)"
+                }
+              ]
+            },
+            "description": "Retourne la liste des modules les plus utilisés, triés par popularité."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Utilisateurs",
+      "item": [
+        {
+          "name": "Lister tous les utilisateurs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Recherche par email, prénom ou nom",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "ADMIN",
+                  "description": "Filtre par rôle : ADMIN | MANAGER | EMPLOYEE | CASHIER",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filtre par statut : true | false",
+                  "disabled": true
+                },
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}",
+                  "description": "Filtre par company",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Liste tous les utilisateurs (hors SUPER_ADMIN) avec pagination et filtres optionnels."
+          }
+        },
+        {
+          "name": "Lister utilisateurs d'une company",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users?companyId={{companyId}}&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "{{companyId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Liste uniquement les utilisateurs d'une company spécifique."
+          }
+        },
+        {
+          "name": "Lister utilisateurs actifs uniquement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users?isActive=true&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Liste uniquement les utilisateurs dont le compte est actif."
+          }
+        },
+        {
+          "name": "Activer un utilisateur",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users", "{{userId}}", "status"]
+            },
+            "description": "Active le compte d'un utilisateur (isActive: true). Impossible sur un SUPER_ADMIN."
+          }
+        },
+        {
+          "name": "Suspendre un utilisateur",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users/{{userId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users", "{{userId}}", "status"]
+            },
+            "description": "Suspend le compte d'un utilisateur (isActive: false). L'utilisateur ne pourra plus se connecter. Impossible sur un SUPER_ADMIN."
+          }
+        },
+        {
+          "name": "Utilisateurs en ligne",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/users/online",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "users", "online"]
+            },
+            "description": "Retourne les utilisateurs actuellement en ligne ou actifs dans les 5 dernières minutes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs d'activité",
+      "item": [
+        {
+          "name": "Tous les logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "Filtre par utilisateur",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "COMPANY_CREATED",
+                  "description": "Filtre par action ex: COMPANY_CREATED | USER_SUSPENDED | SUBSCRIPTION_ACTIVATED",
+                  "disabled": true
+                },
+                {
+                  "key": "module",
+                  "value": "superadmin",
+                  "description": "Filtre par module : superadmin | magasin | client | users",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01",
+                  "description": "Date de début (YYYY-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31",
+                  "description": "Date de fin (YYYY-MM-DD)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retourne tous les logs d'activité avec pagination. Filtres optionnels : userId, action, module, startDate, endDate."
+          }
+        },
+        {
+          "name": "Logs par action",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs?action=COMPANY_CREATED&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs"],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "COMPANY_CREATED"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Filtre les logs par action. Actions possibles : COMPANY_CREATED, COMPANY_UPDATED, COMPANY_ACTIVATED, COMPANY_DEACTIVATED, COMPANY_DELETED, SUBSCRIPTION_ACTIVATED, SUBSCRIPTION_EXTENDED, SUBSCRIPTION_CANCELLED, MODULE_ACTIVATED, MODULE_DEACTIVATED, USER_ACTIVATED, USER_SUSPENDED"
+          }
+        },
+        {
+          "name": "Logs du module superadmin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs?module=superadmin&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs"],
+              "query": [
+                {
+                  "key": "module",
+                  "value": "superadmin"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retourne uniquement les logs du module superadmin."
+          }
+        },
+        {
+          "name": "Logs par plage de dates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs?startDate=2024-01-01&endDate=2024-12-31&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Retourne les logs dans une plage de dates."
+          }
+        },
+        {
+          "name": "Activité récente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs/recent?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs", "recent"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Nombre d'activités récentes à retourner (défaut: 20)"
+                }
+              ]
+            },
+            "description": "Retourne les N dernières activités sur la plateforme."
+          }
+        },
+        {
+          "name": "Statistiques d'activité",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/superadmin/activity-logs/stats?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["superadmin", "activity-logs", "stats"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01",
+                  "description": "Date de début (optionnelle)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31",
+                  "description": "Date de fin (optionnelle)"
+                }
+              ]
+            },
+            "description": "Retourne les statistiques agrégées des logs d'activité sur une période."
+          }
+        }
+      ]
+    }
+  ]
+}

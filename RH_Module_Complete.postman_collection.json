@@ -1,0 +1,1371 @@
+{
+  "info": {
+    "name": "RH Module — Collection Complète",
+    "description": "Collection complète pour tester le module Ressources Humaines de Mukapps.\n\n## Setup\n1. Définir la variable `base_url` (ex: http://localhost:4000)\n2. Faire la requête **[Auth] Login** pour obtenir un token\n3. Le token est automatiquement stocké dans `auth_token`\n4. Créer un département, puis un employé → copier les IDs dans les variables\n\n## Variables à configurer\n- `base_url` : URL du serveur\n- `auth_token` : auto-rempli après login\n- `department_id` : auto-rempli après création département\n- `employee_id` : auto-rempli après création employé\n- `attendance_id` : auto-rempli après création pointage\n- `leave_id` : auto-rempli après création congé\n- `payslip_id` : auto-rempli après génération bulletin\n- `qr_token` : token QR Code de l'employé (pour la borne)\n- `period` : ex: 2026-05",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",      "value": "http://localhost:4000", "type": "string" },
+    { "key": "auth_token",    "value": "", "type": "string" },
+    { "key": "department_id", "value": "", "type": "string" },
+    { "key": "employee_id",   "value": "", "type": "string" },
+    { "key": "attendance_id", "value": "", "type": "string" },
+    { "key": "leave_id",      "value": "", "type": "string" },
+    { "key": "payslip_id",    "value": "", "type": "string" },
+    { "key": "payslip_item_id","value": "", "type": "string" },
+    { "key": "qr_token",      "value": "", "type": "string" },
+    { "key": "period",        "value": "2026-05", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "0. Authentification",
+      "item": [
+        {
+          "name": "[Auth] Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('auth_token', json.data.token);",
+                  "  console.log('Token sauvegardé:', json.data.token.substring(0, 30) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "1. Départements",
+      "item": [
+        {
+          "name": "Lister les départements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/departments",
+              "host": ["{{base_url}}"], "path": ["api","rh","departments"]
+            }
+          }
+        },
+        {
+          "name": "Lister les départements (actifs seulement)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/departments?isActive=true",
+              "host": ["{{base_url}}"], "path": ["api","rh","departments"],
+              "query": [{ "key": "isActive", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "Créer un département",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('department_id', json.data.id);",
+                  "  console.log('department_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Informatique\",\n  \"description\": \"Département IT et développement\",\n  \"managerId\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/departments", "host": ["{{base_url}}"], "path": ["api","rh","departments"] }
+          }
+        },
+        {
+          "name": "Créer un département (RH)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ressources Humaines\",\n  \"description\": \"Gestion du personnel\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/departments", "host": ["{{base_url}}"], "path": ["api","rh","departments"] }
+          }
+        },
+        {
+          "name": "Obtenir un département",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/departments/{{department_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","departments","{{department_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Modifier un département",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Informatique & Digital\",\n  \"description\": \"Département IT, développement et transformation digitale\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/departments/{{department_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","departments","{{department_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un département",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/departments/{{department_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","departments","{{department_id}}"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Créer département sans nom",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Manque le champ name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/departments", "host": ["{{base_url}}"], "path": ["api","rh","departments"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "2. Employés",
+      "item": [
+        {
+          "name": "Lister les employés",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"]
+            }
+          }
+        },
+        {
+          "name": "Lister les employés (filtres)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees?status=ACTIF&page=1&limit=20",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"],
+              "query": [
+                { "key": "status", "value": "ACTIF" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lister les employés (recherche)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees?search=Diallo",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"],
+              "query": [{ "key": "search", "value": "Diallo" }]
+            }
+          }
+        },
+        {
+          "name": "Lister les employés (par département)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees?departmentId={{department_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"],
+              "query": [{ "key": "departmentId", "value": "{{department_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Créer un employé (CDI complet)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('employee_id', json.data.id);",
+                  "  console.log('employee_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Amara\",\n  \"lastName\": \"Diallo\",\n  \"email\": \"amara.diallo@example.com\",\n  \"phone\": \"+225 07 00 00 01\",\n  \"address\": \"Cocody, Abidjan\",\n  \"dateOfBirth\": \"1990-03-15\",\n  \"hireDate\": \"2023-01-10\",\n  \"position\": \"Développeur Full Stack\",\n  \"departmentId\": \"{{department_id}}\",\n  \"contractType\": \"CDI\",\n  \"baseSalary\": 450000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/employees", "host": ["{{base_url}}"], "path": ["api","rh","employees"] }
+          }
+        },
+        {
+          "name": "Créer un employé (CDD minimal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Fatoumata\",\n  \"lastName\": \"Koné\",\n  \"hireDate\": \"2026-01-01\",\n  \"endDate\": \"2026-12-31\",\n  \"position\": \"Assistante Administrative\",\n  \"contractType\": \"CDD\",\n  \"baseSalary\": 200000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/employees", "host": ["{{base_url}}"], "path": ["api","rh","employees"] }
+          }
+        },
+        {
+          "name": "Créer un employé (Stagiaire)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Ibrahim\",\n  \"lastName\": \"Touré\",\n  \"hireDate\": \"2026-04-01\",\n  \"endDate\": \"2026-09-30\",\n  \"position\": \"Stagiaire Marketing\",\n  \"contractType\": \"STAGE\",\n  \"baseSalary\": 75000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/employees", "host": ["{{base_url}}"], "path": ["api","rh","employees"] }
+          }
+        },
+        {
+          "name": "Obtenir un employé",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Statistiques d'un employé",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}/stats",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}","stats"]
+            }
+          }
+        },
+        {
+          "name": "Modifier un employé",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": \"Lead Développeur Full Stack\",\n  \"baseSalary\": 550000,\n  \"phone\": \"+225 07 00 00 99\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Suspendre un employé",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SUSPENDU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Réactiver un employé",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIF\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer un employé",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/{{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","{{employee_id}}"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Créer employé sans champs requis",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/employees", "host": ["{{base_url}}"], "path": ["api","rh","employees"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "3. Présences (Pointage manuel)",
+      "item": [
+        {
+          "name": "Lister les pointages",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance"]
+            }
+          }
+        },
+        {
+          "name": "Lister les pointages (filtres)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance?employeeId={{employee_id}}&dateFrom=2026-05-01&dateTo=2026-05-31&page=1&limit=50",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance"],
+              "query": [
+                { "key": "employeeId", "value": "{{employee_id}}" },
+                { "key": "dateFrom", "value": "2026-05-01" },
+                { "key": "dateTo", "value": "2026-05-31" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lister les absents",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance?status=ABSENT",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance"],
+              "query": [{ "key": "status", "value": "ABSENT" }]
+            }
+          }
+        },
+        {
+          "name": "Enregistrer un pointage (présent avec heures)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('attendance_id', json.data.id);",
+                  "  console.log('attendance_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"date\": \"2026-05-30\",\n  \"checkIn\": \"2026-05-30T08:00:00.000Z\",\n  \"checkOut\": \"2026-05-30T17:00:00.000Z\",\n  \"status\": \"PRESENT\",\n  \"notes\": \"Journée normale\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/attendance", "host": ["{{base_url}}"], "path": ["api","rh","attendance"] }
+          }
+        },
+        {
+          "name": "Enregistrer une absence",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"date\": \"2026-05-29\",\n  \"status\": \"ABSENT\",\n  \"notes\": \"Absence injustifiée\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/attendance", "host": ["{{base_url}}"], "path": ["api","rh","attendance"] }
+          }
+        },
+        {
+          "name": "Enregistrer un retard",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"date\": \"2026-05-28\",\n  \"checkIn\": \"2026-05-28T09:35:00.000Z\",\n  \"checkOut\": \"2026-05-28T18:00:00.000Z\",\n  \"status\": \"RETARD\",\n  \"notes\": \"Retard de 35 minutes\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/attendance", "host": ["{{base_url}}"], "path": ["api","rh","attendance"] }
+          }
+        },
+        {
+          "name": "Pointage groupé (bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"employeeId\": \"{{employee_id}}\",\n      \"date\": \"2026-05-27\",\n      \"checkIn\": \"2026-05-27T08:05:00.000Z\",\n      \"checkOut\": \"2026-05-27T17:10:00.000Z\",\n      \"status\": \"PRESENT\"\n    },\n    {\n      \"employeeId\": \"{{employee_id}}\",\n      \"date\": \"2026-05-26\",\n      \"status\": \"ABSENT\",\n      \"notes\": \"Maladie\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/attendance/bulk", "host": ["{{base_url}}"], "path": ["api","rh","attendance","bulk"] }
+          }
+        },
+        {
+          "name": "Obtenir un pointage",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance/{{attendance_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance","{{attendance_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Résumé mensuel d'un employé",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance/employees/{{employee_id}}/summary?month=5&year=2026",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance","employees","{{employee_id}}","summary"],
+              "query": [
+                { "key": "month", "value": "5" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Corriger un pointage",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkIn\": \"2026-05-30T08:15:00.000Z\",\n  \"checkOut\": \"2026-05-30T17:30:00.000Z\",\n  \"notes\": \"Corrigé après vérification badge\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/attendance/{{attendance_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","attendance","{{attendance_id}}"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] checkOut avant checkIn",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"date\": \"2026-06-01\",\n  \"checkIn\": \"2026-06-01T17:00:00.000Z\",\n  \"checkOut\": \"2026-06-01T08:00:00.000Z\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/attendance", "host": ["{{base_url}}"], "path": ["api","rh","attendance"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "4. Pointage QR Code",
+      "item": [
+        {
+          "name": "Télécharger le QR Code PNG",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/employees/{{employee_id}}/qrcode",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","employees","{{employee_id}}","qrcode"]
+            },
+            "description": "Retourne une image image/png du QR Code. Le token est généré automatiquement si l'employé n'en a pas encore."
+          }
+        },
+        {
+          "name": "Régénérer le QR Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "console.log('Ancien QR Code invalidé. Nouveau token généré.');",
+                  "console.log('Réponse:', JSON.stringify(json, null, 2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/employees/{{employee_id}}/qrcode/regenerate",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","employees","{{employee_id}}","qrcode","regenerate"]
+            },
+            "description": "Invalide l'ancien QR Code et génère un nouveau token sécurisé."
+          }
+        },
+        {
+          "name": "Scanner — Pointage Arrivée (check_in)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.success) {",
+                  "  console.log('Action:', json.data.action);",
+                  "  console.log('Message:', json.data.message);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{qr_token}}\",\n  \"scanType\": \"check_in\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/scan",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","scan"]
+            },
+            "description": "Endpoint PUBLIC — pas de JWT requis. Utilisé par la borne de pointage.\n\nRemplacer {{qr_token}} par le vrai token (visible dans la BDD colonne qrToken de rh_employees)."
+          }
+        },
+        {
+          "name": "Scanner — Pointage Départ (check_out)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{qr_token}}\",\n  \"scanType\": \"check_out\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/scan",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","scan"]
+            },
+            "description": "Endpoint PUBLIC — enregistre le départ. Calcule les heures travaillées automatiquement."
+          }
+        },
+        {
+          "name": "Statut du jour par token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/scan/status?token={{qr_token}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","scan","status"],
+              "query": [{ "key": "token", "value": "{{qr_token}}" }]
+            },
+            "description": "Endpoint PUBLIC — vérifie si l'employé a déjà pointé aujourd'hui."
+          }
+        },
+        {
+          "name": "[Erreur] Token invalide",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token_inexistant_00000000000000000000000000000000\",\n  \"scanType\": \"check_in\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/scan",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","scan"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] scanType invalide",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{qr_token}}\",\n  \"scanType\": \"lunch_break\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/qrcode/scan",
+              "host": ["{{base_url}}"], "path": ["api","rh","qrcode","scan"]
+            }
+          }
+        },
+        {
+          "name": "[Info] Borne de pointage (navigateur)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/kiosk",
+              "host": ["{{base_url}}"], "path": ["kiosk"]
+            },
+            "description": "Ouvrir dans un navigateur. Page HTML complète de la borne de pointage — aucune authentification requise."
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "5. Congés",
+      "item": [
+        {
+          "name": "Lister les congés",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves"]
+            }
+          }
+        },
+        {
+          "name": "Lister les congés (en attente)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves?status=EN_ATTENTE",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves"],
+              "query": [{ "key": "status", "value": "EN_ATTENTE" }]
+            }
+          }
+        },
+        {
+          "name": "Lister les congés (par employé)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves?employeeId={{employee_id}}&type=ANNUEL",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves"],
+              "query": [
+                { "key": "employeeId", "value": "{{employee_id}}" },
+                { "key": "type", "value": "ANNUEL" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Soldes de congés d'un employé",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves/employees/{{employee_id}}/balances",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves","employees","{{employee_id}}","balances"]
+            }
+          }
+        },
+        {
+          "name": "Soumettre un congé annuel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('leave_id', json.data.id);",
+                  "  console.log('leave_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"type\": \"ANNUEL\",\n  \"startDate\": \"2026-07-14\",\n  \"endDate\": \"2026-07-25\",\n  \"reason\": \"Congés d'été annuels\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/leaves", "host": ["{{base_url}}"], "path": ["api","rh","leaves"] }
+          }
+        },
+        {
+          "name": "Soumettre un congé maladie",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"type\": \"MALADIE\",\n  \"startDate\": \"2026-06-10\",\n  \"endDate\": \"2026-06-12\",\n  \"reason\": \"Certificat médical fourni\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/leaves", "host": ["{{base_url}}"], "path": ["api","rh","leaves"] }
+          }
+        },
+        {
+          "name": "Soumettre un congé sans solde",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"type\": \"SANS_SOLDE\",\n  \"startDate\": \"2026-08-01\",\n  \"endDate\": \"2026-08-05\",\n  \"reason\": \"Raisons personnelles\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/leaves", "host": ["{{base_url}}"], "path": ["api","rh","leaves"] }
+          }
+        },
+        {
+          "name": "Obtenir un congé",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves/{{leave_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves","{{leave_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Approuver un congé",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves/{{leave_id}}/approve",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves","{{leave_id}}","approve"]
+            },
+            "description": "Approuver crée automatiquement les enregistrements CONGE dans RhAttendance (via hook)."
+          }
+        },
+        {
+          "name": "Refuser un congé",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refusalReason\": \"Période de forte activité, impossible d'accorder le congé à cette date.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves/{{leave_id}}/refuse",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves","{{leave_id}}","refuse"]
+            }
+          }
+        },
+        {
+          "name": "Annuler un congé",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/leaves/{{leave_id}}/cancel",
+              "host": ["{{base_url}}"], "path": ["api","rh","leaves","{{leave_id}}","cancel"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Congé sur période déjà prise",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"type\": \"ANNUEL\",\n  \"startDate\": \"2026-07-15\",\n  \"endDate\": \"2026-07-20\",\n  \"reason\": \"Doublon intentionnel pour tester\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/leaves", "host": ["{{base_url}}"], "path": ["api","rh","leaves"] }
+          }
+        },
+        {
+          "name": "[Erreur] endDate avant startDate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"type\": \"ANNUEL\",\n  \"startDate\": \"2026-09-10\",\n  \"endDate\": \"2026-09-05\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/leaves", "host": ["{{base_url}}"], "path": ["api","rh","leaves"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "6. Bulletins de paie",
+      "item": [
+        {
+          "name": "Lister les bulletins",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips"]
+            }
+          }
+        },
+        {
+          "name": "Lister les bulletins (par période)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips?period={{period}}&status=BROUILLON",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips"],
+              "query": [
+                { "key": "period", "value": "{{period}}" },
+                { "key": "status", "value": "BROUILLON" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Générer un bulletin (simple)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('payslip_id', json.data.id);",
+                  "  console.log('payslip_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"period\": \"{{period}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/payslips", "host": ["{{base_url}}"], "path": ["api","rh","payslips"] }
+          }
+        },
+        {
+          "name": "Générer un bulletin (avec primes et retenues)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"period\": \"2026-04\",\n  \"bonuses\": [\n    { \"label\": \"Prime de performance\", \"amount\": 50000 },\n    { \"label\": \"Prime de transport\", \"amount\": 20000 }\n  ],\n  \"deductions\": [\n    { \"label\": \"Cotisation CNPS\", \"amount\": 36000 },\n    { \"label\": \"Impôt sur le revenu\", \"amount\": 22500 },\n    { \"label\": \"Avance sur salaire\", \"amount\": 100000 }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/payslips", "host": ["{{base_url}}"], "path": ["api","rh","payslips"] }
+          }
+        },
+        {
+          "name": "Génération groupée (tous les employés)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"period\": \"2026-06\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/payslips/bulk-generate", "host": ["{{base_url}}"], "path": ["api","rh","payslips","bulk-generate"] }
+          }
+        },
+        {
+          "name": "Obtenir un bulletin",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Ajouter une ligne au bulletin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('payslip_item_id', json.data.id);",
+                  "  console.log('payslip_item_id:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PRIME\",\n  \"label\": \"Prime exceptionnelle Q2\",\n  \"amount\": 75000,\n  \"isDeduction\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}/items",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}","items"]
+            }
+          }
+        },
+        {
+          "name": "Supprimer une ligne du bulletin",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}/items/{{payslip_item_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}","items","{{payslip_item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Valider un bulletin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}/validate",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}","validate"]
+            },
+            "description": "BROUILLON → VALIDE. Action déclenchant le hook rh:payslip:afterValidate."
+          }
+        },
+        {
+          "name": "Marquer un bulletin comme payé",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}/mark-paid",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}","mark-paid"]
+            },
+            "description": "VALIDE → PAYE. Enregistre la date de paiement."
+          }
+        },
+        {
+          "name": "[Erreur] Valider un bulletin déjà validé",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/payslips/{{payslip_id}}/validate",
+              "host": ["{{base_url}}"], "path": ["api","rh","payslips","{{payslip_id}}","validate"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Doublon période",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"{{employee_id}}\",\n  \"period\": \"{{period}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/rh/payslips", "host": ["{{base_url}}"], "path": ["api","rh","payslips"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "7. Dashboard",
+      "item": [
+        {
+          "name": "Résumé général RH",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/summary",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","summary"]
+            },
+            "description": "Retourne : effectif total/actif, congés en attente, absents du jour, masse salariale du mois, répartition par département et contrat."
+          }
+        },
+        {
+          "name": "Statistiques de présences (mois courant)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/attendance-stats",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","attendance-stats"]
+            }
+          }
+        },
+        {
+          "name": "Statistiques de présences (mois spécifique)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/attendance-stats?month=5&year=2026",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","attendance-stats"],
+              "query": [
+                { "key": "month", "value": "5" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Évolution masse salariale (6 mois)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/payroll-evolution?months=6",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","payroll-evolution"],
+              "query": [{ "key": "months", "value": "6" }]
+            }
+          }
+        },
+        {
+          "name": "Évolution masse salariale (12 mois)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/payroll-evolution?months=12",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","payroll-evolution"],
+              "query": [{ "key": "months", "value": "12" }]
+            }
+          }
+        },
+        {
+          "name": "Statistiques des congés",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/dashboard/leave-stats",
+              "host": ["{{base_url}}"], "path": ["api","rh","dashboard","leave-stats"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "8. Exports CSV",
+      "item": [
+        {
+          "name": "Exporter tous les employés (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/employees",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","employees"]
+            },
+            "description": "Retourne un fichier CSV avec BOM UTF-8 (compatible Excel)."
+          }
+        },
+        {
+          "name": "Exporter les employés actifs (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/employees?status=ACTIF",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","employees"],
+              "query": [{ "key": "status", "value": "ACTIF" }]
+            }
+          }
+        },
+        {
+          "name": "Exporter les employés d'un département (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/employees?departmentId={{department_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","employees"],
+              "query": [{ "key": "departmentId", "value": "{{department_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Exporter les présences du mois (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/attendance?year=2026&month=5",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","attendance"],
+              "query": [
+                { "key": "year", "value": "2026" },
+                { "key": "month", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Exporter les présences d'un employé (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/attendance?year=2026&month=5&employeeId={{employee_id}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","attendance"],
+              "query": [
+                { "key": "year", "value": "2026" },
+                { "key": "month", "value": "5" },
+                { "key": "employeeId", "value": "{{employee_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Exporter la paie du mois (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/payroll?period={{period}}",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","payroll"],
+              "query": [{ "key": "period", "value": "{{period}}" }]
+            }
+          }
+        },
+        {
+          "name": "Exporter les congés (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/leaves",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","leaves"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Export présences sans year/month",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/attendance",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","attendance"]
+            }
+          }
+        },
+        {
+          "name": "[Erreur] Export paie période invalide",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/exports/payroll?period=mai-2026",
+              "host": ["{{base_url}}"], "path": ["api","rh","exports","payroll"],
+              "query": [{ "key": "period", "value": "mai-2026" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "9. Cas d'erreur généraux",
+      "item": [
+        {
+          "name": "[401] Sans token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"]
+            }
+          }
+        },
+        {
+          "name": "[401] Token expiré",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYWtlIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE2MDAwMDAwMDF9.invalid" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees"]
+            }
+          }
+        },
+        {
+          "name": "[404] Employé inexistant",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        },
+        {
+          "name": "[400] UUID invalide",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{auth_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/rh/employees/pas-un-uuid",
+              "host": ["{{base_url}}"], "path": ["api","rh","employees","pas-un-uuid"]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

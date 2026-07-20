@@ -1,0 +1,120 @@
+# Apache Configuration for MukApps POS
+# Optimized for SEO, Performance & Security
+
+# ========================
+# REWRITE (SPA React)
+# ========================
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Remove trailing slash
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} (.+)/$
+  RewriteRule ^ %1 [R=301,L]
+
+  # Skip existing files/folders
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Skip API
+  RewriteCond %{REQUEST_URI} !^/api
+
+  # React SPA fallback
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# ========================
+# COMPRESSION
+# ========================
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+# ========================
+# CACHE
+# ========================
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Images
+  ExpiresByType image/* "access plus 1 year"
+
+  # CSS & JS
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+
+  # Fonts
+  ExpiresByType font/* "access plus 1 year"
+
+  # HTML
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# ========================
+# HEADERS (SECURITY)
+# ========================
+<IfModule mod_headers.c>
+
+  # Cache static
+  <FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico|css|js|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "max-age=31536000, public"
+  </FilesMatch>
+
+  # No cache HTML
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+
+  # ðŸ”’ Clickjacking protection
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # ðŸ”’ Content Security Policy (adaptÃ© React)
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; script-src 'self' https: 'unsafe-inline'; style-src 'self' https: 'unsafe-inline'; font-src 'self' data: https:; connect-src 'self' https: https://cine.mukapps.com;"
+
+  # ðŸ”’ HTTPS strict
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+  # ðŸ”’ MIME protection
+  Header always set X-Content-Type-Options "nosniff"
+
+  # ðŸ”’ XSS protection
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # ðŸ”’ Referrer policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # ðŸ”’ Remove server info
+  Header unset X-Powered-By
+  Header unset Server
+
+</IfModule>
+
+# ========================
+# MIME TYPES
+# ========================
+<IfModule mod_mime.c>
+  AddType application/javascript js
+  AddType text/css css
+  AddType image/svg+xml svg svgz
+  AddType application/font-woff woff
+  AddType application/font-woff2 woff2
+  AddType application/manifest+json webmanifest
+</IfModule>
+
+# ========================
+# SECURITY
+# ========================
+Options -Indexes
+
+# ========================
+# ERROR HANDLING
+# ========================
+ErrorDocument 404 /index.html
+ErrorDocument 500 /index.html
