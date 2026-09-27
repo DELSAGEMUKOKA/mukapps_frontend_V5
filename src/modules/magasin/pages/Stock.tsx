@@ -2,21 +2,34 @@
 import { useState } from 'react';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, RefreshCw, Plus, Eye, PackagePlus } from 'lucide-react';
-import { stockApi, type Product, type StockOverview, type ProductForMovement, type StockMovementFormData } from '../api/stockApi';
+import { Search, RefreshCw, Plus, Eye, PackagePlus, History } from 'lucide-react';
+import { stockApi, type StockOverview, type ProductForMovement, type StockMovementFormData } from '../api/stockApi';
+import type { Product } from '@/shared/types';
 import { PageLoader } from '@/core/components/common/Loader';
 import { useFormatCurrency } from '@/shared/hooks/useCurrency';
 import toast from 'react-hot-toast';
-import { StockOverview as StockOverviewComponent } from './stock/StockOverview';
-import { CategoryBreakdown } from './stock/CategoryBreakdown';
-import { StockAlerts } from './stock/StockAlerts';
 import { AdjustStockModal } from './stock/AdjustStockModal';
 import { MovementsModal } from './stock/MovementsModal';
 import { StockMovementModal } from './stock/StockMovementModal';
+import { StockMovementsList } from './stock/StockMovementsList';
 
+// ✅ Type pour l'erreur API
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
+
+// ✅ Fonction getStockStatus corrigée pour utiliser les bons champs
 function getStockStatus(product: Product) {
-  if (product.quantity <= 0) return { label: 'Rupture', color: 'bg-red-100 text-red-700' };
-  if (product.quantity <= product.minStockLevel) return { label: 'Stock bas', color: 'bg-yellow-100 text-yellow-700' };
+  const stock = product.stock ?? 0;
+  const minStock = product.minStock ?? 0;
+  
+  if (stock <= 0) return { label: 'Rupture', color: 'bg-red-100 text-red-700' };
+  if (stock <= minStock) return { label: 'Stock bas', color: 'bg-yellow-100 text-yellow-700' };
   return { label: 'Normal', color: 'bg-green-100 text-green-700' };
 }
 
@@ -29,6 +42,7 @@ export default function Stock() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showMovementsModal, setShowMovementsModal] = useState(false);
   const [showMovementModal, setShowMovementModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [productsPage, setProductsPage] = useState(1);
   const limit = 20;
 
@@ -38,8 +52,8 @@ export default function Stock() {
     queryFn: () => stockApi.getOverview(),
   });
 
-  // Produits en stock bas
-  const { data: lowStockProducts, isLoading: loadingLowStock } = useQuery({
+  // Produits en stock bas - ✅ Suppression de refetchLowStock non utilisé
+  const { data: lowStockProducts } = useQuery({
     queryKey: ['stock-low-stock'],
     queryFn: () => stockApi.getLowStockProducts(),
   });
@@ -79,7 +93,7 @@ export default function Stock() {
   });
 
   // Tous les produits pour le modal de mouvement
-  const { data: movementProductsData, isLoading: loadingMovementProducts } = useQuery({
+  const { data: movementProductsData } = useQuery({
     queryKey: ['stock-movement-products'],
     queryFn: () => stockApi.getAllProductsForMovement(),
     staleTime: 5 * 60 * 1000,
@@ -97,7 +111,7 @@ export default function Stock() {
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movement-products'] });
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       toast.error(error?.response?.data?.message || 'Erreur lors de l\'enregistrement');
     },
   });
@@ -143,7 +157,14 @@ export default function Stock() {
           <h1 className="page-title">Gestion de stock</h1>
           <p className="page-subtitle">Suivez et gérez vos niveaux de stock</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="btn-secondary flex items-center gap-2 text-sm bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300"
+          >
+            <History size={16} />
+            Historique
+          </button>
           <button
             onClick={() => setShowMovementModal(true)}
             className="btn-primary flex items-center gap-2 text-sm"
@@ -281,25 +302,31 @@ export default function Stock() {
             <span className="ml-auto text-xs text-yellow-600">{lowStockList.length} produit(s) concerné(s)</span>
           </div>
           <div className="divide-y divide-gray-100">
-            {lowStockList.map((product) => (
-              <div key={product.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
-                <div>
-                  <p className="font-medium text-secondary-900">{product.name}</p>
-                  <p className="text-xs text-gray-500">Stock minimum: {product.minStockLevel}</p>
+            {lowStockList.map((product) => {
+              const stock = product.stock ?? 0;
+              const minStock = product.minStock ?? 0;
+              const unit = product.unit || 'pièce';
+              
+              return (
+                <div key={product.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+                  <div>
+                    <p className="font-medium text-secondary-900">{product.name}</p>
+                    <p className="text-xs text-gray-500">Stock minimum: {minStock} {unit}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold ${stock <= 0 ? 'text-red-600' : 'text-yellow-600'}`}>
+                      {stock} {unit}
+                    </p>
+                    <button
+                      onClick={() => { setSelectedProduct(product); setShowAdjustModal(true); }}
+                      className="text-xs text-blue-500 hover:text-blue-600 mt-1"
+                    >
+                      Ajuster
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-bold ${product.quantity <= 0 ? 'text-red-600' : 'text-yellow-600'}`}>
-                    {product.quantity} {product.unit}
-                  </p>
-                  <button
-                    onClick={() => { setSelectedProduct(product); setShowAdjustModal(true); }}
-                    className="text-xs text-blue-500 hover:text-blue-600 mt-1"
-                  >
-                    Ajuster
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -346,6 +373,10 @@ export default function Stock() {
               ) : (
                 products.map((product: Product) => {
                   const status = getStockStatus(product);
+                  const stock = product.stock ?? 0;
+                  const minStock = product.minStock ?? 0;
+                  const unit = product.unit || 'pièce';
+                  
                   return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-5 py-3">
@@ -355,11 +386,19 @@ export default function Stock() {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-500">{product.category?.name || 'Sans catégorie'}</td>
-                      <td className="px-5 py-3 text-right font-medium">{product.quantity} {product.unit}</td>
-                      <td className="px-5 py-3 text-right text-sm text-gray-500">{product.minStockLevel}</td>
-                      <td className="px-5 py-3 text-right font-medium">{formatCurrency(parseFloat(product.sellingPrice))}</td>
+                      <td className="px-5 py-3 text-right font-medium">
+                        {stock} {unit}
+                      </td>
+                      <td className="px-5 py-3 text-right text-sm text-gray-500">
+                        {minStock} {unit}
+                      </td>
+                      <td className="px-5 py-3 text-right font-medium">
+                        {formatCurrency(parseFloat(String(product.unitPrice ?? 0)))}
+                      </td>
                       <td className="px-5 py-3 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>{status.label}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          {status.label}
+                        </span>
                       </td>
                       <td className="px-5 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -438,6 +477,36 @@ export default function Stock() {
         onClose={() => setShowMovementModal(false)}
         onSubmit={handleCreateMovement}
       />
+
+      {/* Modal Historique des mouvements */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <History size={20} className="text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Historique des mouvements</h2>
+                  <p className="text-xs text-gray-500">Consultez tous les mouvements de stock</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <StockMovementsList onClose={() => setShowHistoryModal(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

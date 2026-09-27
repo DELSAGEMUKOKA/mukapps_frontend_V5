@@ -110,7 +110,7 @@ export default function ProductForm() {
               <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="label">Code-barres</label>
+              <label className="label">Code</label>
               <div className="relative">
                 <input
                   className={`input pr-10 ${
@@ -122,7 +122,7 @@ export default function ProductForm() {
                   }`}
                   value={form.barcode}
                   onChange={(e) => set('barcode', e.target.value)}
-                  placeholder="Entrez un code-barres..."
+                  placeholder="Entrez un code article..."
                 />
                 {debouncedBarcode && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2">

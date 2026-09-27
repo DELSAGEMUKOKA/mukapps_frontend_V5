@@ -1,33 +1,30 @@
-// src/modules/users/pages/Users.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, CreditCard as Edit2, Trash2, UserCheck, UserX, Shield, MoveVertical as MoreVertical, Eye, Power, RefreshCw, ListFilter as Filter } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, UserCheck, UserX, Shield, Power, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usersApi, type User } from '../api/usersApi';
 import { PageLoader } from '@/core/components/common/Loader';
 import Modal from '@/core/components/common/Modal';
 import ConfirmationModal from '@/core/components/feedback/ConfirmationModal';
 import { formatDate } from '@/lib/utils';
+import { useAuth } from '@/core/store';
 
 const USER_ROLES = [
-  // Général
-  { value: 'ADMIN',          label: 'Administrateur',     color: 'bg-blue-100 text-blue-700',    group: 'Général' },
-  { value: 'SUPERVISOR',     label: 'Superviseur',         color: 'bg-sky-100 text-sky-700',      group: 'Général' },
-  { value: 'OPERATOR',       label: 'Opérateur',           color: 'bg-green-100 text-green-700',  group: 'Général' },
-  { value: 'CASHIER',        label: 'Caissier',            color: 'bg-amber-100 text-amber-700',  group: 'Général' },
-  // Restaurant / Bar
-  { value: 'SERVEUR',        label: 'Serveur',             color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
-  { value: 'BARMAN',         label: 'Barman',              color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
-  { value: 'CUISINIER',      label: 'Cuisinier',           color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
+  { value: 'ADMIN', label: 'Administrateur', color: 'bg-blue-100 text-blue-700', group: 'Général' },
+  { value: 'SUPERVISOR', label: 'Superviseur', color: 'bg-sky-100 text-sky-700', group: 'Général' },
+  { value: 'OPERATOR', label: 'Opérateur', color: 'bg-green-100 text-green-700', group: 'Général' },
+  { value: 'CASHIER', label: 'Caissier', color: 'bg-amber-100 text-amber-700', group: 'Général' },
+  { value: 'SERVEUR', label: 'Serveur', color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
+  { value: 'BARMAN', label: 'Barman', color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
+  { value: 'CUISINIER', label: 'Cuisinier', color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
   { value: 'CAISSIER_RESTO', label: 'Caissier Restaurant', color: 'bg-orange-100 text-orange-700', group: 'Restaurant / Bar' },
-  // Ressources Humaines
-  { value: 'RH_MANAGER',     label: 'Responsable RH',     color: 'bg-teal-100 text-teal-700',    group: 'Ressources Humaines' },
-  { value: 'RH_AGENT',       label: 'Agent RH',           color: 'bg-teal-50 text-teal-600',     group: 'Ressources Humaines' },
-  // Hôtellerie
-  { value: 'HOTEL_MANAGER',  label: 'Responsable Hôtel',  color: 'bg-cyan-100 text-cyan-700',    group: 'Hôtellerie' },
-  { value: 'RECEPTIONNISTE', label: 'Réceptionniste',     color: 'bg-cyan-50 text-cyan-600',     group: 'Hôtellerie' },
-  { value: 'GOUVERNANTE',    label: 'Gouvernante',         color: 'bg-cyan-50 text-cyan-600',     group: 'Hôtellerie' },
+  { value: 'RH_MANAGER', label: 'Responsable RH', color: 'bg-teal-100 text-teal-700', group: 'Ressources Humaines' },
+  { value: 'RH_AGENT', label: 'Agent RH', color: 'bg-teal-50 text-teal-600', group: 'Ressources Humaines' },
+  { value: 'HOTEL_MANAGER', label: 'Responsable Hôtel', color: 'bg-cyan-100 text-cyan-700', group: 'Hôtellerie' },
+  { value: 'RECEPTIONNISTE', label: 'Réceptionniste', color: 'bg-cyan-50 text-cyan-600', group: 'Hôtellerie' },
+  { value: 'GOUVERNANTE', label: 'Gouvernante', color: 'bg-cyan-50 text-cyan-600', group: 'Hôtellerie' },
 ];
 
 const getRoleLabel = (role: string) => {
@@ -50,6 +47,8 @@ const EMPTY_USER = {
 };
 
 export default function Users() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
@@ -64,18 +63,36 @@ export default function Users() {
 
   const limit = 20;
 
-  // Requête pour la liste des utilisateurs
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast.error('Vous n\'avez pas les permissions nécessaires');
+      navigate('/dashboard');
+    }
+  }, [isAdmin, navigate]);
+
+  if (!isAdmin) {
+    return <PageLoader />;
+  }
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['users', page, debouncedSearch],
     queryFn: () => usersApi.getAll({ page, limit, search: debouncedSearch || undefined }),
+    enabled: isAdmin,
   });
 
-  // CORRECTION : Structure de la réponse: data.users et data.pagination
-  const users: User[] = data?.users || [];
-  const pagination = data?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
+  // ✅ CORRECTION ICI : data contient déjà users et pagination
+  console.log('📡 Data reçue:', data);
+  
+  const users: User[] = data?.users || [];  // ✅ Plus de .data
+  const pagination = data?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };  // ✅ Plus de .data
   const total = pagination.total || users.length;
 
-  // Mutations
+  console.log('👥 Utilisateurs:', users);
+  console.log('📄 Pagination:', pagination);
+  console.log('📊 Total:', total);
+
   const createMutation = useMutation({
     mutationFn: (payload: typeof EMPTY_USER) => usersApi.create(payload),
     onSuccess: () => {
@@ -167,7 +184,6 @@ export default function Users() {
 
   return (
     <div className="space-y-5">
-      {/* En-tête */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">Utilisateurs</h1>
@@ -187,7 +203,6 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Recherche */}
       <div className="card p-4">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" />
@@ -200,7 +215,6 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Tableau des utilisateurs */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table">
@@ -302,7 +316,6 @@ export default function Users() {
           </table>
         </div>
 
-        {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-secondary-100">
             <p className="text-sm text-secondary-500">
@@ -328,7 +341,6 @@ export default function Users() {
         )}
       </div>
 
-      {/* Modal Ajout/Modification */}
       <Modal
         isOpen={modal}
         onClose={handleClose}
@@ -426,7 +438,6 @@ export default function Users() {
         </form>
       </Modal>
 
-      {/* Modal changement de rôle */}
       <Modal
         isOpen={!!roleTarget}
         onClose={() => { setRoleTarget(null); setSelectedRole(''); }}
@@ -473,7 +484,6 @@ export default function Users() {
         </div>
       </Modal>
 
-      {/* Modal confirmation suppression */}
       <ConfirmationModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -483,7 +493,6 @@ export default function Users() {
         loading={deleteMutation.isPending}
       />
 
-      {/* Modal confirmation changement statut */}
       <ConfirmationModal
         isOpen={!!statusTarget}
         onClose={() => setStatusTarget(null)}

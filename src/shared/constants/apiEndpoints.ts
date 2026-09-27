@@ -380,6 +380,8 @@ ORDER_SERVE: (id: string) => `/restaurant/orders/${id}/serve`,
     // ─────────────────────────────────────────────
     DASHBOARD: '/restaurant/dashboard',
     REPORT_DAILY: '/restaurant/dashboard/reports/daily',
+       REPORT_WEEKLY: '/restaurant/dashboard/reports/weekly',     // ← NOUVEAU
+    REPORT_MONTHLY: '/restaurant/dashboard/reports/monthly',   // ← NOUVEAU
     REPORT_ITEMS: '/restaurant/dashboard/reports/items',
     REPORT_SERVERS: '/restaurant/dashboard/reports/servers',
     REPORT_TABLES: '/restaurant/dashboard/reports/tables',

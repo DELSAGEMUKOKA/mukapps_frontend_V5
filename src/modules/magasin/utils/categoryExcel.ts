@@ -1,52 +1,159 @@
-import * as XLSX from 'xlsx';
+// src/modules/magasin/utils/categoryExcel.ts
+
+import type ExcelJS from 'exceljs';
 import type { Category } from '@/shared/types';
 import type { CreateCategoryPayload } from '../api/categoryApi';
 
-export function exportCategoriesToExcel(categories: Category[], filename = 'categories.xlsx') {
-  const rows = categories.map((c) => ({
-    'Nom': c.name,
-    'Description': c.description || '',
-    'Couleur': c.color || '',
-    'Nb Produits': c._count?.products ?? 0,
-    'Date création': new Date(c.createdAt).toLocaleDateString('fr-FR'),
-  }));
+// ============================================================================
+// HELPERS
+// ============================================================================
 
-  const ws = XLSX.utils.json_to_sheet(rows);
-
-  ws['!cols'] = [
-    { wch: 30 },
-    { wch: 50 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 18 },
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Catégories');
-  XLSX.writeFile(wb, filename);
+/**
+ * Convertit une valeur de cellule ExcelJS en chaîne de caractères.
+ * ExcelJS peut renvoyer : string | number | Date | RichText | { formula, result } | ...
+ */
+function cellToString(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value instanceof Date) return value.toISOString();
+  // RichText : { richText: [{ text }, ...] }
+  if (typeof value === 'object' && value !== null && 'richText' in value) {
+    const rich = (value as { richText: { text: string }[] }).richText;
+    return rich.map((r) => r.text).join('');
+  }
+  // Formule : { formula, result }
+  if (typeof value === 'object' && value !== null && 'result' in value) {
+    const res = (value as { result: unknown }).result;
+    return res === null || res === undefined ? '' : String(res);
+  }
+  return String(value);
 }
 
-export function downloadCategoryTemplate(filename = 'template_categories.xlsx') {
-  const headers = ['Nom *', 'Description', 'Couleur'];
-
-  const examples = [
-    { 'Nom *': 'Alimentation', 'Description': 'Produits alimentaires et boissons', 'Couleur': '#10b981' },
-    { 'Nom *': 'Hygiène', 'Description': 'Produits d\'hygiène et soins', 'Couleur': '#3b82f6' },
-    { 'Nom *': 'Électronique', 'Description': '', 'Couleur': '#f59e0b' },
-  ];
-
-  const ws = XLSX.utils.json_to_sheet(examples, { header: headers });
-
-  ws['!cols'] = [
-    { wch: 30 },
-    { wch: 50 },
-    { wch: 15 },
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Catégories');
-  XLSX.writeFile(wb, filename);
+/**
+ * Convertit une valeur de cellule en nombre (entier).
+ */
+function cellToNumber(value: unknown): number {
+  const str = cellToString(value);
+  const num = Number(str);
+  return Number.isFinite(num) ? num : 0;
 }
+
+/**
+ * Télécharge un buffer sous forme de fichier .xlsx
+ */
+function downloadBuffer(buffer: ArrayBuffer, filename: string) {
+  const blob = new Blob([buffer as BlobPart], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Applique un style d'en-tête (fond vert, texte blanc, gras) sur une ligne.
+ * Types ExcelJS précis → plus de `any`.
+ */
+function styleHeaderRow(row: ExcelJS.Row) {
+  row.eachCell((cell: ExcelJS.Cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF10B981' },
+    };
+    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    cell.border = {
+      bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+    };
+  });
+}
+
+// ============================================================================
+// EXPORT : Catégories → Excel
+// ============================================================================
+
+export async function exportCategoriesToExcel(
+  categories: Category[],
+  filename = 'categories.xlsx',
+): Promise<void> {
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Catégories');
+
+  ws.columns = [
+    { header: 'Nom', key: 'name', width: 30 },
+    { header: 'Description', key: 'description', width: 50 },
+    { header: 'Couleur', key: 'color', width: 15 },
+    { header: 'Nb Produits', key: 'productCount', width: 15 },
+    { header: 'Date création', key: 'createdAt', width: 18 },
+  ];
+
+  styleHeaderRow(ws.getRow(1));
+
+  categories.forEach((c) => {
+    ws.addRow({
+      name: c.name,
+      description: c.description || '',
+      color: c.color || '',
+      productCount: c._count?.products ?? 0,
+      createdAt: new Date(c.createdAt).toLocaleDateString('fr-FR'),
+    });
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  downloadBuffer(buffer as ArrayBuffer, filename);
+}
+
+// ============================================================================
+// TEMPLATE : Fichier modèle à télécharger
+// ============================================================================
+
+export async function downloadCategoryTemplate(
+  filename = 'template_categories.xlsx',
+): Promise<void> {
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Catégories');
+
+  ws.columns = [
+    { header: 'Nom *', key: 'name', width: 30 },
+    { header: 'Description', key: 'description', width: 50 },
+    { header: 'Couleur', key: 'color', width: 15 },
+  ];
+
+  styleHeaderRow(ws.getRow(1));
+
+  // Lignes d'exemple
+  ws.addRow({
+    name: 'Alimentation',
+    description: 'Produits alimentaires et boissons',
+    color: '#10b981',
+  });
+  ws.addRow({
+    name: 'Hygiène',
+    description: "Produits d'hygiène et soins",
+    color: '#3b82f6',
+  });
+  ws.addRow({
+    name: 'Électronique',
+    description: '',
+    color: '#f59e0b',
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  downloadBuffer(buffer as ArrayBuffer, filename);
+}
+
+// ============================================================================
+// IMPORT : Excel → Catégories
+// ============================================================================
 
 export interface CategoryImportResult {
   valid: CreateCategoryPayload[];
@@ -54,44 +161,75 @@ export interface CategoryImportResult {
 }
 
 export async function importCategoriesFromExcel(file: File): Promise<CategoryImportResult> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
 
-        const valid: CreateCategoryPayload[] = [];
-        const errors: string[] = [];
+  const buffer = await file.arrayBuffer();
+  await wb.xlsx.load(buffer);
 
-        rows.forEach((row, i) => {
-          const name = String(row['Nom *'] || row['Nom'] || row['name'] || '').trim();
-          if (!name) {
-            errors.push(`Ligne ${i + 2} : nom manquant`);
-            return;
-          }
+  const ws = wb.worksheets[0];
+  if (!ws) {
+    return { valid: [], errors: ['Aucune feuille trouvée dans le fichier'] };
+  }
 
-          const color = String(row['Couleur'] || row['color'] || '').trim();
-          const isValidColor = !color || /^#[0-9a-fA-F]{6}$/.test(color);
-          if (!isValidColor) {
-            errors.push(`Ligne ${i + 2} : couleur invalide "${color}" (format attendu : #RRGGBB)`);
-          }
-
-          valid.push({
-            name,
-            description: String(row['Description'] || row['description'] || '').trim() || undefined,
-            color: isValidColor && color ? color : undefined,
-          });
-        });
-
-        resolve({ valid, errors });
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
+  // ─── Lecture de la ligne d'en-tête ───
+  const headerRow = ws.getRow(1);
+  const headers: Record<number, string> = {};
+  headerRow.eachCell((cell: ExcelJS.Cell, colNumber: number) => {
+    headers[colNumber] = cellToString(cell.value).trim();
   });
+
+  // ─── Lecture des données ───
+  const valid: CreateCategoryPayload[] = [];
+  const errors: string[] = [];
+
+  const totalRows = ws.rowCount;
+
+  for (let rowNumber = 2; rowNumber <= totalRows; rowNumber++) {
+    const row = ws.getRow(rowNumber);
+
+    // Extraction par nom d'en-tête (tolérant aux variations)
+    const getValue = (...keys: string[]): string => {
+      for (const [colNumber, header] of Object.entries(headers)) {
+        if (keys.some((k) => header.toLowerCase() === k.toLowerCase())) {
+          return cellToString(row.getCell(Number(colNumber)).value).trim();
+        }
+      }
+      return '';
+    };
+
+    const name = getValue('Nom *', 'Nom', 'name');
+    if (!name) {
+      // Ligne vide → on ignore silencieusement (pas d'erreur)
+      const isEmpty =
+        !getValue('Description', 'description') &&
+        !getValue('Couleur', 'color');
+      if (isEmpty) continue;
+
+      errors.push(`Ligne ${rowNumber} : nom manquant`);
+      continue;
+    }
+
+    const color = getValue('Couleur', 'color');
+    const isValidColor = !color || /^#[0-9a-fA-F]{6}$/.test(color);
+    if (!isValidColor) {
+      errors.push(
+        `Ligne ${rowNumber} : couleur invalide "${color}" (format attendu : #RRGGBB)`,
+      );
+    }
+
+    valid.push({
+      name,
+      description: getValue('Description', 'description') || undefined,
+      color: isValidColor && color ? color : undefined,
+    });
+  }
+
+  return { valid, errors };
 }
+
+// ============================================================================
+// Ré-export pour compatibilité (si d'autres fichiers importent ces helpers)
+// ============================================================================
+
+export { cellToString, cellToNumber };

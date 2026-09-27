@@ -276,7 +276,7 @@ function useSidebarNav() {
     title: '',
     sections: [{
       items: [
-        ...(canPage('dashboard') ? [{ label: 'Tableau de bord', to: ROUTES.DASHBOARD, icon: LayoutDashboard }] : []),
+        ...(canPage('dashboard') ? [{ label: 'Acceuil', to: ROUTES.DASHBOARD, icon: LayoutDashboard }] : []),
       ],
     }],
   };

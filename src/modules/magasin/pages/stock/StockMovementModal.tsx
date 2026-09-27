@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Package, Barcode, Layers, AlertTriangle, ArrowUp, ArrowDown, RefreshCw, Calendar, Undo } from 'lucide-react';
+import { X, Search, Package, Barcode, Layers, AlertTriangle, ArrowUp, ArrowDown, RefreshCw, Calendar, Undo, History } from 'lucide-react';
 import type { ProductForMovement, StockMovementFormData } from '../../api/stockApi';
 import { useQuery } from '@tanstack/react-query';
 import { batchApi } from '../../api/batchApi';
+import { StockMovementsList } from './StockMovementsList';
+import apiClient from '@/core/api/axiosConfig';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 
 interface StockMovementModalProps {
   show: boolean;
@@ -20,6 +23,17 @@ interface BatchInfo {
   expiryDate: string;
   daysUntilExpiry: number;
   isExpired: boolean;
+}
+
+interface ApiProductResponse {
+  id: string;
+  name: string;
+  barcode?: string;
+  quantity?: number;
+  stock?: number;
+  minStockLevel?: number;
+  minStock?: number;
+  unit?: string;
 }
 
 type MovementType = 'IN' | 'OUT' | 'ADJUSTMENT' | 'EXPIRY' | 'RETURN';
@@ -82,6 +96,16 @@ const MOVEMENT_TYPES: MovementTypeInfo[] = [
   }
 ];
 
+// ✅ Fonction utilitaire pour transformer les produits de l'API
+const transformApiProduct = (p: ApiProductResponse): ProductForMovement => ({
+  id: p.id,
+  name: p.name,
+  barcode: p.barcode || '',
+  currentStock: p.quantity ?? p.stock ?? 0,
+  minStockLevel: p.minStockLevel ?? p.minStock ?? 0,
+  unit: p.unit || 'pièce',
+});
+
 export function StockMovementModal({
   show,
   products,
@@ -98,6 +122,9 @@ export function StockMovementModal({
   const [movementType, setMovementType] = useState<MovementType>('IN');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ✅ État pour afficher l'historique des mouvements (tous les mouvements)
+  const [showMovementsHistory, setShowMovementsHistory] = useState(false);
+
   const [formData, setFormData] = useState<StockMovementFormData>({
     productId: initialProduct?.id || '',
     type: 'in',
@@ -106,6 +133,38 @@ export function StockMovementModal({
     reference: '',
     notes: '',
   });
+
+  // ✅ Debounce pour la recherche
+  const debouncedSearch = useDebounce(productSearchTerm, 300);
+
+  // ✅ Requête pour rechercher des produits côté serveur
+  const { data: searchResults, isLoading: isSearchingProducts } = useQuery({
+    queryKey: ['product-search', debouncedSearch],
+    queryFn: async () => {
+      if (!debouncedSearch || debouncedSearch.length < 2) {
+        return products;
+      }
+      try {
+        const response = await apiClient.get('/magasin/products', {
+          params: { search: debouncedSearch, limit: 50 }
+        });
+        const data = response.data?.data || response.data;
+        const results: ApiProductResponse[] = Array.isArray(data) ? data : data?.products || data?.data || [];
+        
+        return results.map(transformApiProduct);
+      } catch (error) {
+        console.error('Erreur recherche produits:', error);
+        return [];
+      }
+    },
+    enabled: debouncedSearch.length >= 2,
+    staleTime: 30 * 1000,
+    placeholderData: (prev) => prev || products,
+  });
+
+  // ✅ Utiliser les résultats de recherche ou les produits par défaut
+  const displayProducts = debouncedSearch.length >= 2 ? (searchResults || []) : products;
+  const isLoadingProducts = debouncedSearch.length >= 2 && isSearchingProducts;
 
   const { data: batchesData, isLoading: isLoadingBatches } = useQuery({
     queryKey: ['product-batches', selectedProduct?.id, movementType],
@@ -120,15 +179,29 @@ export function StockMovementModal({
     enabled: !!selectedProduct?.id && showBatchSelection && (movementType === 'OUT' || movementType === 'EXPIRY' || movementType === 'ADJUSTMENT'),
   });
 
-  const batches = (batchesData?.data?.data || []) as BatchInfo[];
+  // ✅ Transformation correcte des batches avec vérification des types
+  const batches: BatchInfo[] = (batchesData?.data?.data || []).map((batch: any) => ({
+    id: batch.id || '',
+    batchNumber: batch.batchNumber || '',
+    quantity: batch.quantity || 0,
+    expiryDate: batch.expiryDate || '',
+    daysUntilExpiry: batch.daysUntilExpiry ?? 0,
+    isExpired: batch.isExpired ?? false,
+  }));
 
+  // ✅ Utiliser useMemo ou useRef pour éviter les rendus en cascade
+  const isInitialized = useRef(false);
+
+  // ✅ Remplacer useEffect par une logique de mise à jour contrôlée
   useEffect(() => {
-    if (show) {
+    if (show && !isInitialized.current) {
+      isInitialized.current = true;
       setSelectedProduct(initialProduct || null);
       setProductSearchTerm(initialProduct?.name || '');
       setSelectedBatch(null);
       setShowBatchSelection(false);
       setMovementType('IN');
+      setShowMovementsHistory(false);
       setFormData({
         productId: initialProduct?.id || '',
         type: 'in',
@@ -137,6 +210,11 @@ export function StockMovementModal({
         reference: '',
         notes: '',
       });
+    }
+    
+    // ✅ Réinitialiser si le modal se ferme
+    if (!show) {
+      isInitialized.current = false;
     }
   }, [show, initialProduct]);
 
@@ -153,7 +231,7 @@ export function StockMovementModal({
 
   if (!show) return null;
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = displayProducts.filter((product: ProductForMovement) => {
     const search = productSearchTerm.toLowerCase();
     return (
       product.name.toLowerCase().includes(search) ||
@@ -286,13 +364,37 @@ export function StockMovementModal({
             <h2 className="text-lg font-bold text-gray-900">Nouveau mouvement de stock</h2>
             <p className="text-xs text-gray-500 mt-0.5">Gestion des entrées, sorties, ajustements, expirations et retours</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowMovementsHistory(!showMovementsHistory)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                showMovementsHistory 
+                  ? 'bg-indigo-100 text-indigo-700' 
+                  : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+              title="Voir l'historique complet des mouvements"
+            >
+              <History size={16} />
+              <span>Historique</span>
+              <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                {showMovementsHistory ? '✕' : '📋'}
+              </span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {showMovementsHistory && (
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <StockMovementsList onClose={() => setShowMovementsHistory(false)} />
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-5">
@@ -312,11 +414,23 @@ export function StockMovementModal({
                   placeholder="Rechercher par nom ou code-barres..."
                   autoComplete="off"
                 />
+                {isLoadingProducts && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
 
-              {showProductDropdown && productSearchTerm && (
+              {showProductDropdown && (productSearchTerm || isLoadingProducts) && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {filteredProducts.length > 0 ? (
+                  {isLoadingProducts ? (
+                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        Recherche en cours...
+                      </div>
+                    </div>
+                  ) : filteredProducts.length > 0 ? (
                     filteredProducts.map((product) => (
                       <button
                         key={product.id}
@@ -608,9 +722,9 @@ export function StockMovementModal({
                   </p>
                   {movementType !== 'IN' && movementType !== 'RETURN' && (
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Stock actuel: {selectedProduct.currentStock} → 
+                      Stock actuel: <span className="font-medium">{selectedProduct.currentStock} {selectedProduct.unit}</span> → 
                       <span className="font-bold ml-1 text-red-600">
-                        {selectedProduct.currentStock - formData.quantity}
+                        {selectedProduct.currentStock - formData.quantity} {selectedProduct.unit}
                       </span>
                     </p>
                   )}

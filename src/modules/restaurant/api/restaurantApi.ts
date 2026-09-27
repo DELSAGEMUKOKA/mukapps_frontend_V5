@@ -99,7 +99,7 @@ export interface TableStats {
   byZone: Record<Zone, number>;
 }
 
-// ─── NOUVEAU: Historique des mouvements de table ──────────────────────────────
+// ─── Historique des mouvements de table ───────────────────────────────────────
 
 export interface TableHistory {
   id: string;
@@ -124,7 +124,7 @@ export interface TableOccupationHistory {
   occupancyCount: number;
 }
 
-// ─── NOUVEAU: Fusion et Split de tables ───────────────────────────────────────
+// ─── Fusion et Split de tables ────────────────────────────────────────────────
 
 export interface TableMergeRequest {
   sourceTableIds: string[];
@@ -154,7 +154,7 @@ export interface TableSplitResult {
   targetTables: string[];
 }
 
-// ─── NOUVEAU: Planning des réservations par table ─────────────────────────────
+// ─── Planning des réservations par table ──────────────────────────────────────
 
 export interface ReservationSlot {
   id: string;
@@ -192,7 +192,7 @@ export interface MenuItem {
   station: Station;
   preparationTime?: number;
   isAvailable: boolean;
-  imageUrl?: string;  // ✅ AJOUTÉ - URL de l'image
+  imageUrl?: string;
   tags?: string;
   companyId: string;
   linkedProductId?: string;
@@ -469,10 +469,46 @@ export interface RestaurantDashboard {
 }
 
 export interface DailyReport {
+  period: 'DAY';
   date: string;
   totalRevenue: number;
   totalBills: number;
   avgBill: number;
+  byPaymentMethod: Record<PaymentMethod, number>;
+  byServer: {
+    name: string;
+    userId: string;
+    count: number;
+    revenue: number;
+  }[];
+}
+
+export interface WeeklyReport {
+  period: 'WEEK';
+  startDate: string;
+  endDate: string;
+  totalRevenue: number;
+  totalBills: number;
+  avgBill: number;
+  byDay: { date: string; billCount: number; revenue: number }[];
+  byPaymentMethod: Record<PaymentMethod, number>;
+  byServer: {
+    name: string;
+    userId: string;
+    count: number;
+    revenue: number;
+  }[];
+}
+
+export interface MonthlyReport {
+  period: 'MONTH';
+  month: string; // "YYYY-MM"
+  startDate: string;
+  endDate: string;
+  totalRevenue: number;
+  totalBills: number;
+  avgBill: number;
+  byDay: { date: string; billCount: number; revenue: number }[];
   byPaymentMethod: Record<PaymentMethod, number>;
   byServer: {
     name: string;
@@ -671,7 +707,7 @@ export const menuApi = {
     tags?: string;
     linkedProductId?: string;
     stockDeductionQty?: number;
-    imageUrl?: string;  // ✅ AJOUTÉ
+    imageUrl?: string;
   }) => apiPost<ApiResponse<MenuItem>>(API.RESTAURANT.MENU_ITEMS, data),
 
   updateItem: (id: string, data: Partial<{
@@ -683,7 +719,7 @@ export const menuApi = {
     categoryId: string;
     isAvailable: boolean;
     tags: string;
-    imageUrl: string;  // ✅ AJOUTÉ
+    imageUrl: string;
   }>) => apiPut<ApiResponse<MenuItem>>(API.RESTAURANT.MENU_ITEM_BY_ID(id), data),
 
   setAvailability: (id: string, isAvailable: boolean) =>
@@ -702,39 +738,33 @@ export const menuApi = {
     apiGet<ApiResponse<BarStockReport>>(API.RESTAURANT.BAR_STOCK_REPORT),
 
   // ============================================
-  // ✅ NOUVELLES MÉTHODES POUR LA GESTION DES IMAGES
+  // ✅ GESTION DES IMAGES
   // ============================================
 
   /**
    * Upload d'image pour un article
- // ============================================
-// ✅ MÉTHODES CORRIGÉES POUR LA GESTION DES IMAGES
-// ============================================
+   * @param itemId - ID de l'article
+   * @param file - Fichier image (JPEG, PNG, WEBP, GIF)
+   * @returns Promise avec l'URL de l'image
+   */
+  uploadItemImage: async (itemId: string, file: File): Promise<{ imageUrl: string }> => {
+    const formData = new FormData();
+    formData.append('image', file);
 
-/**
- * Upload d'image pour un article
- * @param itemId - ID de l'article
- * @param file - Fichier image (JPEG, PNG, WEBP, GIF)
- * @returns Promise avec l'URL de l'image
- */
-uploadItemImage: async (itemId: string, file: File): Promise<{ imageUrl: string }> => {
-  const formData = new FormData();
-  formData.append('image', file);
-  
-  const response = await apiPost<ApiResponse<{ imageUrl: string }>>(
-    `/restaurant/menu/items/${itemId}/image`,
-    formData
-  );
-  return response.data;
-},
+    const response = await apiPost<ApiResponse<{ imageUrl: string }>>(
+      `/restaurant/menu/items/${itemId}/image`,
+      formData,
+    );
+    return response.data;
+  },
 
-/**
- * Supprimer l'image d'un article
- * @param itemId - ID de l'article
- */
-deleteItemImage: async (itemId: string): Promise<void> => {
-  await apiDelete<ApiResponse<void>>(`/restaurant/menu/items/${itemId}/image`);
-},
+  /**
+   * Supprimer l'image d'un article
+   * @param itemId - ID de l'article
+   */
+  deleteItemImage: async (itemId: string): Promise<void> => {
+    await apiDelete<ApiResponse<void>>(`/restaurant/menu/items/${itemId}/image`);
+  },
 };
 
 // ─── Modifiers API ────────────────────────────────────────────────────────────
@@ -857,7 +887,7 @@ export const ordersApi = {
 
   createBillDraft: (orderId: string, notes?: string) =>
     apiPost<ApiResponse<Bill>>(API.RESTAURANT.ORDER_BILL_DRAFT(orderId), { notes }),
-    
+
   markAsServed: (orderId: string) =>
     apiPost<ApiResponse<Order>>(API.RESTAURANT.ORDER_SERVE(orderId)),
 };
@@ -911,9 +941,9 @@ export const returnsApi = {
 // ─── Bills API ────────────────────────────────────────────────────────────────
 
 export const billsApi = {
-  getAll: (params?: { 
-    page?: number; 
-    limit?: number; 
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
     status?: BillStatus;
     startDate?: string;
     endDate?: string;
@@ -1027,9 +1057,17 @@ export const restaurantDashboardApi = {
   get: () =>
     apiGet<ApiResponse<RestaurantDashboard>>(API.RESTAURANT.DASHBOARD),
 
+  // ─── Rapports : jour / semaine / mois ──────────────────────────────────
   getDaily: (date: string) =>
     apiGet<ApiResponse<DailyReport>>(API.RESTAURANT.REPORT_DAILY, { date }),
 
+  getWeekly: (date?: string) =>
+    apiGet<ApiResponse<WeeklyReport>>(API.RESTAURANT.REPORT_WEEKLY, { date }),
+
+  getMonthly: (month?: string) =>
+    apiGet<ApiResponse<MonthlyReport>>(API.RESTAURANT.REPORT_MONTHLY, { month }),
+
+  // ─── Autres rapports ───────────────────────────────────────────────────
   getTopItems: (params: { startDate: string; endDate: string; limit?: number }) =>
     apiGet<ApiResponse<TopItem[]>>(
       API.RESTAURANT.REPORT_ITEMS,

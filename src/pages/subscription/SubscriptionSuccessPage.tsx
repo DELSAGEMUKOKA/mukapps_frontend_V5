@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CircleCheck as CheckCircle2, Loader as Loader2 } from 'lucide-react';
-import { subscriptionApi } from '@/core/api/subscriptionApi';
+import { subscriptionApi, modulesApi } from '@/core/api/subscriptionApi';
 import { useModules } from '@/core/store';
 
 export default function SubscriptionSuccessPage() {
@@ -18,7 +18,7 @@ export default function SubscriptionSuccessPage() {
         const sub = await subscriptionApi.get();
         if (sub?.packs?.active) {
           // Refresh active modules from the new packs
-          const mods = await import('@/core/api/subscriptionApi').then((m) => m.modulesApi.list());
+          const mods = await modulesApi.list();
           const activeNames = mods
             .filter((m) => m.companyHasAccess)
             .map((m) => m.name);

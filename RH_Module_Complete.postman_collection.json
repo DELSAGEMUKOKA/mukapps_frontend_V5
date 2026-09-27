@@ -1,11 +1,11 @@
 {
   "info": {
     "name": "RH Module — Collection Complète",
-    "description": "Collection complète pour tester le module Ressources Humaines de Mukapps.\n\n## Setup\n1. Définir la variable `base_url` (ex: http://localhost:4000)\n2. Faire la requête **[Auth] Login** pour obtenir un token\n3. Le token est automatiquement stocké dans `auth_token`\n4. Créer un département, puis un employé → copier les IDs dans les variables\n\n## Variables à configurer\n- `base_url` : URL du serveur\n- `auth_token` : auto-rempli après login\n- `department_id` : auto-rempli après création département\n- `employee_id` : auto-rempli après création employé\n- `attendance_id` : auto-rempli après création pointage\n- `leave_id` : auto-rempli après création congé\n- `payslip_id` : auto-rempli après génération bulletin\n- `qr_token` : token QR Code de l'employé (pour la borne)\n- `period` : ex: 2026-05",
+    "description": "Collection complète pour tester le module Ressources Humaines de Mukapps.\n\n## Setup\n1. Définir la variable `base_url` (ex: https://mukappss.online)\n2. Faire la requête **[Auth] Login** pour obtenir un token\n3. Le token est automatiquement stocké dans `auth_token`\n4. Créer un département, puis un employé → copier les IDs dans les variables\n\n## Variables à configurer\n- `base_url` : URL du serveur\n- `auth_token` : auto-rempli après login\n- `department_id` : auto-rempli après création département\n- `employee_id` : auto-rempli après création employé\n- `attendance_id` : auto-rempli après création pointage\n- `leave_id` : auto-rempli après création congé\n- `payslip_id` : auto-rempli après génération bulletin\n- `qr_token` : token QR Code de l'employé (pour la borne)\n- `period` : ex: 2026-05",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url",      "value": "http://localhost:4000", "type": "string" },
+    { "key": "base_url",      "value": "https://mukappss.online", "type": "string" },
     { "key": "auth_token",    "value": "", "type": "string" },
     { "key": "department_id", "value": "", "type": "string" },
     { "key": "employee_id",   "value": "", "type": "string" },

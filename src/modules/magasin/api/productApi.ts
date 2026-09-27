@@ -53,6 +53,12 @@ export interface TopSellingProduct {
   totalRevenue: string;
 }
 
+// Interface pour la mise à jour du stock
+export interface UpdateStockPayload {
+  quantity: number;
+  operation: 'add' | 'remove' | 'set';
+}
+
 const toBackend = (payload: Partial<CreateProductPayload>) => {
   const { unitPrice, stock, minStock, expiryDate, manageBatches, ...rest } = payload;
   const result: Record<string, unknown> = { ...rest };
@@ -174,10 +180,63 @@ export const productApi = {
 
   /**
    * Ajuster le stock d'un produit (méthode traditionnelle)
-   * @deprecated Utiliser batchApi pour les produits avec gestion de lots
+   * @deprecated Utiliser les nouvelles fonctions addStock, removeStock, setStock
    */
   adjustStock: async (id: string, payload: { quantity: number; type: string; reason?: string }): Promise<void> => {
     await apiClient.patch(API.PRODUCTS.STOCK(id), payload);
+  },
+
+  // ✅ NOUVELLES FONCTIONS POUR LA GESTION DU STOCK
+
+  /**
+   * Mettre à jour le stock d'un produit avec opération
+   * PATCH /api/magasin/products/:productId/stock
+   */
+  updateProductStock: async (productId: string, payload: UpdateStockPayload): Promise<Product> => {
+    const response = await apiClient.patch(`/magasin/products/${productId}/stock`, payload);
+    return fromBackend(response.data.data);
+  },
+
+  /**
+   * Ajouter du stock à un produit
+   * PATCH /api/magasin/products/:productId/stock
+   * @param productId - ID du produit
+   * @param quantity - Quantité à ajouter
+   */
+  addStock: async (productId: string, quantity: number): Promise<Product> => {
+    const response = await apiClient.patch(`/magasin/products/${productId}/stock`, {
+      quantity: quantity,
+      operation: 'add'
+    });
+    return fromBackend(response.data.data);
+  },
+
+  /**
+   * Retirer du stock d'un produit
+   * PATCH /api/magasin/products/:productId/stock
+   * @param productId - ID du produit
+   * @param quantity - Quantité à retirer
+   */
+  removeStock: async (productId: string, quantity: number): Promise<Product> => {
+    const response = await apiClient.patch(`/magasin/products/${productId}/stock`, {
+      quantity: quantity,
+      operation: 'remove'
+    });
+    return fromBackend(response.data.data);
+  },
+
+  /**
+   * Définir le stock d'un produit à une valeur exacte
+   * PATCH /api/magasin/products/:productId/stock
+   * @param productId - ID du produit
+   * @param quantity - Nouvelle quantité exacte
+   */
+  setStock: async (productId: string, quantity: number): Promise<Product> => {
+    const response = await apiClient.patch(`/magasin/products/${productId}/stock`, {
+      quantity: quantity,
+      operation: 'set'
+    });
+    return fromBackend(response.data.data);
   },
 
   /**

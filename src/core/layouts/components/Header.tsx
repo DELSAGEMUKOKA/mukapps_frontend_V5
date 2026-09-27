@@ -30,7 +30,7 @@ function useBreadcrumb() {
   const segments: { label: string; to?: string }[] = [];
 
   const routeMap: Record<string, string> = {
-    '/dashboard': 'Tableau de bord',
+    '/dashboard': 'Acceuil',
     '/products': 'Produits',
     '/products/new': 'Nouveau produit',
     '/categories': 'Catégories',

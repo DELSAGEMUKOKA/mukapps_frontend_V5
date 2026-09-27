@@ -19,7 +19,6 @@ const validateForm = (email: string, password: string): string | null => {
   return null;
 };
 
-
 export default function Login() {
   const { setAuth } = useAuth();
   const { setActiveModules } = useModules();
@@ -73,53 +72,33 @@ export default function Login() {
 
       const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'SUPER_ADMIN';
 
-      try {
-        const modules = await subscriptionApi.getModules();
-        const activeModules = modules.filter((m) => m.isActive);
-        const activeModuleNames = activeModules.map((m) => m.moduleName);
+      // ✅ CHARGER LES MODULES UNIQUEMENT POUR LES ADMINISTRATEURS
+      if (isAdmin) {
+        try {
+          const modules = await subscriptionApi.getModules();
+          const activeModules = modules.filter((m) => m.isActive);
+          const activeModuleNames = activeModules.map((m) => m.moduleName);
+          setActiveModules(activeModuleNames);
 
-        setActiveModules(activeModuleNames);
+          toast.success(`Bienvenue, ${res.user.firstName} !`);
+          navigate(getDefaultRoute(res.user.role));
+          return;
 
-        if (activeModules.length === 0 && isAdmin) {
-          toast.success(`Bienvenue ${res.user.firstName} !`);
+        } catch (subErr) {
+          console.error('Erreur chargement des modules:', subErr);
+          setActiveModules([]);
+          
+          // ✅ REDIRECTION VERS DASHBOARD MÊME EN CAS D'ERREUR
+          toast.success(`Bienvenue, ${res.user.firstName} !`);
           navigate('/dashboard');
           return;
         }
-
-        if (activeModules.length === 0 && !isAdmin) {
-          toast.error('Aucun module n\'est actif. Veuillez contacter votre administrateur.');
-          setLoading(false);
-          return;
-        }
-
+      } else {
+        // ✅ POUR LES CASHIERS ET AUTRES RÔLES NON-ADMIN
+        setActiveModules([]);
         toast.success(`Bienvenue, ${res.user.firstName} !`);
         navigate(getDefaultRoute(res.user.role));
-
-      } catch (subErr) {
-        setActiveModules([]);
-        const errMsg = subErr instanceof Error ? subErr.message.toLowerCase() : '';
-        const isSubscriptionError =
-          errMsg.includes('expiré') ||
-          errMsg.includes('expired') ||
-          errMsg.includes('abonnement') ||
-          errMsg.includes('subscription') ||
-          errMsg.includes('actif');
-
-        if (isSubscriptionError) {
-          if (isAdmin) {
-            toast.error('Votre abonnement est expiré. Veuillez le renouveler.');
-            navigate('/subscription/renew');
-          } else {
-            navigate('/subscription-required');
-          }
-          return;
-        }
-
-        if (isAdmin) {
-          navigate('/dashboard');
-        } else {
-          toast.error('Erreur de configuration. Veuillez contacter votre administrateur.');
-        }
+        return;
       }
 
     } catch (err: unknown) {
@@ -131,8 +110,6 @@ export default function Login() {
         errMsg.includes('subscription');
 
       if (isSubscriptionError) {
-        // Try to re-use any existing stored session token so the admin can reach the renew page.
-        // /auth/me is auth-only and should not be blocked by subscription status.
         try {
           const me = await authApi.me();
           const existingToken = localStorage.getItem('token') || '';
@@ -145,7 +122,6 @@ export default function Login() {
             navigate('/subscription-required');
           }
         } catch {
-          // No valid session — navigate with default admin assumption so admin can renew
           navigate('/subscription-required', { state: { isAdmin: true } });
         }
         setLoading(false);
@@ -169,11 +145,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 flex">
-      
-      {/* Section gauche - Formulaire */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-sky-500 rounded-2xl shadow-lg mb-4">
               <span className="text-white font-bold text-2xl">M</span>
@@ -184,10 +157,7 @@ export default function Login() {
             <p className="text-gray-500 text-sm mt-1">Solution de gestion d'entreprise</p>
           </div>
 
-
-          {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-gray-700 block">
                 Adresse email
@@ -219,7 +189,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Mot de passe */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-gray-700 block">
                 Mot de passe
@@ -259,7 +228,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Options */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -282,7 +250,6 @@ export default function Login() {
               </Link>
             </div>
 
-            {/* Bouton de connexion */}
             <button 
               type="submit" 
               className="w-full bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
@@ -302,7 +269,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Lien d'inscription */}
           <p className="mt-8 text-center text-sm text-gray-600">
             Pas encore de compte ?{' '}
             <Link 
@@ -312,15 +278,8 @@ export default function Login() {
               Créer un compte gratuitement
             </Link>
           </p>
-
-      
         </div>
       </div>
-
-      {/* Section droite - Hero / Branding */}
-  
-
-  
     </div>
   );
 }

@@ -1656,7 +1656,7 @@ src/modules/rh/
 **Exemple — télécharger le QR Code d'un employé :**
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:4000/api/rh/qrcode/employees/<uuid>/qrcode \
+  https://mukappss.online/api/rh/qrcode/employees/<uuid>/qrcode \
   --output qrcode-EMP00001.png
 ```
 

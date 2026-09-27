@@ -228,7 +228,7 @@ export default function TopNavbar() {
       ]
     : [
         ...(canPage('dashboard')
-          ? [{ key: 'dashboard' as ActiveModule, label: 'Tableau de bord', icon: LayoutDashboard, to: ROUTES.DASHBOARD, paths: ['/dashboard'] }]
+          ? [{ key: 'dashboard' as ActiveModule, label: 'Acceuil', icon: LayoutDashboard, to: ROUTES.DASHBOARD, paths: ['/dashboard'] }]
           : []),
         ...(hasModule('product') && canPage('products')
           ? [{ key: 'product' as ActiveModule, label: 'Produits', icon: Package, to: ROUTES.PRODUCTS, paths: ['/products', '/categories', '/expiry', '/barcode-labels'] }]

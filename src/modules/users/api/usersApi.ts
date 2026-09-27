@@ -66,99 +66,44 @@ export interface ProfileResponse {
   companyId: string;
 }
 
-// Configuration pour les permissions
-const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'];
-
-// Fonction pour vérifier si l'utilisateur peut voir tous les utilisateurs
-const canViewAllUsers = (user: any): boolean => {
-  if (!user) return false;
-  return ADMIN_ROLES.includes(user.role);
-};
-
-// Fonction utilitaire pour gérer les erreurs
-const safeRequest = async <T>(
-  requestFn: () => Promise<any>,
-  fallback: T,
-  throwOnError: boolean = false
-): Promise<T> => {
-  try {
-    const response = await requestFn();
-    return response.data?.data ?? response.data ?? fallback;
-  } catch (error: any) {
-    console.warn(`Users API Error: ${error.response?.status} - ${error.config?.url}`);
-    
-    // Si on veut propager l'erreur (pour les composants qui doivent gérer l'erreur)
-    if (throwOnError) {
-      throw error;
-    }
-    
-    return fallback;
-  }
-};
-
 export const usersApi = {
   /**
    * Récupère la liste des utilisateurs
    * GET /api/users?page=1&limit=20
-   * 
-   * @param params - Pagination et recherche
-   * @param user - L'utilisateur courant pour vérifier les permissions
-   * @returns UsersResponse ou utilisateur unique si pas admin
    */
   getAll: async (
-    params?: { page?: number; limit?: number; search?: string },
-    user?: any
+    params?: { page?: number; limit?: number; search?: string }
   ): Promise<UsersResponse> => {
-    // ✅ Vérifier les permissions avant d'appeler l'API
-    const hasPermission = canViewAllUsers(user);
-    
-    if (!hasPermission) {
-      console.warn('User does not have permission to view all users. Returning empty list.');
+    try {
+      const response = await apiClient.get('/users', { params });
+      console.log('📡 Réponse API /users:', response.data);
       
-      // Si l'utilisateur n'a pas la permission, retourner une liste vide
-      // OU on pourrait retourner l'utilisateur courant si disponible
-      if (user) {
+      // ✅ Extraction correcte des données
+      const data = response.data.data || response.data;
+      
+      // ✅ Vérification des données
+      if (data.users && data.pagination) {
         return {
-          users: [{
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            isActive: user.isActive ?? true,
-            phone: user.phone || null,
-            address: user.address || null,
-            lastLoginAt: user.lastLoginAt || null,
-            createdAt: user.createdAt || new Date().toISOString(),
-            updatedAt: user.updatedAt || new Date().toISOString(),
-            companyId: user.companyId,
-            deletedAt: null,
-          }],
-          pagination: {
-            total: 1,
-            page: 1,
-            limit: 20,
-            totalPages: 1,
-          },
+          users: data.users,
+          pagination: data.pagination,
         };
       }
       
+      // ⚠️ Fallback si la structure est différente
+      console.warn('Structure de données inattendue:', data);
       return {
         users: [],
-        pagination: {
-          total: 0,
-          page: 1,
-          limit: 20,
-          totalPages: 0,
-        },
+        pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
+      };
+    } catch (error: any) {
+      console.error('❌ Erreur lors du chargement des utilisateurs:', error);
+      
+      // En cas d'erreur, retourner une liste vide
+      return {
+        users: [],
+        pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
       };
     }
-
-    // Si l'utilisateur a la permission, faire la requête
-    return safeRequest(
-      () => apiClient.get('/users', { params }),
-      { users: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } }
-    );
   },
 
   /**
@@ -175,23 +120,13 @@ export const usersApi = {
    * GET /api/users/profile/me
    */
   getMyProfile: async (): Promise<ProfileResponse> => {
-    return safeRequest(
-      () => apiClient.get('/users/profile/me'),
-      {
-        id: '',
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: '',
-        isActive: true,
-        phone: null,
-        address: null,
-        lastLoginAt: null,
-        createdAt: '',
-        updatedAt: '',
-        companyId: '',
-      }
-    );
+    try {
+      const response = await apiClient.get('/users/profile/me');
+      return response.data?.data ?? response.data;
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement du profil:', error);
+      throw error;
+    }
   },
 
   /**
@@ -238,34 +173,6 @@ export const usersApi = {
     const response = await apiClient.put(`/users/${userId}`, payload);
     return response.data?.data ?? response.data;
   },
-
-  /**
-   * Vérifie si l'utilisateur actuel peut voir tous les utilisateurs
-   * @param user - L'utilisateur à vérifier
-   * @returns boolean
-   */
-  canViewAllUsers: (user: any): boolean => {
-    return canViewAllUsers(user);
-  },
-
-  /**
-   * Récupère la liste des utilisateurs avec gestion explicite des erreurs
-   * GET /api/users?page=1&limit=20
-   * Cette version propage les erreurs pour que le composant puisse les gérer
-   */
-  getAllWithErrorHandling: async (
-    params?: { page?: number; limit?: number; search?: string }
-  ): Promise<UsersResponse> => {
-    return safeRequest(
-      () => apiClient.get('/users', { params }),
-      { users: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } },
-      true // Propager les erreurs
-    );
-  },
 };
 
-// Export des utilitaires
-export { canViewAllUsers };
-
-// Export par défaut
 export default usersApi;

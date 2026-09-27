@@ -229,17 +229,7 @@ export default function SubscriptionRenewPage() {
       {/* Telephone (optional) */}
       {!useFormFallback && (
         <div className="card p-4 space-y-2">
-          <label className="text-sm font-medium text-secondary-700 flex items-center gap-2">
-            <Phone size={14} />
-            Numéro MaxiCash (optionnel)
-          </label>
-          <input
-            type="tel"
-            value={telephone}
-            onChange={(e) => setTelephone(e.target.value)}
-            placeholder="+243812345678"
-            className="input-field w-full sm:w-64"
-          />
+       
           <button
             onClick={() => setUseFormFallback(true)}
             className="text-xs text-secondary-400 hover:text-secondary-600 transition-colors"
@@ -299,7 +289,7 @@ export default function SubscriptionRenewPage() {
             ) : (
               <CreditCard size={14} />
             )}
-            {payMutation.isPending ? 'Redirection...' : 'Payer via MaxiCash'}
+            {payMutation.isPending ? 'Redirection...' : 'Payer '}
           </button>
         </div>
       </div>

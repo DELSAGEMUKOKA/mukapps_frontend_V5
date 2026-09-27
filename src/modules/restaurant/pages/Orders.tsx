@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Plus, Search, Clock, CheckCircle, XCircle, 
+import {
+  Plus, Search, Clock, CheckCircle, XCircle,
   Coffee, Package, Users, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,10 @@ import { SmartLoader } from '@/core/components/common/SmartLoader';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 
-// Configuration des statuts
+// ============================================================================
+// CONFIGURATION DES STATUTS
+// ============================================================================
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
   EN_ATTENTE: { label: 'En attente', color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
   EN_COURS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50', icon: RefreshCw },
@@ -36,6 +39,30 @@ interface OrdersApiResponse {
   pages: number;
 }
 
+// ============================================================================
+// HELPER : Avatar + nom du serveur
+// ============================================================================
+
+function ServerBadge({ firstName, lastName }: { firstName?: string; lastName?: string }) {
+  if (!firstName && !lastName) return null;
+
+  const initials = `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase() || '?';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+  return (
+    <span className="flex items-center gap-1 text-xs text-gray-400">
+      <span className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-[8px] font-bold">
+        {initials}
+      </span>
+      <span className="truncate max-w-[140px]">{fullName}</span>
+    </span>
+  );
+}
+
+// ============================================================================
+// COMPOSANT PRINCIPAL
+// ============================================================================
+
 export default function Orders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -46,10 +73,10 @@ export default function Orders() {
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ['restaurant-orders', statusFilter, search],
-    queryFn: () => ordersApi.getAll({ 
+    queryFn: () => ordersApi.getAll({
       status: statusFilter || undefined,
-      page: 1, 
-      limit: 50 
+      page: 1,
+      limit: 50,
     }),
   });
 
@@ -86,29 +113,29 @@ export default function Orders() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard 
-          label="Total commandes" 
-          value={orders.length} 
-          icon={Coffee} 
-          color="bg-[var(--primary)]" 
+        <StatCard
+          label="Total commandes"
+          value={orders.length}
+          icon={Coffee}
+          color="bg-[var(--primary)]"
         />
-        <StatCard 
-          label="En attente" 
-          value={orders.filter((o: Order) => o.status === 'EN_ATTENTE').length} 
-          icon={Clock} 
-          color="bg-amber-500" 
+        <StatCard
+          label="En attente"
+          value={orders.filter((o: Order) => o.status === 'EN_ATTENTE').length}
+          icon={Clock}
+          color="bg-amber-500"
         />
-        <StatCard 
-          label="En cours" 
-          value={orders.filter((o: Order) => o.status === 'EN_COURS').length} 
-          icon={RefreshCw} 
-          color="bg-blue-500" 
+        <StatCard
+          label="En cours"
+          value={orders.filter((o: Order) => o.status === 'EN_COURS').length}
+          icon={RefreshCw}
+          color="bg-blue-500"
         />
-        <StatCard 
-          label="Servies" 
-          value={orders.filter((o: Order) => o.status === 'SERVIE' || o.status === 'SERVI').length} 
-          icon={CheckCircle} 
-          color="bg-emerald-500" 
+        <StatCard
+          label="Servies"
+          value={orders.filter((o: Order) => o.status === 'SERVIE' || o.status === 'SERVI').length}
+          icon={CheckCircle}
+          color="bg-emerald-500"
         />
       </div>
 
@@ -169,9 +196,12 @@ export default function Orders() {
       ) : (
         <div className="space-y-3">
           {orders.map((order: Order) => {
-            const totalAmount = order.items?.reduce((sum: number, item: { unitPrice: number; quantity: number }) => 
-              sum + (Number(item.unitPrice) * item.quantity), 0) ?? 0;
-            
+            const totalAmount = order.items?.reduce(
+              (sum: number, item: { unitPrice: number; quantity: number }) =>
+                sum + (Number(item.unitPrice) * item.quantity),
+              0,
+            ) ?? 0;
+
             return (
               <OrderCard
                 key={order.id}
@@ -189,7 +219,10 @@ export default function Orders() {
   );
 }
 
-// StatCard component
+// ============================================================================
+// STAT CARD
+// ============================================================================
+
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
   return (
     <div className="card p-4">
@@ -204,21 +237,39 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
   );
 }
 
-// OrderCard component
-function OrderCard({ order, totalAmount, currency, onView, onCancel }: { 
-  order: Order; 
+// ============================================================================
+// ORDER CARD
+// ============================================================================
+
+function OrderCard({
+  order,
+  totalAmount,
+  currency,
+  onView,
+  onCancel,
+}: {
+  order: Order;
   totalAmount: number;
-  currency: string; 
-  onView: () => void; 
+  currency: string;
+  onView: () => void;
   onCancel: () => void;
 }) {
   const statusConfig = getStatusConfig(order.status);
   const StatusIcon = statusConfig.icon;
-  
-  const date = new Date(order.createdAt);
-  const formattedDate = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-  const canCancel = order.status !== 'ANNULE' && order.status !== 'ANNULEE' && order.status !== 'SERVIE' && order.status !== 'SERVI';
+  const date = new Date(order.createdAt);
+  const formattedDate = date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const canCancel =
+    order.status !== 'ANNULE' &&
+    order.status !== 'ANNULEE' &&
+    order.status !== 'SERVIE' &&
+    order.status !== 'SERVI';
 
   return (
     <div className="card p-4 hover:shadow-md transition-all">
@@ -233,6 +284,7 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
             </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="text-xs text-gray-400">{formattedDate}</span>
+
               {order.table && (
                 <>
                   <span className="text-xs text-gray-300">•</span>
@@ -241,8 +293,12 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
                   </span>
                 </>
               )}
+
               <span className="text-xs text-gray-300">•</span>
-              <span className="text-xs text-gray-400">{order.type === 'SUR_PLACE' ? 'Sur place' : 'À emporter'}</span>
+              <span className="text-xs text-gray-400">
+                {order.type === 'SUR_PLACE' ? 'Sur place' : 'À emporter'}
+              </span>
+
               {order.guestCount > 0 && (
                 <>
                   <span className="text-xs text-gray-300">•</span>
@@ -251,7 +307,19 @@ function OrderCard({ order, totalAmount, currency, onView, onCancel }: {
                   </span>
                 </>
               )}
+
+              {/* ✅ NOUVEAU : Nom du serveur qui a créé la commande */}
+              {order.user && (
+                <>
+                  <span className="text-xs text-gray-300">•</span>
+                  <ServerBadge
+                    firstName={order.user.firstName}
+                    lastName={order.user.lastName}
+                  />
+                </>
+              )}
             </div>
+
             {order.notes && (
               <p className="text-[10px] text-amber-600 mt-1">📝 {order.notes}</p>
             )}

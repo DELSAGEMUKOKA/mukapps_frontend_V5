@@ -121,7 +121,7 @@ export default function Register() {
         // ✅ Si aucun module n'est actif et que l'utilisateur est admin
         if (activeModules.length === 0 && isAdmin) {
           toast.success(`Bienvenue ${res.user.firstName} ! Veuillez activer vos modules pour continuer.`);
-          navigate('/modules'); // ← Redirection vers la page de configuration des modules
+          navigate('/dashboard'); // ← Redirection vers la page de configuration des modules
           return;
         }
         
@@ -144,7 +144,7 @@ export default function Register() {
         
         const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'SUPER_ADMIN';
         if (isAdmin) {
-          navigate('/modules');
+          navigate('/dashboard');
         } else {
           toast.error('Erreur de configuration. Veuillez contacter votre administrateur.');
         }

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "mukapps-api-v2-2026",
     "name": "Mukapps SaaS Backend API v2.0",
-    "description": "Collection complète de l'API Mukapps Backend v2.0\n\n## Architecture Modulaire\n- Product Module (Implémenté)\n- Category Module (Implémenté)\n- Sales Module (À tester)\n- Stock Module (À tester)\n- Finance Module (À tester)\n- Reports Module (À tester)\n- Customer Module (À tester)\n- User Module (À tester)\n\n## Variables d'environnement requises:\n- `baseUrl`: http://localhost:4000\n- `token`: Token JWT (auto-généré après login)\n- `companyId`: ID de l'entreprise\n- `userId`: ID de l'utilisateur\n\n## Ordre de test recommandé:\n1. Health - Vérifier l'API\n2. Auth - Register & Login\n3. Modules - Vérifier accès\n4. Product - CRUD\n5. Category - CRUD\n\n## Nouvelle Structure:\n- Routes centralisées: /api/\n- Modules indépendants: /api/products, /api/categories, /api/sales, etc.\n- Gestion des modules: /api/modules/\n\nDernière mise à jour: 2026-04-24",
+    "description": "Collection complète de l'API Mukapps Backend v2.0\n\n## Architecture Modulaire\n- Product Module (Implémenté)\n- Category Module (Implémenté)\n- Sales Module (À tester)\n- Stock Module (À tester)\n- Finance Module (À tester)\n- Reports Module (À tester)\n- Customer Module (À tester)\n- User Module (À tester)\n\n## Variables d'environnement requises:\n- `baseUrl`: https://mukappss.online\n- `token`: Token JWT (auto-généré après login)\n- `companyId`: ID de l'entreprise\n- `userId`: ID de l'utilisateur\n\n## Ordre de test recommandé:\n1. Health - Vérifier l'API\n2. Auth - Register & Login\n3. Modules - Vérifier accès\n4. Product - CRUD\n5. Category - CRUD\n\n## Nouvelle Structure:\n- Routes centralisées: /api/\n- Modules indépendants: /api/products, /api/categories, /api/sales, etc.\n- Gestion des modules: /api/modules/\n\nDernière mise à jour: 2026-04-24",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -785,7 +785,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:4000",
+      "value": "https://mukappss.online",
       "type": "string"
     },
     {
